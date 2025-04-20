@@ -1,18 +1,21 @@
 <template>
   <div class="chat">
     <div class="content">
-      <div class="record"></div>
+      <div class="record">
+        <messageList></messageList>
+      </div>
       <div class="input">
         <n-input
           placeholder="有什么我能帮您的吗?"
           type="textarea"
-          size="small"
+          size="tiny"
           :value="inputValue"
           :autosize="{
             minRows: 4,
             maxRows: 4,
           }"
           @input="handleInput"
+          class="textarea"
         />
         <div class="tool">
           <n-button text style="font-size: 24px">
@@ -27,6 +30,7 @@
 <script setup>
 import { ref } from 'vue';
 import { NInput } from 'naive-ui';
+import messageList from './messageList.vue';
 
 const inputValue = ref('');
 const handleInput = (value) => {
@@ -55,6 +59,9 @@ const handleInput = (value) => {
     .input{
       display: flex;
       flex-direction: column;
+      .textarea{
+        font-size: 20px;
+      }
       .tool{
         height: 60px;
         padding: 10px 0;

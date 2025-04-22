@@ -16,7 +16,10 @@
           }"
         >
           <n-avatar round :src="getAvatar(item.role)" class="avatar" />
-          <div class="text-container">
+          <div
+            class="text-container"
+            :style="{ maxWidth: item.role === 'assistant' ? '50vw' : '560px' }"
+          >
             <div class="text">
               <div v-html="item.content"></div>
             </div>
@@ -70,12 +73,15 @@ const sendMessage = (userInput) => {
     content: userInput,
     key: Global.getRandomKey(),
   });
+  virtualListRef.value.scrollTo({
+    position: "bottom",
+  });
   localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
 const fetchAI = async () => {
   const completion = await openai.chat.completions.create({
-    model: "qwen-plus",
+    model: "qwen-plus-latest",
     messages: chatHistory.value,
     stream: true,
     stream_options: {
@@ -91,14 +97,21 @@ const fetchAI = async () => {
     content: fullContent,
     key: Global.getRandomKey(),
   });
+  let lastScrollTime = 0;
+  const scrollTime = 300;
   for await (const chunk of completion) {
     if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
       fullContent = fullContent + chunk.choices[0].delta.content;
       chatHistory.value[chatHistory.value.length - 1].content =
         md.render(fullContent);
-      virtualListRef.value.scrollTo({
-        position: "bottom",
-      });
+
+      const now = Date.now();
+      if (now - lastScrollTime > scrollTime) {
+        virtualListRef.value.scrollTo({
+          position: "bottom",
+        });
+        lastScrollTime = now;
+      }
     }
   }
   localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));

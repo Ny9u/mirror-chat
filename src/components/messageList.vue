@@ -1,63 +1,136 @@
 <template>
-  <div class="message-list">
+  <div class="message-list" v-if="chatHistory.slice(1).length">
     <n-virtual-list
+      ref="virtualListRef"
       style="max-height: 70vh"
       :item-size="30"
-      :items="items"
+      :items="chatHistory.slice(1)"
       item-resizable
     >
-    <template #default="{ item, index }">
-      <div :key="item.key" class="item" :style="{ flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse' }">
-        <n-avatar
-          round
-          :src="getImg(item.role)"
-          class="avatar"
-        />
-        <div class="text-container">
-          <div class="text">
-            {{ index }} - {{ item.message }}
-          </div> 
+      <template #default="{ item }">
+        <div
+          :key="item.key"
+          class="item"
+          :style="{
+            flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse',
+          }"
+        >
+          <n-avatar round :src="getAvatar(item.role)" class="avatar" />
+          <div class="text-container">
+            <div class="text">
+              <div v-html="item.content"></div>
+            </div>
+          </div>
         </div>
-      </div>
-    </template>
+      </template>
     </n-virtual-list>
+  </div>
+  <div class="welcome" v-show="!chatHistory.slice(1).length">
+    <div id="typed" class="welcome-text"></div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { NVirtualList, NAvatar } from 'naive-ui';
-import assistantUrl from '../assets/assistant.svg';
-import userUrl from '../assets/avatar.jpg';
+import { computed, onMounted, ref } from "vue";
+import { NVirtualList, NAvatar } from "naive-ui";
+import assistantUrl from "../assets/assistant.svg";
+import userUrl from "../assets/avatar.jpg";
+import OpenAI from "openai";
+import Global from "../utils/global.js";
+import MarkdownIt from "markdown-it";
+import Typed from "typed.js";
 
-const messages = [
-  "生活就像一场盛大的魔术表演，我们时而扮演着魔术师，时而又成了被戏弄的观众，最后发现，最大的魔术其实是时间，它把我们的青春和钱包都变得不见了",
-  "复杂度不会消失，只会转移，当你听到一些人对于精致的概念模型侃侃而谈，请保持清醒",
-  "当谈到虚拟列表时，能让你感觉列表像是无限长的，但实际上它只是在偷偷隐藏那些不可见的元素，就像是个懒惰的程序员拿着一个空白纸条说：“你看不见我，我也不会加载自己！”",
-  "问题有时候本身就是答案，追寻的过程就是一种答案，语言具有破坏的能力，一旦一个东西说出口它就破坏了，我说要沉默，但我一说口沉默就没了，我说要享受当下，一说享受当下，当下就溜走了",
-  "弗洛伊德阅读梦，发现一条直达潜意识的秘密通道。海明威阅读海，发现生命是一条要花一辈子才会上钩的鱼。凡高阅读麦田，发现艺术躲在太阳的背后乘凉。罗丹阅读人体，发现哥伦布没有发现的美丽海岸线。加缪阅读卡夫卡，发现真理已经被讲完一半"
-];
+defineProps({ userInput: String });
 
-const role = [
-  "assistant",
-  "user"
-];
+const md = new MarkdownIt();
+const virtualListRef = ref(null);
+const chatHistory = ref(
+  JSON.parse(localStorage.getItem("chatHistory")) || [
+    {
+      role: "system",
+      content: "You are a helpful assistant.",
+      key: Global.getRandomKey(),
+    },
+  ]
+);
 
-const items = Array.from({ length: 100 }, (_, i) => ({
-  key: `${i}`,
-  value: i,
-  message: messages[Math.floor(Math.random() * messages.length)],
-  role: role[Math.floor(Math.random() * role.length)]
-}));
+const role = ["assistant", "user"];
 
-const getImg = (role) => {
-  return role === 'assistant' ? assistantUrl : userUrl;
+// 初始化openai
+const openai = new OpenAI({
+  apiKey: "sk-1555dc8ec09a4b19a34e7b9392a928c8",
+  baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  dangerouslyAllowBrowser: true,
+});
+
+// 发送消息
+const sendMessage = (userInput) => {
+  chatHistory.value.push({
+    role: "user",
+    content: userInput,
+    key: Global.getRandomKey(),
+  });
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
+const fetchAI = async () => {
+  const completion = await openai.chat.completions.create({
+    model: "qwen-plus",
+    messages: chatHistory.value,
+    stream: true,
+    stream_options: {
+      include_usage: true,
+    },
+  });
+  if (!completion) {
+    throw new Error("请求服务失败");
+  }
+  let fullContent = "";
+  chatHistory.value.push({
+    role: "assistant",
+    content: fullContent,
+    key: Global.getRandomKey(),
+  });
+  for await (const chunk of completion) {
+    if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
+      fullContent = fullContent + chunk.choices[0].delta.content;
+      chatHistory.value[chatHistory.value.length - 1].content =
+        md.render(fullContent);
+      virtualListRef.value.scrollTo({
+        position: "bottom",
+      });
+    }
+  }
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+  return fullContent;
+};
+const getAvatar = (role) => {
+  return role === "assistant" ? assistantUrl : userUrl;
+};
+
+const scrollToBottom = () => {
+  virtualListRef.value.scrollTo({
+    index: chatHistory.value.length - 2,
+  });
+};
+
+defineExpose({ sendMessage, fetchAI });
+onMounted(() => {
+  new Typed("#typed", {
+    strings: ["下午好, Master🥰"],
+    typeSpeed: 50,
+    backSpeed: 0,
+    loop: false,
+    showCursor: false,
+  });
+  if (virtualListRef.value) {
+    scrollToBottom();
+  }
+});
 </script>
 
 <style lang="less" scoped>
-.message-list{
+.message-list {
   width: 70vw;
   height: 70vh;
   background: #2b2b31 no-repeat center;
@@ -72,17 +145,30 @@ const getImg = (role) => {
     height: 32px;
     margin: 0 10px;
   }
-  .text-container{
+  .text-container {
     max-width: 560px;
     background: #414149 no-repeat center;
     border-radius: 8px;
-    .text{
+    .text {
       padding: 10px 20px;
       font-size: 16px;
     }
   }
-  ::v-deep(.n-scrollbar-rail){
+  ::v-deep(.n-scrollbar-rail) {
     display: none;
+  }
+}
+.welcome {
+  width: 70vw;
+  height: 70vh;
+  background: #2b2b31 no-repeat center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .welcome-text {
+    font-size: 30px;
+    font-weight: bold;
+    color: #fff;
   }
 }
 </style>

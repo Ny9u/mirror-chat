@@ -1,3 +1,11 @@
 {
-  "recommendations": ["Vue.volar"]
+  "recommendations": [
+    "vue.volar",
+    "hollowtree.vue-snippets",
+    "dbaeumer.vscode-eslint",
+    "stylelint.vscode-stylelint",
+    "esbenp.prettier-vscode",
+    "streetsidesoftware.code-spell-checker",
+    "syler.sass-indented"
+  ]
 }

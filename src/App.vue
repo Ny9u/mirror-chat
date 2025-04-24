@@ -1,6 +1,6 @@
 <template>
   <n-config-provider :theme="theme">
-    <div class="main">
+    <div class="main" :class="{ 'light-mode': configStore.theme === 'light' }">
       <n-message-provider>
         <Header />
         <Chat />
@@ -10,13 +10,21 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { darkTheme } from "naive-ui";
 import { NConfigProvider, NMessageProvider } from "naive-ui";
 import Header from "./components/header.vue";
 import Chat from "./components/chat.vue";
+import { useConfigStore } from "./stores/configStore";
 
-const theme = ref(darkTheme);
+const configStore = useConfigStore();
+
+const theme = computed(() => {
+  if (configStore.theme === "light") {
+    return null;
+  }
+  return darkTheme;
+});
 </script>
 
 <style lang="less" scoped>

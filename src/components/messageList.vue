@@ -37,14 +37,17 @@
 import { computed, onMounted, ref } from "vue";
 import { NVirtualList, NAvatar } from "naive-ui";
 import assistantUrl from "../assets/assistant.svg";
+import assistantDarkUrl from "../assets/assistant_dark.svg";
 import userUrl from "../assets/avatar.jpg";
 import OpenAI from "openai";
 import Global from "../utils/global.js";
 import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
+import { useConfigStore } from "@/stores/configStore.js";
 
 defineProps({ userInput: String });
 
+const configStore = useConfigStore();
 const md = new MarkdownIt();
 const virtualListRef = ref(null);
 const chatHistory = ref(
@@ -118,6 +121,9 @@ const fetchAI = async () => {
   return fullContent;
 };
 const getAvatar = (role) => {
+  if (configStore.theme === "light" && role === "assistant") {
+    return assistantDarkUrl;
+  }
   return role === "assistant" ? assistantUrl : userUrl;
 };
 
@@ -146,12 +152,12 @@ onMounted(() => {
 .message-list {
   width: 70vw;
   height: 70vh;
-  background: #2b2b31 no-repeat center;
+  background: var(--background-color) no-repeat center;
   .item {
     display: flex;
     align-items: flex-start;
     margin: 40px 0;
-    color: #fff;
+    color: var(--text-color);
   }
   .avatar {
     width: 32px;
@@ -160,7 +166,7 @@ onMounted(() => {
   }
   .text-container {
     max-width: 560px;
-    background: #414149 no-repeat center;
+    background: var(--message-color) no-repeat center;
     border-radius: 8px;
     .text {
       padding: 10px 20px;
@@ -170,18 +176,21 @@ onMounted(() => {
   ::v-deep(.n-scrollbar-rail) {
     display: none;
   }
+  ::v-deep(.n-avatar) {
+    background-color: transparent;
+  }
 }
 .welcome {
   width: 70vw;
   height: 70vh;
-  background: #2b2b31 no-repeat center;
+  background: var(--background-color) no-repeat center;
   display: flex;
   justify-content: center;
   align-items: center;
   .welcome-text {
     font-size: 30px;
     font-weight: bold;
-    color: #fff;
+    color: var(--text-color);
   }
 }
 </style>

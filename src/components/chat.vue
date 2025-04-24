@@ -81,7 +81,7 @@ const sendMessage = async () => {
   margin-top: 54px;
   display: flex;
   justify-content: center;
-  background: #2b2b31 no-repeat center;
+  background: var(--background-color) no-repeat center;
   .content {
     width: 70vw;
     height: 100vh;

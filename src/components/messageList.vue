@@ -76,9 +76,11 @@ const sendMessage = (userInput) => {
     content: userInput,
     key: Global.getRandomKey(),
   });
-  virtualListRef.value.scrollTo({
-    position: "bottom",
-  });
+  if (chatHistory.value.length > 2) {
+    virtualListRef.value.scrollTo({
+      position: "bottom",
+    });
+  }
   localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
@@ -159,7 +161,7 @@ onMounted(() => {
     loop: false,
     showCursor: false,
   });
-  if (virtualListRef.value) {
+  if (virtualListRef.value && chatHistory.value.length > 2) {
     scrollToBottom();
   }
 });

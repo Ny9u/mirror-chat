@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, getCurrentInstance } from "vue";
 import { NVirtualList, NAvatar } from "naive-ui";
 import assistantUrl from "../assets/assistant.svg";
 import assistantDarkUrl from "../assets/assistant_dark.svg";
@@ -45,9 +45,10 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 
-defineProps({ userInput: String });
+defineProps({ userInput: String }, { netSearch: Boolean });
 
 const configStore = useConfigStore();
+const { proxy } = getCurrentInstance();
 const md = new MarkdownIt();
 const virtualListRef = ref(null);
 const chatHistory = ref(
@@ -65,7 +66,7 @@ const role = ["assistant", "user"];
 // 初始化openai
 const openai = new OpenAI({
   apiKey: "sk-1555dc8ec09a4b19a34e7b9392a928c8",
-  baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  baseURL: proxy.$api.aliyun,
   dangerouslyAllowBrowser: true,
 });
 

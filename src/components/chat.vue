@@ -5,6 +5,7 @@
         <messageList
           :userInput="inputValue"
           :netSearch="netSearch"
+          :deepThinking="deepThinking"
           ref="listRef"
         ></messageList>
       </div>
@@ -24,14 +25,24 @@
           class="textarea"
         />
         <div class="tool">
-          <n-button ghost round :color="color" @click="useNetSearch">
-            <template #icon>
-              <n-icon>
-                <World />
-              </n-icon>
-            </template>
-            搜索
-          </n-button>
+          <div class="features">
+            <n-button ghost round :color="thinkColor" @click="useDeepThinking">
+              <template #icon>
+                <n-icon>
+                  <Atom />
+                </n-icon>
+              </template>
+              深度思考
+            </n-button>
+            <n-button ghost round :color="netColor" @click="useNetSearch">
+              <template #icon>
+                <n-icon>
+                  <World />
+                </n-icon>
+              </template>
+              搜索
+            </n-button>
+          </div>
           <n-button text style="font-size: 24px">
             <div class="upload" @click="sendMessage"></div>
           </n-button>
@@ -45,7 +56,7 @@
 import { ref, computed, getCurrentInstance } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World } from "@vicons/tabler";
+import { World, Atom } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Request } from "@/utils/request.js";
 
@@ -54,12 +65,20 @@ const configStore = useConfigStore();
 const inputValue = ref("");
 const listRef = ref(null);
 const netSearch = ref(false);
-const { proxy } = getCurrentInstance();
-const color = computed(() => {
+const deepThinking = ref(false);
+
+const netColor = computed(() => {
   if (netSearch.value) {
     return "#615ced";
   }
-  return configStore.theme === "dark" ? "#fff" : "#000";
+  return configStore.theme === "dark" ? "#ffffff" : "#000000";
+});
+
+const thinkColor = computed(() => {
+  if (deepThinking.value) {
+    return "#615ced";
+  }
+  return configStore.theme === "dark" ? "#ffffff" : "#000000";
 });
 
 const handleInput = (value) => {
@@ -123,6 +142,10 @@ const sendMessage = async () => {
 const useNetSearch = () => {
   netSearch.value = !netSearch.value;
 };
+
+const useDeepThinking = () => {
+  deepThinking.value = !deepThinking.value;
+};
 </script>
 
 <style lang="less" scoped>
@@ -156,6 +179,10 @@ const useNetSearch = () => {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
+        .features {
+          display: flex;
+          gap: 10px;
+        }
         .upload {
           width: 48px;
           height: 48px;

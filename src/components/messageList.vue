@@ -16,12 +16,24 @@
           }"
         >
           <n-avatar round :src="getAvatar(item.role)" class="avatar" />
-          <div
-            class="text-container"
-            :style="{ maxWidth: item.role === 'assistant' ? '50vw' : '560px' }"
-          >
-            <div class="text">
-              <div v-html="item.content"></div>
+          <div class="message">
+            <div v-for="(i, index) in item.content" :key="index">
+              <div class="think-container" v-if="i.type === 'thinking'">
+                <div class="think">
+                  <div v-html="i.data"></div>
+                </div>
+              </div>
+              <div
+                class="text-container"
+                :style="{
+                  maxWidth: item.role === 'assistant' ? '50vw' : '560px',
+                }"
+                v-if="i.type === 'content'"
+              >
+                <div class="text">
+                  <div v-html="i.data"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -34,8 +46,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, getCurrentInstance } from "vue";
-import { NVirtualList, NAvatar } from "naive-ui";
+import { computed, onMounted, ref, getCurrentInstance, toRefs } from "vue";
+import { NVirtualList, NAvatar, useMessage } from "naive-ui";
 import assistantUrl from "../assets/assistant.svg";
 import assistantDarkUrl from "../assets/assistant_dark.svg";
 import userUrl from "../assets/avatar.jpg";
@@ -45,12 +57,23 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 
-defineProps({ userInput: String }, { netSearch: Boolean });
+const props = defineProps({
+  userInput: String,
+  netSearch: Boolean,
+  deepThinking: Boolean,
+});
+const { userInput, netSearch, deepThinking } = toRefs(props);
 
 const configStore = useConfigStore();
 const { proxy } = getCurrentInstance();
-const md = new MarkdownIt();
+const message = useMessage();
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
 const virtualListRef = ref(null);
+let model = "qwq-plus-2025-03-05";
 const chatHistory = ref(
   JSON.parse(localStorage.getItem("chatHistory")) || [
     {
@@ -74,7 +97,12 @@ const openai = new OpenAI({
 const sendMessage = (userInput) => {
   chatHistory.value.push({
     role: "user",
-    content: userInput,
+    content: [
+      {
+        type: "content",
+        data: userInput,
+      },
+    ],
     key: Global.getRandomKey(),
   });
   if (chatHistory.value.length > 2) {
@@ -86,42 +114,104 @@ const sendMessage = (userInput) => {
 };
 
 const fetchAI = async () => {
-  const completion = await openai.chat.completions.create({
-    model: "qwen-plus-latest",
-    messages: chatHistory.value,
-    stream: true,
-    stream_options: {
-      include_usage: true,
-    },
-  });
-  if (!completion) {
-    throw new Error("请求服务失败");
-  }
-  let fullContent = "";
-  chatHistory.value.push({
-    role: "assistant",
-    content: fullContent,
-    key: Global.getRandomKey(),
-  });
-  let lastScrollTime = 0;
-  const scrollTime = 300;
-  for await (const chunk of completion) {
-    if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
-      fullContent = fullContent + chunk.choices[0].delta.content;
-      chatHistory.value[chatHistory.value.length - 1].content =
-        md.render(fullContent);
+  if (deepThinking.value) {
+    if (!model.includes("qwq")) {
+      message.error("当前模型不支持深度思考");
+      return;
+    }
+    let reasoningContent = "";
+    let answerContent = "";
+    const stream = await openai.chat.completions.create({
+      model: model,
+      messages: [{ role: "user", content: "9.9和9.11谁大" }],
+      stream: true,
+    });
+    chatHistory.value.push({
+      role: "assistant",
+      content: [
+        {
+          type: "thinking",
+          data: reasoningContent,
+        },
+      ],
+      key: Global.getRandomKey(),
+    });
+    let lastScrollTime = 0;
+    const scrollTime = 500;
+    for await (const chunk of stream) {
+      if (!chunk.choices?.length) {
+        continue;
+      }
 
-      const now = Date.now();
-      if (now - lastScrollTime > scrollTime) {
-        virtualListRef.value.scrollTo({
-          position: "bottom",
-        });
-        lastScrollTime = now;
+      const delta = chunk.choices[0].delta;
+
+      // 处理思考过程
+      if (delta.reasoning_content) {
+        reasoningContent += delta.reasoning_content;
+        chatHistory.value[chatHistory.value.length - 1].content[0].data =
+          md.render(reasoningContent);
+        const now = Date.now();
+        if (now - lastScrollTime > scrollTime) {
+          virtualListRef.value.scrollTo({
+            position: "bottom",
+          });
+          lastScrollTime = now;
+        }
+      } else if (delta.content) {
+        answerContent += delta.content;
       }
     }
+    chatHistory.value[chatHistory.value.length - 1].content.push({
+      type: "content",
+      data: answerContent,
+    });
+    virtualListRef.value.scrollTo({
+      position: "bottom",
+    });
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    return answerContent;
+  } else {
+    // const stream = await openai.chat.completions.create({
+    //   model: model,
+    //   messages: chatHistory.value,
+    //   stream: true,
+    //   stream_options: {
+    //     include_usage: true,
+    //   },
+    // });
+    // if (!stream) {
+    //   throw new Error("请求服务失败");
+    // }
+    // let fullContent = "";
+    // chatHistory.value.push({
+    //   role: "assistant",
+    //   content: [
+    //     {
+    //       type: "content",
+    //       data: fullContent,
+    //     },
+    //   ],
+    //   key: Global.getRandomKey(),
+    // });
+    // let lastScrollTime = 0;
+    // const scrollTime = 500;
+    // for await (const chunk of stream) {
+    //   if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
+    //     fullContent = fullContent + chunk.choices[0].delta.content;
+    //     chatHistory.value[chatHistory.value.length - 1].content.data =
+    //       md.render(fullContent);
+    //     const now = Date.now();
+    //     if (now - lastScrollTime > scrollTime) {
+    //       virtualListRef.value.scrollTo({
+    //         position: "bottom",
+    //       });
+    //       lastScrollTime = now;
+    //     }
+    //   }
+    // }
+    // localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    // return fullContent;
   }
-  localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
-  return fullContent;
 };
 const getAvatar = (role) => {
   if (configStore.theme === "light" && role === "assistant") {
@@ -184,15 +274,32 @@ onMounted(() => {
     height: 32px;
     margin: 0 10px;
   }
-  .text-container {
-    max-width: 560px;
-    background: var(--message-color) no-repeat center;
-    border-radius: 8px;
-    .text {
-      padding: 10px 20px;
-      font-size: 16px;
+  .message {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    .text-container {
+      max-width: 560px;
+      background: var(--message-color) no-repeat center;
+      border-radius: 8px;
+      .text {
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+    }
+    .think-container {
+      max-width: 900px;
+      .think {
+        padding: 1px 20px;
+        font-size: 13px;
+        color: var(--text-color);
+        background: var(--think-color) no-repeat center;
+        border-left: 3px solid var(--text-color);
+      }
     }
   }
+
   ::v-deep(.n-scrollbar-rail) {
     display: none;
   }

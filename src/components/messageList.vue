@@ -20,6 +20,17 @@
             <div v-for="(i, index) in item.content" :key="index">
               <div class="think-container" v-if="i.type === 'thinking'">
                 <div class="think">
+                  <n-spin
+                    size="small"
+                    description="思考中"
+                    v-if="!item.isFinishThinking"
+                  >
+                    <template #icon>
+                      <n-icon>
+                        <Loader />
+                      </n-icon>
+                    </template>
+                  </n-spin>
                   <div v-html="i.data"></div>
                 </div>
               </div>
@@ -47,7 +58,7 @@
 
 <script setup>
 import { computed, onMounted, ref, getCurrentInstance, toRefs } from "vue";
-import { NVirtualList, NAvatar, useMessage } from "naive-ui";
+import { NVirtualList, NAvatar, useMessage, NSpin, NIcon } from "naive-ui";
 import assistantUrl from "../assets/assistant.svg";
 import assistantDarkUrl from "../assets/assistant_dark.svg";
 import userUrl from "../assets/avatar.jpg";
@@ -56,6 +67,7 @@ import Global from "../utils/global.js";
 import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
+import { Loader } from "@vicons/tabler";
 
 const props = defineProps({
   userInput: String,
@@ -123,7 +135,7 @@ const fetchAI = async () => {
     let answerContent = "";
     const stream = await openai.chat.completions.create({
       model: model,
-      messages: [{ role: "user", content: "9.9和9.11谁大" }],
+      messages: Global.sortThinkingMessages(chatHistory.value),
       stream: true,
     });
     chatHistory.value.push({
@@ -135,6 +147,7 @@ const fetchAI = async () => {
         },
       ],
       key: Global.getRandomKey(),
+      isFinishThinking: false,
     });
     let lastScrollTime = 0;
     const scrollTime = 500;
@@ -158,59 +171,59 @@ const fetchAI = async () => {
           lastScrollTime = now;
         }
       } else if (delta.content) {
+        chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
         answerContent += delta.content;
       }
     }
     chatHistory.value[chatHistory.value.length - 1].content.push({
       type: "content",
-      data: answerContent,
+      data: md.render(answerContent),
     });
-    virtualListRef.value.scrollTo({
-      position: "bottom",
-    });
+    scrollToBottom();
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
     return answerContent;
   } else {
-    // const stream = await openai.chat.completions.create({
-    //   model: model,
-    //   messages: chatHistory.value,
-    //   stream: true,
-    //   stream_options: {
-    //     include_usage: true,
-    //   },
-    // });
-    // if (!stream) {
-    //   throw new Error("请求服务失败");
-    // }
-    // let fullContent = "";
-    // chatHistory.value.push({
-    //   role: "assistant",
-    //   content: [
-    //     {
-    //       type: "content",
-    //       data: fullContent,
-    //     },
-    //   ],
-    //   key: Global.getRandomKey(),
-    // });
-    // let lastScrollTime = 0;
-    // const scrollTime = 500;
-    // for await (const chunk of stream) {
-    //   if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
-    //     fullContent = fullContent + chunk.choices[0].delta.content;
-    //     chatHistory.value[chatHistory.value.length - 1].content.data =
-    //       md.render(fullContent);
-    //     const now = Date.now();
-    //     if (now - lastScrollTime > scrollTime) {
-    //       virtualListRef.value.scrollTo({
-    //         position: "bottom",
-    //       });
-    //       lastScrollTime = now;
-    //     }
-    //   }
-    // }
-    // localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
-    // return fullContent;
+    const stream = await openai.chat.completions.create({
+      model: model,
+      messages: Global.sortThinkingMessages(chatHistory.value),
+      stream: true,
+      stream_options: {
+        include_usage: true,
+      },
+    });
+    if (!stream) {
+      throw new Error("请求服务失败");
+    }
+    let fullContent = "";
+    chatHistory.value.push({
+      role: "assistant",
+      content: [
+        {
+          type: "content",
+          data: fullContent,
+        },
+      ],
+      key: Global.getRandomKey(),
+    });
+    let lastScrollTime = 0;
+    const scrollTime = 500;
+    for await (const chunk of stream) {
+      if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
+        if (chunk.choices[0].delta.content)
+          fullContent = fullContent + chunk.choices[0].delta.content;
+        chatHistory.value[chatHistory.value.length - 1].content[0].data =
+          md.render(fullContent);
+        const now = Date.now();
+        if (now - lastScrollTime > scrollTime) {
+          virtualListRef.value.scrollTo({
+            position: "bottom",
+          });
+          lastScrollTime = now;
+        }
+      }
+    }
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    return fullContent;
   }
 };
 const getAvatar = (role) => {
@@ -305,6 +318,15 @@ onMounted(() => {
   }
   ::v-deep(.n-avatar) {
     background-color: transparent;
+  }
+  ::v-deep(.n-spin-body) {
+    display: flex;
+    flex-direction: row;
+    font-size: 16px;
+    gap: 10px;
+  }
+  ::v-deep(.n-spin-description) {
+    margin-top: 0px;
   }
 }
 .welcome {

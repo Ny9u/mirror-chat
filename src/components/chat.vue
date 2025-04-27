@@ -69,14 +69,14 @@ const deepThinking = ref(false);
 
 const netColor = computed(() => {
   if (netSearch.value) {
-    return "#615ced";
+    return "#7fe7c4";
   }
   return configStore.theme === "dark" ? "#ffffff" : "#000000";
 });
 
 const thinkColor = computed(() => {
   if (deepThinking.value) {
-    return "#615ced";
+    return "#7fe7c4";
   }
   return configStore.theme === "dark" ? "#ffffff" : "#000000";
 });

@@ -121,8 +121,6 @@ const sendMessage = async () => {
     //     message.error("搜索失败");
     //   }
     // });
-    message.warning("联网功能开发中，暂不可用");
-    return;
   }
   listRef.value.sendMessage(inputValue.value);
   inputValue.value = "";

@@ -126,6 +126,12 @@ const sendMessage = (userInput) => {
 };
 
 const fetchAI = async () => {
+  if (netSearch.value) {
+    if (!model.includes("qwq") || /\d/.test(model)) {
+      message.error("当前模型不支持联网搜索");
+      return;
+    }
+  }
   if (deepThinking.value) {
     if (!model.includes("qwq")) {
       message.error("当前模型不支持深度思考");
@@ -137,6 +143,11 @@ const fetchAI = async () => {
       model: model,
       messages: Global.sortThinkingMessages(chatHistory.value),
       stream: true,
+      enable_search: netSearch.value,
+      stream_options: {
+        include_usage: true,
+        forced_search: netSearch.value,
+      },
     });
     chatHistory.value.push({
       role: "assistant",
@@ -187,8 +198,10 @@ const fetchAI = async () => {
       model: model,
       messages: Global.sortThinkingMessages(chatHistory.value),
       stream: true,
+      enable_search: netSearch.value,
       stream_options: {
         include_usage: true,
+        forced_search: netSearch.value,
       },
     });
     if (!stream) {

@@ -320,7 +320,6 @@ onMounted(() => {
     background-color: transparent;
   }
   ::v-deep(.n-spin-body) {
-    display: flex;
     flex-direction: row;
     font-size: 16px;
     gap: 10px;

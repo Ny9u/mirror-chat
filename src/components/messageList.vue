@@ -100,7 +100,7 @@ const role = ["assistant", "user"];
 
 // 初始化openai
 const openai = new OpenAI({
-  apiKey: "sk-1555dc8ec09a4b19a34e7b9392a928c8",
+  apiKey: import.meta.env.VITE_ALIYUN_API_KEY, // 使用环境变量
   baseURL: proxy.$api.aliyun,
   dangerouslyAllowBrowser: true,
 });

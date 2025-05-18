@@ -85,7 +85,7 @@ const md = new MarkdownIt({
   typographer: true,
 });
 const virtualListRef = ref(null);
-let model = "qwq-plus-2025-03-05";
+let model = "ernie-x1-turbo-32k";
 const chatHistory = ref(
   JSON.parse(localStorage.getItem("chatHistory")) || [
     {
@@ -100,8 +100,8 @@ const role = ["assistant", "user"];
 
 // 初始化openai
 const openai = new OpenAI({
-  apiKey: "sk-1555dc8ec09a4b19a34e7b9392a928c8",
-  baseURL: proxy.$api.aliyun,
+  apiKey: import.meta.env.VITE_BAIDU_API_KEY,
+  baseURL: proxy.$api.baidu,
   dangerouslyAllowBrowser: true,
 });
 
@@ -127,13 +127,13 @@ const sendMessage = (userInput) => {
 
 const fetchAI = async () => {
   if (netSearch.value) {
-    if (!model.includes("qwq") || /\d/.test(model)) {
+    if (!model.includes("x1") || /\d/.test(model)) {
       message.error("当前模型不支持联网搜索");
       return;
     }
   }
   if (deepThinking.value) {
-    if (!model.includes("qwq")) {
+    if (!model.includes("x1")) {
       message.error("当前模型不支持深度思考");
       return;
     }

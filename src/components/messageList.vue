@@ -85,7 +85,6 @@ const md = new MarkdownIt({
   typographer: true,
 });
 const virtualListRef = ref(null);
-let model = "qwq-plus-2025-03-05";
 const chatHistory = ref(
   JSON.parse(localStorage.getItem("chatHistory")) || [
     {
@@ -127,20 +126,20 @@ const sendMessage = (userInput) => {
 
 const fetchAI = async () => {
   if (netSearch.value) {
-    if (!model.includes("qwq") || /\d/.test(model)) {
+    if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
       message.error("当前模型不支持联网搜索");
       return;
     }
   }
   if (deepThinking.value) {
-    if (!model.includes("qwq")) {
+    if (!configStore.model.includes("qwq")) {
       message.error("当前模型不支持深度思考");
       return;
     }
     let reasoningContent = "";
     let answerContent = "";
     const stream = await openai.chat.completions.create({
-      model: model,
+      model: configStore.model,
       messages: Global.sortThinkingMessages(chatHistory.value),
       stream: true,
       enable_search: netSearch.value,
@@ -195,7 +194,7 @@ const fetchAI = async () => {
     return answerContent;
   } else {
     const stream = await openai.chat.completions.create({
-      model: model,
+      model: configStore.model,
       messages: Global.sortThinkingMessages(chatHistory.value),
       stream: true,
       enable_search: netSearch.value,
@@ -312,6 +311,7 @@ onMounted(() => {
       .text {
         padding: 10px 20px;
         font-size: 16px;
+        caret-color: transparent;
       }
     }
     .think-container {

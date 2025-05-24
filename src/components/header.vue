@@ -8,6 +8,15 @@
         }"
       ></div>
       <div class="title">Mirror-Chat</div>
+      <div class="model" @click="openModelSelect">
+        <span>{{ configStore.model }}</span>
+        <div
+          :class="{
+            down: theme === '浅色主题',
+            'down-light': theme === '深色主题',
+          }"
+        ></div>
+      </div>
     </div>
     <div class="tool">
       <n-dropdown
@@ -26,16 +35,53 @@
       <n-avatar round :src="imgUrl" class="avatar" />
     </div>
   </div>
+  <div class="select" v-show="showSelect">
+    <div class="model-title">
+      <div>模型</div>
+      <n-tooltip placement="top" trigger="hover">
+        <template #trigger>
+          <div
+            :class="{
+              'model-question': theme === '浅色主题',
+              'model-question-light': theme === '深色主题',
+            }"
+          ></div>
+        </template>
+        <span>模型描述</span>
+      </n-tooltip>
+    </div>
+    <n-infinite-scroll style="height: 270px" :distance="10">
+      <div
+        v-for="model in Models"
+        :key="model.key"
+        class="item"
+        :class="{ selected: model.key === configStore.model }"
+        @click="selectModel(model.key)"
+      >
+        <div class="model-name">{{ model.name }}</div>
+        <div class="model-desc">{{ model.desc }}</div>
+      </div>
+    </n-infinite-scroll>
+  </div>
 </template>
 
 <script setup>
-import { NAvatar, NDropdown, NIcon } from "naive-ui";
-import { ref, h } from "vue";
+import {
+  NAvatar,
+  NDropdown,
+  NIcon,
+  useMessage,
+  NInfiniteScroll,
+  NTooltip,
+} from "naive-ui";
+import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { Moon, Sun } from "@vicons/tabler";
 import imgUrl from "@/assets/avatar.jpg";
 import { useConfigStore } from "@/stores/configStore";
-
+import { Request } from "@/utils/request.js";
+const message = useMessage();
 const configStore = useConfigStore();
+const { proxy } = getCurrentInstance();
 
 const renderIcon = (icon) => {
   return () => {
@@ -56,6 +102,43 @@ const options = ref([
   },
 ]);
 
+// 官方没有提供相关接口, 暂时采取手动添加模型列表
+const Models = ref([
+  {
+    name: "qwq-plus-2025-03-05",
+    key: "qwq-plus-2025-03-05",
+    desc: "通义千问QwQ推理模型增强版，基于Qwen2.5模型训练的QwQ推理模型，通过强化学习大幅度提升了模型推理能力。",
+  },
+  {
+    name: "qwen-plus-latest",
+    key: "qwen-plus-latest",
+    desc: "通义千问系列能力均衡的模型，推理效果和速度介于通义千问-Max和通义千问-Turbo之间，适合中等复杂任务。",
+  },
+  {
+    name: "qwen-turbo-latest",
+    key: "qwen-turbo-latest",
+    desc: "通义千问系列速度最快、成本很低的模型，适合简单任务。",
+  },
+  {
+    name: "qwen-max-latest",
+    key: "qwen-max-latest",
+    desc: "通义千问系列效果最好的模型，模型推理能力和复杂指令理解能力显著增强，困难任务上的表现更优，数学、代码能力显著提升。",
+  },
+  {
+    name: "qwen3-235b-a22b",
+    key: "qwen3-235b-a22b",
+    desc: "实现思考模式和非思考模式的有效融合，可在对话中切换模式。",
+  },
+]);
+
+let showSelect = ref(false);
+const openModelSelect = () => {
+  showSelect.value = !showSelect.value;
+};
+const selectModel = (model) => {
+  configStore.setModel(model);
+  showSelect.value = false;
+};
 const handleSelect = (key) => {
   if (key === "theme") {
     theme.value = theme.value === "深色主题" ? "浅色主题" : "深色主题";
@@ -69,6 +152,28 @@ const handleSelect = (key) => {
     }
   }
 };
+
+// const getModelList = async () => {
+//   Request({
+//     headers: {
+//       Authorization: "Bearer" + import.meta.env.VITE_ALIYUN_API_KEY,
+//       "Content-Type": "application/json",
+//       Accept: "*/*",
+//     },
+//     url: proxy.$api.getModels,
+//     method: "GET",
+//     data: {
+//       page_no: 1,
+//       page_size: 10,
+//     },
+//   }).then((res) => {
+//     console.log(res);
+//   });
+// };
+
+onMounted(async () => {
+  // await getModelList();
+});
 </script>
 
 <style lang="less" scoped>
@@ -81,6 +186,8 @@ const handleSelect = (key) => {
   position: fixed;
   top: 0;
   background: var(--background-color) no-repeat center;
+  cursor: pointer;
+  caret-color: transparent;
   .info {
     display: flex;
     align-items: center;
@@ -102,6 +209,29 @@ const handleSelect = (key) => {
       font-size: 22px;
       font-weight: 800;
       color: var(--text-color);
+    }
+    .model {
+      height: 18px;
+      margin-top: 3px;
+      line-height: 18px;
+      display: flex;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    .down {
+      width: 20px;
+      height: 20px;
+      margin: 0 16px;
+      background: url("@/assets/down.svg") no-repeat center;
+      background-size: 100% 100%;
+    }
+    .down-light {
+      width: 20px;
+      height: 20px;
+      margin: 0 16px;
+      background: url("@/assets/down_dark.svg") no-repeat center;
+      background-size: 100% 100%;
     }
   }
   .tool {
@@ -137,5 +267,70 @@ const handleSelect = (key) => {
       margin: 0 16px;
     }
   }
+}
+.select {
+  width: 500px;
+  height: 320px;
+  background: var(--select-color) no-repeat center;
+  border-radius: 16px;
+  position: absolute;
+  top: 54px;
+  left: 200px;
+  z-index: 999;
+  caret-color: transparent;
+  .model-title {
+    height: 50px;
+    padding: 0 20px;
+    line-height: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .model-question {
+      width: 20px;
+      height: 20px;
+      background: url("@/assets/question.svg") no-repeat center;
+      background-size: 100% 100%;
+    }
+    .model-question-light {
+      width: 20px;
+      height: 20px;
+      background: url("@/assets/question-dark.svg") no-repeat center;
+      background-size: 100% 100%;
+    }
+  }
+  .item {
+    width: 95%;
+    height: 80px;
+    padding-left: 20px;
+    font-size: 16px;
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 10px;
+    cursor: pointer;
+    .model-name {
+      width: 95%;
+    }
+    .model-desc {
+      width: 95%;
+      color: #8c8e9c;
+      font-size: 14px;
+    }
+  }
+  .item.selected {
+    background: rgba(49, 62, 63);
+    border-radius: 12px;
+  }
+  .item:hover {
+    background: #333333;
+    border-radius: 12px;
+  }
+}
+::v-deep(.n-scrollbar-rail) {
+  display: none;
 }
 </style>

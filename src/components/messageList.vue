@@ -86,7 +86,7 @@ const md = new MarkdownIt({
 });
 const virtualListRef = ref(null);
 const chatHistory = ref(
-  JSON.parse(localStorage.getItem("chatHistory")) || [
+  JSON.parse(sessionStorage.getItem("chatHistory")) || [
     {
       role: "system",
       content: "You are a helpful assistant.",
@@ -121,7 +121,7 @@ const sendMessage = (userInput) => {
       position: "bottom",
     });
   }
-  localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+  sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
 const fetchAI = async () => {
@@ -190,7 +190,7 @@ const fetchAI = async () => {
       data: md.render(answerContent),
     });
     scrollToBottom();
-    localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
     return answerContent;
   } else {
     const stream = await openai.chat.completions.create({
@@ -234,7 +234,7 @@ const fetchAI = async () => {
         }
       }
     }
-    localStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
     return fullContent;
   }
 };
@@ -291,13 +291,13 @@ onMounted(() => {
   .item {
     display: flex;
     align-items: flex-start;
-    margin: 40px 0;
+    margin: 2.67rem 0;
     color: var(--text-color);
   }
   .avatar {
-    width: 32px;
-    height: 32px;
-    margin: 0 10px;
+    width: 2.13rem;
+    height: 2.13rem;
+    margin: 0 0.67rem;
   }
   .message {
     display: flex;
@@ -305,23 +305,23 @@ onMounted(() => {
     align-items: flex-start;
     gap: 20px;
     .text-container {
-      max-width: 560px;
+      max-width: 37.33rem;
       background: var(--message-color) no-repeat center;
-      border-radius: 8px;
+      border-radius: 0.53rem;
       .text {
-        padding: 10px 20px;
-        font-size: 16px;
+        padding: 0.67rem 1.33rem;
+        font-size: 1.07rem;
         caret-color: transparent;
       }
     }
     .think-container {
-      max-width: 900px;
+      max-width: 60rem;
       .think {
-        padding: 1px 20px;
-        font-size: 13px;
+        padding: 0.07rem 1.33rem;
+        font-size: 0.87rem;
         color: var(--text-color);
         background: var(--think-color) no-repeat center;
-        border-left: 3px solid var(--text-color);
+        border-left: 0.2rem solid var(--text-color);
       }
     }
   }
@@ -334,11 +334,11 @@ onMounted(() => {
   }
   ::v-deep(.n-spin-body) {
     flex-direction: row;
-    font-size: 16px;
-    gap: 10px;
+    font-size: 1.07rem;
+    gap: 0.67rem;
   }
   ::v-deep(.n-spin-description) {
-    margin-top: 0px;
+    margin-top: 0rem;
   }
 }
 .welcome {
@@ -349,7 +349,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   .welcome-text {
-    font-size: 30px;
+    font-size: 2rem;
     font-weight: bold;
     color: var(--text-color);
   }

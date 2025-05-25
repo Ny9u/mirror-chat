@@ -150,7 +150,7 @@ const useDeepThinking = () => {
 .chat {
   width: 100vw;
   height: 100%;
-  margin-top: 54px;
+  margin-top: 3.6rem;
   display: flex;
   justify-content: center;
   background: var(--background-color) no-repeat center;
@@ -161,18 +161,18 @@ const useDeepThinking = () => {
     flex-direction: column;
     .record {
       height: 70vh;
-      margin-bottom: 50px;
+      margin-bottom: 3.33rem;
     }
     .input {
       display: flex;
       flex-direction: column;
       .textarea {
-        font-size: 17px;
-        border-radius: 15px;
+        font-size: 1.13rem;
+        border-radius: 1rem;
       }
       .tool {
-        height: 60px;
-        padding: 10px 0;
+        height: 4rem;
+        padding: 0.67rem 0;
         display: flex;
         flex-direction: row;
         justify-content: space-between;
@@ -182,8 +182,8 @@ const useDeepThinking = () => {
           gap: 10px;
         }
         .upload {
-          width: 48px;
-          height: 48px;
+          width: 3.2rem;
+          height: 3.2rem;
           background: url("@/assets/upload.png") no-repeat center;
         }
       }
@@ -191,9 +191,9 @@ const useDeepThinking = () => {
   }
 }
 :deep(.n-input-wrapper) {
-  padding: 0 12px;
+  padding: 0 0.8rem;
 }
 :deep(.n-button) {
-  padding: 0 12px;
+  padding: 0 0.8rem;
 }
 </style>

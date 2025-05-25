@@ -179,7 +179,7 @@ onMounted(async () => {
 <style lang="less" scoped>
 .header {
   width: 100vw;
-  height: 54px;
+  height: 3.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -192,44 +192,44 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     .logo {
-      width: 48px;
-      height: 48px;
-      margin: 0 16px;
+      width: 3.2rem;
+      height: 3.2rem;
+      margin: 0 1.07rem;
       background: url("@/assets/logo.svg") no-repeat center;
     }
     .logo-light {
-      width: 48px;
-      height: 48px;
-      margin: 0 16px;
+      width: 3.2rem;
+      height: 3.2rem;
+      margin: 0 1.07rem;
       background: url("@/assets/logo_dark.svg") no-repeat center;
     }
     .title {
-      width: 152px;
-      height: 32px;
-      font-size: 22px;
+      width: 10.13rem;
+      height: 2.14rem;
+      font-size: 1.47rem;
       font-weight: 800;
       color: var(--text-color);
     }
     .model {
-      height: 18px;
-      margin-top: 3px;
-      line-height: 18px;
+      height: 1.2rem;
+      margin-top: 0.2rem;
+      line-height: 1.2rem;
       display: flex;
-      font-size: 18px;
+      font-size: 1.2rem;
       font-weight: 600;
       color: var(--text-color);
     }
     .down {
-      width: 20px;
-      height: 20px;
-      margin: 0 16px;
+      width: 1.33rem;
+      height: 1.33rem;
+      margin: 0 1.07rem;
       background: url("@/assets/down.svg") no-repeat center;
       background-size: 100% 100%;
     }
     .down-light {
-      width: 20px;
-      height: 20px;
-      margin: 0 16px;
+      width: 1.33rem;
+      height: 1.33rem;
+      margin: 0 1.07rem;
       background: url("@/assets/down_dark.svg") no-repeat center;
       background-size: 100% 100%;
     }
@@ -240,9 +240,9 @@ onMounted(async () => {
     justify-content: center;
 
     .setting {
-      width: 16px;
-      height: 16px;
-      margin: 0 16px;
+      width: 1.07rem;
+      height: 1.07rem;
+      margin: 0 1.07rem;
       background: url("@/assets/more.svg") no-repeat center;
       background-size: 100% 100%;
     }
@@ -251,9 +251,9 @@ onMounted(async () => {
       opacity: 0.8;
     }
     .setting-light {
-      width: 16px;
-      height: 16px;
-      margin: 0 16px;
+      width: 1.07rem;
+      height: 1.07rem;
+      margin: 0 1.07rem;
       background: url("@/assets/more_dark.svg") no-repeat center;
       background-size: 100% 100%;
     }
@@ -262,55 +262,55 @@ onMounted(async () => {
       opacity: 0.8;
     }
     .avatar {
-      width: 40px;
-      height: 40px;
-      margin: 0 16px;
+      width: 2.67rem;
+      height: 2.67rem;
+      margin: 0 1.07rem;
     }
   }
 }
 .select {
-  width: 500px;
-  height: 320px;
+  width: 33.33rem;
+  height: 21.33rem;
   background: var(--select-color) no-repeat center;
-  border-radius: 16px;
+  border-radius: 1.07rem;
   position: absolute;
-  top: 54px;
-  left: 200px;
+  top: 3.6rem;
+  left: 13.33rem;
   z-index: 999;
   caret-color: transparent;
   .model-title {
-    height: 50px;
-    padding: 0 20px;
-    line-height: 50px;
-    font-size: 18px;
+    height: 3.33rem;
+    padding: 0 1.33rem;
+    line-height: 3.33rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     .model-question {
-      width: 20px;
-      height: 20px;
+      width: 1.33rem;
+      height: 1.33rem;
       background: url("@/assets/question.svg") no-repeat center;
       background-size: 100% 100%;
     }
     .model-question-light {
-      width: 20px;
-      height: 20px;
+      width: 1.33rem;
+      height: 1.33rem;
       background: url("@/assets/question-dark.svg") no-repeat center;
       background-size: 100% 100%;
     }
   }
   .item {
     width: 95%;
-    height: 80px;
-    padding-left: 20px;
-    font-size: 16px;
+    height: 5.33rem;
+    padding-left: 1.33rem;
+    font-size: 1.07rem;
     color: var(--text-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 0.67rem;
     cursor: pointer;
     .model-name {
       width: 95%;
@@ -318,16 +318,16 @@ onMounted(async () => {
     .model-desc {
       width: 95%;
       color: #8c8e9c;
-      font-size: 14px;
+      font-size: 0.93rem;
     }
   }
   .item.selected {
     background: rgba(49, 62, 63);
-    border-radius: 12px;
+    border-radius: 0.8rem;
   }
   .item:hover {
     background: #333333;
-    border-radius: 12px;
+    border-radius: 0.8rem;
   }
 }
 ::v-deep(.n-scrollbar-rail) {

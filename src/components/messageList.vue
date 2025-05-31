@@ -37,7 +37,7 @@
               <div
                 class="text-container"
                 :style="{
-                  maxWidth: item.role === 'assistant' ? '50vw' : '560px',
+                  maxWidth: item.role === 'assistant' ? '63vw' : '560px',
                 }"
                 v-if="i.type === 'content'"
               >
@@ -207,24 +207,30 @@ const fetchAI = async () => {
       throw new Error("请求服务失败");
     }
     let fullContent = "";
-    chatHistory.value.push({
-      role: "assistant",
-      content: [
-        {
-          type: "content",
-          data: fullContent,
-        },
-      ],
-      key: Global.getRandomKey(),
-    });
+    let hasPushed = false;
+
     let lastScrollTime = 0;
     const scrollTime = 500;
     for await (const chunk of stream) {
       if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
-        if (chunk.choices[0].delta.content)
+        if (chunk.choices[0].delta.content) {
           fullContent = fullContent + chunk.choices[0].delta.content;
-        chatHistory.value[chatHistory.value.length - 1].content[0].data =
-          md.render(fullContent);
+          if (!hasPushed) {
+            chatHistory.value.push({
+              role: "assistant",
+              content: [
+                {
+                  type: "content",
+                  data: fullContent,
+                },
+              ],
+              key: Global.getRandomKey(),
+            });
+            hasPushed = true;
+          }
+          chatHistory.value[chatHistory.value.length - 1].content[0].data =
+            md.render(fullContent);
+        }
         const now = Date.now();
         if (now - lastScrollTime > scrollTime) {
           virtualListRef.value.scrollTo({
@@ -271,7 +277,7 @@ defineExpose({ sendMessage, fetchAI });
 onMounted(() => {
   let time = judgeTime();
   new Typed("#typed", {
-    strings: [`${time}好, Master🥰`],
+    strings: [`${time}好, Master🥰🥰`],
     typeSpeed: 50,
     backSpeed: 0,
     loop: false,
@@ -343,11 +349,11 @@ onMounted(() => {
 }
 .welcome {
   width: 70vw;
-  height: 70vh;
+  height: 35vh;
   background: var(--background-color) no-repeat center;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: end;
   .welcome-text {
     font-size: 2rem;
     font-weight: bold;

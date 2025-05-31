@@ -160,7 +160,6 @@ const useDeepThinking = () => {
     display: flex;
     flex-direction: column;
     .record {
-      height: 70vh;
       margin-bottom: 3.33rem;
     }
     .input {

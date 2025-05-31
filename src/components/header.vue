@@ -1,15 +1,17 @@
 <template>
   <div class="header">
     <div class="info">
-      <div
-        :class="{
-          logo: theme === '浅色主题',
-          'logo-light': theme === '深色主题',
-        }"
-      ></div>
-      <div class="title">Mirror-Chat</div>
+      <div class="name" @click="goToMyGithub">
+        <div
+          :class="{
+            logo: theme === '浅色主题',
+            'logo-light': theme === '深色主题',
+          }"
+        ></div>
+        <div class="title">Mirror-Chat</div>
+      </div>
       <div class="model" @click="openModelSelect">
-        <span>{{ configStore.model }}</span>
+        <div>{{ configStore.model }}</div>
         <div
           :class="{
             down: theme === '浅色主题',
@@ -20,7 +22,7 @@
     </div>
     <div class="tool">
       <n-dropdown
-        trigger="click"
+        trigger="hover"
         size="small"
         :options="options"
         @select="handleSelect"
@@ -153,6 +155,10 @@ const handleSelect = (key) => {
   }
 };
 
+const goToMyGithub = () => {
+  window.open("https://github.com/Ny9u");
+};
+
 // const getModelList = async () => {
 //   Request({
 //     headers: {
@@ -189,26 +195,31 @@ onMounted(async () => {
   cursor: pointer;
   caret-color: transparent;
   .info {
+    height: 3.6rem;
     display: flex;
     align-items: center;
-    .logo {
-      width: 3.2rem;
-      height: 3.2rem;
-      margin: 0 1.07rem;
-      background: url("@/assets/logo.svg") no-repeat center;
-    }
-    .logo-light {
-      width: 3.2rem;
-      height: 3.2rem;
-      margin: 0 1.07rem;
-      background: url("@/assets/logo_dark.svg") no-repeat center;
-    }
-    .title {
-      width: 10.13rem;
-      height: 2.14rem;
-      font-size: 1.47rem;
-      font-weight: 800;
-      color: var(--text-color);
+    .name {
+      display: flex;
+      align-items: center;
+      .logo {
+        width: 3.2rem;
+        height: 3.2rem;
+        margin: 0 1.07rem;
+        background: url("@/assets/logo.svg") no-repeat center;
+      }
+      .logo-light {
+        width: 3.2rem;
+        height: 3.2rem;
+        margin: 0 1.07rem;
+        background: url("@/assets/logo_dark.svg") no-repeat center;
+      }
+      .title {
+        width: 10.13rem;
+        height: 2.14rem;
+        font-size: 1.47rem;
+        font-weight: 800;
+        color: var(--text-color);
+      }
     }
     .model {
       height: 1.2rem;
@@ -322,11 +333,11 @@ onMounted(async () => {
     }
   }
   .item.selected {
-    background: rgba(49, 62, 63);
+    background: rgba(140, 161, 143, 0.645);
     border-radius: 0.8rem;
   }
   .item:hover {
-    background: #333333;
+    background: #33333376;
     border-radius: 0.8rem;
   }
 }

@@ -43,8 +43,9 @@
               搜索
             </n-button>
           </div>
-          <n-button text style="font-size: 24px">
-            <div class="upload" @click="sendMessage"></div>
+          <n-button text @click="handleSendClick">
+            <div v-show="!loading" class="upload"></div>
+            <div v-show="loading" class="loading"></div>
           </n-button>
         </div>
       </div>
@@ -66,6 +67,8 @@ const inputValue = ref("");
 const listRef = ref(null);
 const netSearch = ref(false);
 const deepThinking = ref(false);
+const loading = ref(false);
+const abortController = ref(null);
 
 const netColor = computed(() => {
   if (netSearch.value) {
@@ -90,6 +93,17 @@ const handleEnter = (e) => {
     e.preventDefault();
     sendMessage();
   }
+};
+
+const handleSendClick = () => {
+  if (loading.value) {
+    if (abortController.value) {
+      abortController.value.abort();
+      loading.value = false;
+      return;
+    }
+  }
+  sendMessage();
 };
 
 const sendMessage = async () => {
@@ -124,16 +138,26 @@ const sendMessage = async () => {
   }
   listRef.value.sendMessage(inputValue.value);
   inputValue.value = "";
+  loading.value = true;
+  abortController.value = new AbortController();
   return new Promise((resolve, reject) => {
-    listRef.value.fetchAI().then(
-      (res) => {
-        resolve(res);
-      },
-      (err) => {
-        message.error("服务请求失败");
-        reject(err);
-      }
-    );
+    listRef.value
+      .fetchAI(abortController.value.signal)
+      .then(
+        (res) => {
+          resolve(res);
+        },
+        (err) => {
+          if (err.name !== "AbortError") {
+            message.error("服务请求失败");
+          }
+          reject(err);
+        }
+      )
+      .finally(() => {
+        loading.value = false;
+        abortController.value = null;
+      });
   });
 };
 
@@ -184,6 +208,21 @@ const useDeepThinking = () => {
           width: 3.2rem;
           height: 3.2rem;
           background: url("@/assets/upload.png") no-repeat center;
+        }
+        .loading {
+          width: 3.2rem;
+          height: 3.2rem;
+          background: url("@/assets/loading.svg") no-repeat center;
+          background-size: 70% 70%;
+          animation: rotate 1s linear infinite;
+        }
+        @keyframes rotate {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
       }
     }

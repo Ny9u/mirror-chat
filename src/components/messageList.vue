@@ -124,7 +124,7 @@ const sendMessage = (userInput) => {
   sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
-const fetchAI = async () => {
+const fetchAI = async (signal) => {
   if (netSearch.value) {
     if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
       message.error("当前模型不支持联网搜索");
@@ -161,7 +161,13 @@ const fetchAI = async () => {
     });
     let lastScrollTime = 0;
     const scrollTime = 500;
+    let shouldAbort = false;
     for await (const chunk of stream) {
+      if (signal.aborted) {
+        chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
+        shouldAbort = true;
+        break;
+      }
       if (!chunk.choices?.length) {
         continue;
       }
@@ -185,10 +191,12 @@ const fetchAI = async () => {
         answerContent += delta.content;
       }
     }
-    chatHistory.value[chatHistory.value.length - 1].content.push({
-      type: "content",
-      data: md.render(answerContent),
-    });
+    if (!shouldAbort) {
+      chatHistory.value[chatHistory.value.length - 1].content.push({
+        type: "content",
+        data: md.render(answerContent),
+      });
+    }
     scrollToBottom();
     sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
     return answerContent;
@@ -211,7 +219,12 @@ const fetchAI = async () => {
 
     let lastScrollTime = 0;
     const scrollTime = 500;
+    let shouldAbort = false;
     for await (const chunk of stream) {
+      if (signal.aborted) {
+        shouldAbort = true;
+        break;
+      }
       if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
         if (chunk.choices[0].delta.content) {
           fullContent = fullContent + chunk.choices[0].delta.content;
@@ -240,7 +253,9 @@ const fetchAI = async () => {
         }
       }
     }
-    sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    if (!shouldAbort) {
+      sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+    }
     return fullContent;
   }
 };

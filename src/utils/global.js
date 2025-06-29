@@ -12,6 +12,9 @@ const sortThinkingMessages = (chatHistory) => {
         if (arr[j].type === "thinking") continue;
         obj[i].content = arr[j].data;
       }
+      if (typeof obj[i].content !== "string") {
+        obj[i].content = JSON.stringify(obj[i].content);
+      }
     }
   }
   return obj;

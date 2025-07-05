@@ -12,4 +12,8 @@ export default defineConfig({
   define: {
     "process.env": process.env,
   },
+  assetsInclude: ["**/*.cmap"],
+  build: {
+    assetsInlineLimit: 0,
+  },
 });

@@ -68,6 +68,11 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Loader } from "@vicons/tabler";
+import data from "../../public/data";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { ChromaClient } from "chromadb";
 
 const props = defineProps({
   userInput: String,
@@ -104,6 +109,30 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 });
 
+// 新增chroma初始化
+const client = new ChromaClient({
+  path: "http://localhost:8000",
+  auth: { provider: "token", credentials: "YOUR_API_KEY" },
+});
+
+// 重构存储逻辑
+const collection = await client.createCollection({
+  name: "medical_knowledge",
+  metadata: { "hnsw:space": "cosine" },
+});
+
+await collection.add({
+  ids: documents.map((_, i) => `doc_${i}`),
+  embeddings: await Promise.all(
+    documents.map((doc) => getEmbedding(doc.pageContent))
+  ),
+  metadatas: documents.map((doc) => ({
+    disease: doc.metadata.disease,
+    version: "v2.1",
+    source: "medical_db",
+  })),
+});
+
 // 发送消息
 const sendMessage = (userInput) => {
   chatHistory.value.push({
@@ -124,7 +153,42 @@ const sendMessage = (userInput) => {
   sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
+// 激活并修改embedding函数
+async function getEmbedding(text) {
+  const completion = await openai.embeddings.create({
+    model: "text-embedding-v3",
+    input: text,
+    dimensions: 1024,
+    encoding_format: "float",
+  });
+  return completion.data[0].embedding;
+}
+
+// 在fetchAI方法中添加检索增强逻辑
 const fetchAI = async (signal) => {
+  // 获取用户最后一条消息
+  const lastMessage = chatHistory.value.slice(-1)[0].content[0].data;
+
+  // 1 数据预处理
+  const stringHandle = data.map((e) => {
+    return `病名是${e.name}, 不要吃${e.not_eat}, 应该要检查 ${
+      e.check
+    } ,用药一般推荐${e.drug_detail.join(",")}`;
+  });
+
+  // 2 分词器进行分词
+  const splitter = RecursiveCharacterTextSplitter.fromLanguage("html", {
+    // 切分的最大长度
+    chunkSize: 1000,
+    // 相邻两个chunk之间的重叠token数量
+    chunkOverlap: 20,
+  });
+  let documents = [];
+  for (let i of stringHandle) {
+    const tempDoc = await splitter.splitText(i);
+    documents = [...documents, ...tempDoc];
+  }
+
   if (netSearch.value) {
     if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
       message.error("当前模型不支持联网搜索");

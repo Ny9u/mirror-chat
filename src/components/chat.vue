@@ -42,6 +42,14 @@
               </template>
               搜索
             </n-button>
+            <n-button ghost round color="#ffffff" @click="handleFileUpload">
+              <template #icon>
+                <n-icon>
+                  <Upload />
+                </n-icon>
+              </template>
+              上传文件
+            </n-button>
           </div>
           <n-button text @click="handleSendClick">
             <div v-show="!loading" class="upload"></div>
@@ -57,7 +65,7 @@
 import { ref, computed, getCurrentInstance } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World, Atom } from "@vicons/tabler";
+import { World, Atom, Upload } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Request } from "@/utils/request.js";
 
@@ -167,6 +175,14 @@ const useNetSearch = () => {
 
 const useDeepThinking = () => {
   deepThinking.value = !deepThinking.value;
+};
+
+const handleFileUpload = async () => {
+  try {
+    message.success("知识库功能开发中");
+  } catch (err) {
+    message.error(`上传失败: ${err.message}`);
+  }
 };
 </script>
 

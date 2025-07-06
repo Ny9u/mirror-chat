@@ -263,7 +263,7 @@ const getAvatar = (role) => {
   if (configStore.theme === "light" && role === "assistant") {
     return assistantDarkUrl;
   }
-  return role === "assistant" ? assistantUrl : userUrl;
+  return role === "assistant" ? assistantUrl : configStore.avatar;
 };
 
 const scrollToBottom = () => {

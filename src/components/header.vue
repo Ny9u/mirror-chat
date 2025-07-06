@@ -34,7 +34,7 @@
           }"
         ></div>
       </n-dropdown>
-      <n-avatar round :src="imgUrl" class="avatar" />
+      <n-avatar round :src="avatarUrl" class="avatar" />
     </div>
   </div>
   <div class="select" v-show="showSelect">
@@ -78,9 +78,9 @@ import {
 } from "naive-ui";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { Moon, Sun } from "@vicons/tabler";
-import imgUrl from "@/assets/avatar.jpg";
+import backupImg from "@/assets/avatar.jpg";
 import { useConfigStore } from "@/stores/configStore";
-import { Request } from "@/utils/request.js";
+import { getAvatar } from "@/services/user";
 const message = useMessage();
 const configStore = useConfigStore();
 const { proxy } = getCurrentInstance();
@@ -177,8 +177,21 @@ const goToMyGithub = () => {
 //   });
 // };
 
+const avatarUrl = ref("");
+const getUserAvatar = async (id) => {
+  try {
+    const res = await getAvatar({ id: id });
+    avatarUrl.value = res[0]?.avatarUrl;
+    configStore.setAvatar(avatarUrl.value);
+    return res[0]?.avatarUrl;
+  } catch (e) {
+    avatarUrl.value = backupImg;
+  }
+};
+
 onMounted(async () => {
   // await getModelList();
+  getUserAvatar(1);
 });
 </script>
 

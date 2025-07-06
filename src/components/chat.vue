@@ -117,24 +117,6 @@ const sendMessage = async () => {
   }
   if (netSearch.value) {
     // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
-    // Request({
-    //   headers: {
-    //     Authorization: "Bearer sk-060108ad28534136a153df7270fe204c",
-    //     "Content-Type": "application/json",
-    //     Accept: "*/*",
-    //   },
-    //   url: proxy.$api.netSearch,
-    //   method: "POST",
-    //   data: {
-    //     query: inputValue.value,
-    //   },
-    // }).then((res) => {
-    //   if (res.data.code === 200) {
-    //     listRef.value.sendMessage(res.data.data);
-    //   } else {
-    //     message.error("搜索失败");
-    //   }
-    // });
   }
   listRef.value.sendMessage(inputValue.value);
   inputValue.value = "";

@@ -6,4 +6,14 @@ export const getAvatar = async (params) => {
   return res;
 };
 
-export default { getAvatar };
+export const getName = async (params) => {
+  const res = await Request(api.name, "GET", params);
+  return res;
+};
+
+export const getUserInfo = async (params) => {
+  const res = await Request(api.getUserInfo, "GET", params);
+  return res;
+};
+
+export default { getAvatar, getName, getUserInfo };

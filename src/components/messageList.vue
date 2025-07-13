@@ -57,7 +57,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, getCurrentInstance, toRefs } from "vue";
+import {
+  computed,
+  onMounted,
+  ref,
+  getCurrentInstance,
+  toRefs,
+  watch,
+  onBeforeMount,
+} from "vue";
 import { NVirtualList, NAvatar, useMessage, NSpin, NIcon } from "naive-ui";
 import assistantUrl from "../assets/assistant.svg";
 import assistantDarkUrl from "../assets/assistant_dark.svg";
@@ -68,6 +76,7 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Loader } from "@vicons/tabler";
+import { getUserInfo } from "../services/user.js";
 
 const props = defineProps({
   userInput: String,
@@ -289,15 +298,38 @@ const judgeTime = () => {
 };
 
 defineExpose({ sendMessage, fetchAI });
-onMounted(() => {
-  let time = judgeTime();
+const getInfo = async (id) => {
+  try {
+    const res = await getUserInfo({ userId: id });
+    configStore.setAvatar(res?.results[0].data[0].avatarUrl);
+    configStore.setName(res?.results[1].data[0].userName);
+  } catch (e) {
+    return message.error("获取用户信息失败");
+  }
+};
+const initTyped = () => {
+  const time = judgeTime();
   new Typed("#typed", {
-    strings: [`${time}好, Master🥰🥰`],
+    strings: [
+      `${
+        configStore.name ? `${time}好, ${configStore.name}` : `${time}好 `
+      }🥰🥰`,
+    ],
     typeSpeed: 50,
     backSpeed: 0,
     loop: false,
     showCursor: false,
   });
+};
+
+watch(() => configStore.name, initTyped);
+
+onBeforeMount(async () => {
+  getInfo(configStore.userId);
+});
+
+onMounted(() => {
+  initTyped();
   if (virtualListRef.value && chatHistory.value.length > 2) {
     scrollToBottom();
   }

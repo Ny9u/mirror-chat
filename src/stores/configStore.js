@@ -4,7 +4,9 @@ export const useConfigStore = defineStore("config", {
   state: () => ({
     theme: "dark",
     model: "qwq-plus-2025-03-05",
+    userId: 1,
     avatar: "",
+    name: "",
   }),
   actions: {
     setTheme(theme) {
@@ -15,6 +17,9 @@ export const useConfigStore = defineStore("config", {
     },
     setAvatar(avatar) {
       this.avatar = avatar;
+    },
+    setName(name) {
+      this.name = name;
     },
   },
 });

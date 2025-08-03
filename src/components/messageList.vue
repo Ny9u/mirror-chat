@@ -325,7 +325,7 @@ const initTyped = () => {
 watch(() => configStore.name, initTyped);
 
 onBeforeMount(async () => {
-  getInfo(configStore.userId);
+  await getInfo(configStore.userId);
 });
 
 onMounted(() => {

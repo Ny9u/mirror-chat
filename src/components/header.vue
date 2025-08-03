@@ -84,6 +84,7 @@ import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { Moon, Sun } from "@vicons/tabler";
 import backupImg from "@/assets/avatar.jpg";
 import { useConfigStore } from "@/stores/configStore";
+import { getUserInfo } from "../services/user.js";
 const message = useMessage();
 const configStore = useConfigStore();
 const { proxy } = getCurrentInstance();
@@ -103,6 +104,11 @@ const options = ref([
   {
     label: theme.value,
     key: "theme",
+    icon: renderIcon(themeIcon),
+  },
+  {
+    label: "获取用户信息",
+    key: "getUserInfo",
     icon: renderIcon(themeIcon),
   },
 ]);
@@ -144,7 +150,8 @@ const selectModel = (model) => {
   configStore.setModel(model);
   showSelect.value = false;
 };
-const handleSelect = (key) => {
+let userId = 1; // 初始化userId为1
+const handleSelect = async (key) => {
   if (key === "theme") {
     theme.value = theme.value === "深色主题" ? "浅色主题" : "深色主题";
     themeIcon = themeIcon === Moon ? Sun : Moon;
@@ -154,6 +161,17 @@ const handleSelect = (key) => {
       configStore.setTheme("light");
     } else {
       configStore.setTheme("dark");
+    }
+  }
+  if (key === "getUserInfo") {
+    try {
+      const res = await getUserInfo({ userId: userId });
+      configStore.setAvatar(res?.results[0].data[0].avatarUrl);
+      configStore.setName(res?.results[1].data[0].userName);
+      // 切换userId的值，实现1和0往复
+      userId = userId === 1 ? 0 : 1;
+    } catch (e) {
+      return message.error("获取用户信息失败");
     }
   }
 };

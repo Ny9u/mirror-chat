@@ -15,7 +15,7 @@
             flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse',
           }"
         >
-          <n-avatar round :src="getAvatar(item.role)" class="avatar" />
+          <n-avatar round :src="getAvatarUrl(item.role)" class="avatar" />
           <div class="message">
             <div v-for="(i, index) in item.content" :key="index">
               <div class="think-container" v-if="i.type === 'thinking'">
@@ -76,7 +76,7 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Loader } from "@vicons/tabler";
-import { getUserInfo } from "../services/user.js";
+import { getUserInfo, getAvatar, getName } from "../services/user.js";
 
 const props = defineProps({
   userInput: String,
@@ -268,7 +268,7 @@ const fetchAI = async (signal) => {
     return fullContent;
   }
 };
-const getAvatar = (role) => {
+const getAvatarUrl = (role) => {
   if (configStore.theme === "light" && role === "assistant") {
     return assistantDarkUrl;
   }
@@ -300,9 +300,10 @@ const judgeTime = () => {
 defineExpose({ sendMessage, fetchAI });
 const getInfo = async (id) => {
   try {
-    const res = await getUserInfo({ userId: id });
-    configStore.setAvatar(res?.results[0].data[0].avatarUrl);
-    configStore.setName(res?.results[1].data[0].userName);
+    const avatarRes = await getAvatar({ userId: id });
+    const nameRes = await getName({ userId: id });
+    configStore.setAvatar(avatarRes?.[0]?.avatarUrl);
+    configStore.setName(nameRes?.[0]?.userName);
   } catch (e) {
     return message.error("获取用户信息失败");
   }

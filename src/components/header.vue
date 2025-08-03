@@ -84,7 +84,7 @@ import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { Moon, Sun } from "@vicons/tabler";
 import backupImg from "@/assets/avatar.jpg";
 import { useConfigStore } from "@/stores/configStore";
-import { getUserInfo } from "../services/user.js";
+import { getUserInfo, getAvatar, getName } from "../services/user.js";
 const message = useMessage();
 const configStore = useConfigStore();
 const { proxy } = getCurrentInstance();
@@ -165,9 +165,10 @@ const handleSelect = async (key) => {
   }
   if (key === "getUserInfo") {
     try {
-      const res = await getUserInfo({ userId: userId });
-      configStore.setAvatar(res?.results[0].data[0].avatarUrl);
-      configStore.setName(res?.results[1].data[0].userName);
+      const avatarRes = await getAvatar({ userId: userId });
+      const nameRes = await getName({ userId: userId });
+      configStore.setAvatar(avatarRes?.[0]?.avatarUrl);
+      configStore.setName(nameRes?.[0]?.userName);
       // 切换userId的值，实现1和0往复
       userId = userId === 1 ? 0 : 1;
     } catch (e) {

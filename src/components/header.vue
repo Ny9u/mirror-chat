@@ -16,6 +16,7 @@
           :class="{
             down: theme === '浅色主题',
             'down-light': theme === '深色主题',
+            rotate: showSelect,
           }"
         ></div>
       </div>
@@ -41,7 +42,7 @@
       />
     </div>
   </div>
-  <div class="select" v-show="showSelect">
+  <div class="select" :class="{ 'select-visible': showSelect }">
     <div class="model-title">
       <div>模型</div>
       <n-tooltip placement="top" trigger="hover">
@@ -239,6 +240,10 @@ onMounted(async () => {
       margin: 0 1.07rem;
       background: url("@/assets/down.svg") no-repeat center;
       background-size: 100% 100%;
+      transition: transform 0.4s ease;
+    }
+    .down.rotate {
+      transform: rotate(180deg);
     }
     .down-light {
       width: 1.33rem;
@@ -246,6 +251,10 @@ onMounted(async () => {
       margin: 0 1.07rem;
       background: url("@/assets/down_dark.svg") no-repeat center;
       background-size: 100% 100%;
+      transition: transform 0.4s ease;
+    }
+    .down-light.rotate {
+      transform: rotate(180deg);
     }
   }
   .tool {
@@ -292,9 +301,19 @@ onMounted(async () => {
   left: 13.33rem;
   z-index: 999;
   caret-color: transparent;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  &.select-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   .model-title {
     height: 3.33rem;
     padding: 0 1.33rem;
+    margin-bottom: 0.33rem;
     line-height: 3.33rem;
     font-size: 1.2rem;
     font-weight: 600;
@@ -316,32 +335,102 @@ onMounted(async () => {
     }
   }
   .item {
-    width: 95%;
-    height: 5.33rem;
-    padding-left: 1.33rem;
+    width: 100%;
+    height: 5.67rem;
     font-size: 1.07rem;
     color: var(--text-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-bottom: 0.67rem;
     cursor: pointer;
+    border-radius: 1.33rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: scale(1);
+    padding: 0 1.33rem;
+    box-sizing: border-box;
     .model-name {
-      width: 95%;
+      width: 100%;
+      font-weight: 600;
     }
     .model-desc {
-      width: 95%;
+      width: 100%;
       color: #8c8e9c;
       font-size: 0.93rem;
+      white-space: normal;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.2;
+      margin-top: 0.2rem;
     }
   }
   .item.selected {
-    background: rgba(140, 161, 143, 0.645);
-    border-radius: 0.8rem;
+    background: linear-gradient(
+      90deg,
+      rgba(24, 160, 88, 0.15),
+      rgba(24, 160, 88, 0.1)
+    );
+    box-shadow: 0 4px 12px rgba(24, 160, 88, 0.15);
+    transform: scale(1.02);
+    border: 1px solid rgba(24, 160, 88, 0.2);
   }
   .item:hover {
-    background: #33333376;
-    border-radius: 0.8rem;
+    background: linear-gradient(
+      90deg,
+      rgba(150, 150, 150, 0.15),
+      rgba(150, 150, 150, 0.05)
+    );
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: scale(1.01);
+  }
+  .item.selected:hover {
+    background: linear-gradient(
+      90deg,
+      rgba(24, 160, 88, 0.2),
+      rgba(24, 160, 88, 0.15)
+    );
+    box-shadow: 0 6px 16px rgba(24, 160, 88, 0.2);
+    transform: scale(1.03);
+    border: 1px solid rgba(24, 160, 88, 0.25);
+  }
+
+  .item.selected:hover .model-desc {
+    font-weight: normal;
+  }
+
+  .light-mode .item.selected {
+    background: linear-gradient(
+      90deg,
+      rgba(24, 160, 88, 0.1),
+      rgba(24, 160, 88, 0.06)
+    );
+    box-shadow: 0 4px 12px rgba(24, 160, 88, 0.1);
+    border: 1px solid rgba(24, 160, 88, 0.15);
+  }
+
+  .light-mode .item:hover {
+    background: linear-gradient(
+      90deg,
+      rgba(150, 150, 150, 0.1),
+      rgba(150, 150, 150, 0.03)
+    );
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .light-mode .item.selected:hover {
+    background: linear-gradient(
+      90deg,
+      rgba(24, 160, 88, 0.15),
+      rgba(24, 160, 88, 0.1)
+    );
+    box-shadow: 0 6px 16px rgba(24, 160, 88, 0.15);
+    border: 1px solid rgba(24, 160, 88, 0.2);
+  }
+
+  .light-mode .item.selected:hover .model-desc {
+    font-weight: normal;
   }
 }
 ::v-deep(.n-scrollbar-rail) {

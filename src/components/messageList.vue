@@ -1,58 +1,65 @@
 <template>
-  <div class="message-list" v-if="chatHistory.slice(1).length">
-    <n-virtual-list
-      ref="virtualListRef"
-      style="max-height: 70vh"
-      :item-size="30"
-      :items="chatHistory.slice(1)"
-      item-resizable
-    >
-      <template #default="{ item }">
-        <div
-          :key="item.key"
-          class="item"
-          :style="{
-            flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse',
-          }"
-        >
-          <n-avatar round :src="getAvatar(item.role)" class="avatar" />
-          <div class="message">
-            <div v-for="(i, index) in item.content" :key="index">
-              <div class="think-container" v-if="i.type === 'thinking'">
-                <div class="think">
-                  <n-spin
-                    size="small"
-                    description="思考中"
-                    v-if="!item.isFinishThinking"
-                  >
-                    <template #icon>
-                      <n-icon>
-                        <Loader />
-                      </n-icon>
-                    </template>
-                  </n-spin>
-                  <div v-html="i.data"></div>
+  <div class="message-container" :class="{ chat: chatHistory.slice(1).length }">
+    <div class="message-list" v-if="chatHistory.slice(1).length">
+      <n-virtual-list
+        ref="virtualListRef"
+        style="max-height: 70vh"
+        :item-size="30"
+        :items="chatHistory.slice(1)"
+        item-resizable
+      >
+        <template #default="{ item }">
+          <div
+            :key="item.key"
+            class="item"
+            :style="{
+              flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse',
+            }"
+          >
+            <n-avatar
+              round
+              :src="getAvatar(item.role)"
+              class="avatar"
+              v-if="item.role === 'assistant'"
+            />
+            <div class="message">
+              <div v-for="(i, index) in item.content" :key="index">
+                <div class="think-container" v-if="i.type === 'thinking'">
+                  <div class="think">
+                    <n-spin
+                      size="small"
+                      description="思考中"
+                      v-if="!item.isFinishThinking"
+                    >
+                      <template #icon>
+                        <n-icon>
+                          <Loader />
+                        </n-icon>
+                      </template>
+                    </n-spin>
+                    <div v-html="i.data"></div>
+                  </div>
                 </div>
-              </div>
-              <div
-                class="text-container"
-                :style="{
-                  maxWidth: item.role === 'assistant' ? '63vw' : '560px',
-                }"
-                v-if="i.type === 'content'"
-              >
-                <div class="text">
-                  <div v-html="i.data"></div>
+                <div
+                  class="text-container"
+                  :style="{
+                    maxWidth: item.role === 'assistant' ? '63vw' : '560px',
+                  }"
+                  v-if="i.type === 'content'"
+                >
+                  <div class="text">
+                    <div v-html="i.data"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </template>
-    </n-virtual-list>
-  </div>
-  <div class="welcome" v-show="!chatHistory.slice(1).length">
-    <div id="typed" class="welcome-text"></div>
+        </template>
+      </n-virtual-list>
+    </div>
+    <div class="welcome" v-show="!chatHistory.slice(1).length">
+      <div id="typed" class="welcome-text"></div>
+    </div>
   </div>
 </template>
 
@@ -312,7 +319,9 @@ const initTyped = () => {
   new Typed("#typed", {
     strings: [
       `${
-        configStore.name ? `${time}好, ${configStore.name}` : `${time}好 `
+        configStore.name
+          ? `${time}好, ${configStore.name}`
+          : `${time}好 , Master`
       }🥰🥰`,
     ],
     typeSpeed: 50,
@@ -337,74 +346,83 @@ onMounted(() => {
 </script>
 
 <style lang="less" scoped>
-.message-list {
-  width: 70vw;
-  height: 70vh;
-  background: var(--background-color) no-repeat center;
-  .item {
-    display: flex;
-    align-items: flex-start;
-    margin: 2.67rem 0;
-    color: var(--text-color);
-  }
-  .avatar {
-    width: 2.13rem;
-    height: 2.13rem;
-    margin: 0 0.67rem;
-  }
-  .message {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-    .text-container {
-      max-width: 37.33rem;
-      background: var(--message-color) no-repeat center;
-      border-radius: 0.53rem;
-      .text {
-        padding: 0.67rem 1.33rem;
-        font-size: 1.07rem;
-        caret-color: transparent;
-      }
-    }
-    .think-container {
-      max-width: 60rem;
-      .think {
-        padding: 0.07rem 1.33rem;
-        font-size: 0.87rem;
-        color: var(--text-color);
-        background: var(--think-color) no-repeat center;
-        border-left: 0.2rem solid var(--text-color);
-      }
-    }
-  }
-
-  ::v-deep(.n-scrollbar-rail) {
-    display: none;
-  }
-  ::v-deep(.n-avatar) {
-    background-color: transparent;
-  }
-  ::v-deep(.n-spin-body) {
-    flex-direction: row;
-    font-size: 1.07rem;
-    gap: 0.67rem;
-  }
-  ::v-deep(.n-spin-description) {
-    margin-top: 0rem;
-  }
-}
-.welcome {
+.message-container {
   width: 70vw;
   height: 35vh;
   background: var(--background-color) no-repeat center;
-  display: flex;
-  justify-content: center;
-  align-items: end;
-  .welcome-text {
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--text-color);
+  transition: height 0.3s ease-in-out;
+
+  &.chat {
+    height: 70vh;
+  }
+
+  .message-list {
+    width: 100%;
+    height: 100%;
+    .item {
+      display: flex;
+      align-items: flex-start;
+      margin: 2.67rem 0;
+      color: var(--text-color);
+    }
+    .avatar {
+      width: 2.13rem;
+      height: 2.13rem;
+      margin: 0 0.67rem;
+    }
+    .message {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+      .text-container {
+        max-width: 37.33rem;
+        background: var(--message-color) no-repeat center;
+        border-radius: 0.53rem;
+        .text {
+          padding: 0.67rem 1.33rem;
+          font-size: 1.07rem;
+          caret-color: transparent;
+        }
+      }
+      .think-container {
+        max-width: 60rem;
+        .think {
+          padding: 0.07rem 1.33rem;
+          font-size: 0.87rem;
+          color: var(--text-color);
+          background: var(--think-color) no-repeat center;
+          border-left: 0.2rem solid var(--text-color);
+        }
+      }
+    }
+
+    ::v-deep(.n-scrollbar-rail) {
+      display: none;
+    }
+    ::v-deep(.n-avatar) {
+      background-color: transparent;
+    }
+    ::v-deep(.n-spin-body) {
+      flex-direction: row;
+      font-size: 1.07rem;
+      gap: 0.67rem;
+    }
+    ::v-deep(.n-spin-description) {
+      margin-top: 0rem;
+    }
+  }
+  .welcome {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: end;
+    .welcome-text {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--text-color);
+    }
   }
 }
 </style>

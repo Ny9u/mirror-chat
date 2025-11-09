@@ -1,5 +1,5 @@
 <template>
-  <div class="chat">
+  <div class="chat-container">
     <div class="content">
       <div class="record">
         <messageList
@@ -26,7 +26,7 @@
         />
         <div class="tool">
           <div class="features">
-            <n-button ghost round :color="thinkColor" @click="useDeepThinking">
+            <n-button ghost :color="thinkColor" @click="useDeepThinking">
               <template #icon>
                 <n-icon>
                   <Atom />
@@ -34,7 +34,7 @@
               </template>
               深度思考
             </n-button>
-            <n-button ghost round :color="netColor" @click="useNetSearch">
+            <n-button ghost :color="netColor" @click="useNetSearch">
               <template #icon>
                 <n-icon>
                   <World />
@@ -107,7 +107,7 @@ const handleSendClick = () => {
 };
 
 const sendMessage = async () => {
-  if (!inputValue.value) {
+  if (!inputValue.value.trim()) {
     message.warning("请输入内容");
     return;
   }
@@ -118,7 +118,7 @@ const sendMessage = async () => {
   if (netSearch.value) {
     // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
   }
-  listRef.value.sendMessage(inputValue.value);
+  listRef.value.sendMessage(inputValue.value.trim());
   inputValue.value = "";
   loading.value = true;
   abortController.value = new AbortController();
@@ -153,7 +153,7 @@ const useDeepThinking = () => {
 </script>
 
 <style lang="less" scoped>
-.chat {
+.chat-container {
   width: 100vw;
   height: 100%;
   margin-top: 3.6rem;
@@ -172,6 +172,7 @@ const useDeepThinking = () => {
       display: flex;
       flex-direction: column;
       .textarea {
+        padding: 0.3rem 0;
         font-size: 1.13rem;
         border-radius: 1rem;
       }
@@ -185,6 +186,15 @@ const useDeepThinking = () => {
         .features {
           display: flex;
           gap: 10px;
+          :deep(.n-button) {
+            border-radius: 10px;
+          }
+          :deep(.n-button:hover) {
+            box-shadow: 0 0 10px rgba(127, 231, 196, 0.5);
+            transition: all 0.3s ease;
+            color: #7fe7c4 !important;
+            border-color: #7fe7c4 !important;
+          }
         }
         .upload {
           width: 3.2rem;

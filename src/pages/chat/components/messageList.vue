@@ -74,16 +74,16 @@ import {
   onBeforeMount,
 } from "vue";
 import { NVirtualList, NAvatar, useMessage, NSpin, NIcon } from "naive-ui";
-import assistantUrl from "../assets/assistant.svg";
-import assistantDarkUrl from "../assets/assistant_dark.svg";
-import userUrl from "../assets/avatar.jpg";
+import assistantUrl from "@/assets/assistant.svg";
+import assistantDarkUrl from "@/assets/assistant_dark.svg";
+import userUrl from "@/assets/avatar.svg";
 import OpenAI from "openai";
-import Global from "../utils/global.js";
+import Global from "@/utils/global.js";
 import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Loader } from "@vicons/tabler";
-import { getUserInfo } from "../services/user.js";
+import { getUserInfo } from "@/services/user.js";
 
 const props = defineProps({
   userInput: String,

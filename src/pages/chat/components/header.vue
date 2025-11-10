@@ -22,27 +22,42 @@
       </div>
     </div>
     <div class="tool">
-      <n-dropdown
-        trigger="hover"
-        size="small"
-        :options="options"
-        @select="handleSelect"
-      >
-        <div
-          :class="{
-            setting: theme === '浅色主题',
-            'setting-light': theme === '深色主题',
-          }"
-        ></div>
-      </n-dropdown>
       <n-avatar
         round
         :src="configStore.avatar ? configStore.avatar : backupImg"
         class="avatar"
+        @click="openSettings"
       />
     </div>
   </div>
-  <div class="select" :class="{ 'select-visible': showSelect }">
+  <div
+    v-show="showSettings"
+    class="settings"
+    :class="{ 'settings-visible': showSettings }"
+    @click.stop
+  >
+    <div class="user-info">
+      <n-avatar
+        round
+        :src="configStore.avatar ? configStore.avatar : backupImg"
+        class="user-avatar"
+      />
+      <div class="user-details">
+        <div class="user-name">{{ configStore.name || "用户" }}</div>
+        <div class="user-id">ID: {{ configStore.userId }}</div>
+      </div>
+    </div>
+    <div class="settings-options">
+      <div class="setting-item">
+        <div class="setting-label">暗黑模式</div>
+        <n-switch
+          :value="theme === '浅色主题'"
+          @update:value="handleSelect('theme')"
+        />
+      </div>
+    </div>
+  </div>
+  <div v-show="showSelect" class="select" :class="{ 'select-visible': showSelect }" @click.stop>
     <div class="model-title">
       <div>模型</div>
       <n-tooltip placement="top" trigger="hover">
@@ -57,7 +72,7 @@
         <span>模型描述</span>
       </n-tooltip>
     </div>
-    <n-infinite-scroll style="height: 270px" :distance="10">
+    <n-infinite-scroll style="height: 255px" :distance="10">
       <div
         v-for="model in Models"
         :key="model.key"
@@ -70,6 +85,8 @@
       </div>
     </n-infinite-scroll>
   </div>
+  <div v-show="showSelect" class="overlay" @click="closeModelSelect"></div>
+  <div v-show="showSettings" class="overlay" @click="closeSettings"></div>
 </template>
 
 <script setup>
@@ -80,82 +97,42 @@ import {
   useMessage,
   NInfiniteScroll,
   NTooltip,
+  NSwitch,
+  NButton,
 } from "naive-ui";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
-import { Moon, Sun } from "@vicons/tabler";
-import backupImg from "@/assets/avatar.jpg";
+import backupImg from "@/assets/avatar.svg";
 import { useConfigStore } from "@/stores/configStore";
 const message = useMessage();
 const configStore = useConfigStore();
 const { proxy } = getCurrentInstance();
+import Models from "@/config/models.js";
 
-const renderIcon = (icon) => {
-  return () => {
-    return h(NIcon, null, {
-      default: () => h(icon),
-    });
-  };
-};
-
-const theme = ref("浅色主题"); // 默认主题为深色，所以按钮展示为浅色
-let themeIcon = Sun;
-
-const options = ref([
-  {
-    label: theme.value,
-    key: "theme",
-    icon: renderIcon(themeIcon),
-  },
-]);
-
-// 官方没有提供相关接口, 暂时采取手动添加模型列表
-const Models = ref([
-  {
-    name: "qwq-plus-2025-03-05",
-    key: "qwq-plus-2025-03-05",
-    desc: "通义千问QwQ推理模型增强版，基于Qwen2.5模型训练的QwQ推理模型，通过强化学习大幅度提升了模型推理能力。",
-  },
-  {
-    name: "qwen-plus-latest",
-    key: "qwen-plus-latest",
-    desc: "通义千问系列能力均衡的模型，推理效果和速度介于通义千问-Max和通义千问-Turbo之间，适合中等复杂任务。",
-  },
-  {
-    name: "qwen-turbo-latest",
-    key: "qwen-turbo-latest",
-    desc: "通义千问系列速度最快、成本很低的模型，适合简单任务。",
-  },
-  {
-    name: "qwen-max-latest",
-    key: "qwen-max-latest",
-    desc: "通义千问系列效果最好的模型，模型推理能力和复杂指令理解能力显著增强，困难任务上的表现更优，数学、代码能力显著提升。",
-  },
-  {
-    name: "qwen3-235b-a22b",
-    key: "qwen3-235b-a22b",
-    desc: "实现思考模式和非思考模式的有效融合，可在对话中切换模式。",
-  },
-]);
-
+const theme = ref("深色主题"); // 默认主题为浅色，所以按钮展示为深色
 let showSelect = ref(false);
+let showSettings = ref(false);
 const openModelSelect = () => {
-  showSelect.value = !showSelect.value;
+  showSelect.value = true;
+};
+const closeModelSelect = () => {
+  showSelect.value = false;
+};
+const openSettings = () => {
+  showSettings.value = !showSettings.value;
+};
+const closeSettings = () => {
+  showSettings.value = false;
 };
 const selectModel = (model) => {
   configStore.setModel(model);
   showSelect.value = false;
 };
 const handleSelect = (key) => {
-  if (key === "theme") {
-    theme.value = theme.value === "深色主题" ? "浅色主题" : "深色主题";
-    themeIcon = themeIcon === Moon ? Sun : Moon;
-    options.value[0].label = theme.value;
-    options.value[0].icon = renderIcon(themeIcon);
-    if (theme.value === "深色主题") {
-      configStore.setTheme("light");
-    } else {
-      configStore.setTheme("dark");
-    }
+  theme.value = theme.value === "深色主题" ? "浅色主题" : "深色主题";
+  if (theme.value === "深色主题") {
+    configStore.setTheme("light");
+  } else {
+    configStore.setTheme("dark");
   }
 };
 
@@ -285,15 +262,94 @@ onMounted(async () => {
       opacity: 0.8;
     }
     .avatar {
-      width: 2.67rem;
-      height: 2.67rem;
+      width: 2.2rem;
+      height: 2.2rem;
       margin: 0 1.07rem;
+      background-color: var(--background-color);
     }
   }
 }
+.settings {
+  width: 25rem;
+  height: auto;
+  background: var(--select-color) no-repeat center;
+  border-radius: 1.07rem;
+  position: absolute;
+  top: 3.6rem;
+  right: 1.07rem;
+  z-index: 999;
+  caret-color: transparent;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  padding: 1.33rem;
+  box-sizing: border-box;
+
+  &.settings-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    padding-bottom: 1.33rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.33rem;
+
+    .user-avatar {
+      width: 4rem;
+      height: 4rem;
+      margin-right: 1.07rem;
+    }
+
+    .user-details {
+      .user-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .user-id {
+        font-size: 0.93rem;
+        color: var(--text-color);
+      }
+    }
+  }
+
+  .settings-options {
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .setting-label {
+        font-size: 1.07rem;
+        color: var(--text-color);
+      }
+
+      .setting-value {
+        font-size: 0.93rem;
+        color: var(--text-color-light);
+        max-width: 12rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
 .select {
   width: 33.33rem;
-  height: 21.33rem;
+  height: 20.66rem;
   background: var(--select-color) no-repeat center;
   border-radius: 1.07rem;
   position: absolute;
@@ -432,6 +488,15 @@ onMounted(async () => {
   .light-mode .item.selected:hover .model-desc {
     font-weight: normal;
   }
+}
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 998;
 }
 ::v-deep(.n-scrollbar-rail) {
   display: none;

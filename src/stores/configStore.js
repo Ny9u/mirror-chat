@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
+import Models from "@/config/models.js";
 
 export const useConfigStore = defineStore("config", {
   state: () => ({
-    theme: "dark",
-    model: "qwq-plus-2025-03-05",
+    theme: "light",
+    model: Models[0].key,
     userId: 1,
     avatar: "",
     name: "",

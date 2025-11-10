@@ -190,10 +190,8 @@ const useDeepThinking = () => {
             border-radius: 10px;
           }
           :deep(.n-button:hover) {
-            box-shadow: 0 0 10px rgba(127, 231, 196, 0.5);
+            background-color: rgba(24, 160, 88, 0.15);
             transition: all 0.3s ease;
-            color: #7fe7c4 !important;
-            border-color: #7fe7c4 !important;
           }
         }
         .upload {

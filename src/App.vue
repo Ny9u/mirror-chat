@@ -2,8 +2,7 @@
   <n-config-provider :theme="theme">
     <div class="main" :class="{ 'light-mode': configStore.theme === 'light' }">
       <n-message-provider>
-        <Header />
-        <Chat />
+        <router-view />
       </n-message-provider>
     </div>
   </n-config-provider>
@@ -13,8 +12,6 @@
 import { ref, computed } from "vue";
 import { darkTheme } from "naive-ui";
 import { NConfigProvider, NMessageProvider } from "naive-ui";
-import Header from "./components/header.vue";
-import Chat from "./components/chat.vue";
 import { useConfigStore } from "./stores/configStore";
 
 const configStore = useConfigStore();

@@ -1,0 +1,453 @@
+<template>
+  <div class="auth-container">
+    <div class="logo">
+      <img src="@/assets/logo_dark.svg" alt="Mirror Logo" />
+    </div>
+    <div class="auth-card">
+      <div class="title">
+        <h1>{{ activeTab === "login" ? "登录到Mirror" : "注册Mirror" }}</h1>
+      </div>
+
+      <!-- 登录表单 -->
+      <div v-show="activeTab === 'login'" class="form-container">
+        <n-form :model="loginForm" :rules="loginRules" ref="loginFormRef">
+          <div class="input-group">
+            <n-form-item path="email" label="电子邮箱">
+              <n-input
+                v-model:value="loginForm.email"
+                placeholder="请输入您的电子邮箱"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="Mail" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="password" label="密码">
+              <n-input
+                v-model:value="loginForm.password"
+                type="password"
+                placeholder="请输入您的密码"
+                show-password-on="click"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="Lock" />
+                </template>
+              </n-input>
+            </n-form-item>
+          </div>
+          <n-form-item>
+            <n-button
+              type="primary"
+              @click="handleLogin"
+              :loading="loginLoading"
+              :disabled="!isLoginFormValid"
+              block
+            >
+              登录
+            </n-button>
+          </n-form-item>
+        </n-form>
+
+        <div class="auth-footer">
+          <span>没有账号？</span>
+          <n-button type="primary" text @click="activeTab = 'register'"
+            >立即注册</n-button
+          >
+        </div>
+      </div>
+
+      <!-- 注册表单 -->
+      <div v-show="activeTab === 'register'" class="form-container">
+        <n-form
+          :model="registerForm"
+          :rules="registerRules"
+          ref="registerFormRef"
+        >
+          <div class="input-group">
+            <n-form-item path="username" label="用户名">
+              <n-input
+                v-model:value="registerForm.username"
+                placeholder="请输入您的用户名"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="User" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="email" label="电子邮箱">
+              <n-input
+                v-model:value="registerForm.email"
+                placeholder="请输入您的电子邮箱"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="Mail" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="password" label="密码">
+              <n-input
+                v-model:value="registerForm.password"
+                type="password"
+                placeholder="请输入您的密码"
+                show-password-on="click"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="Lock" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="confirmPassword" label="确认密码">
+              <n-input
+                v-model:value="registerForm.confirmPassword"
+                type="password"
+                placeholder="再次输入您的密码"
+                show-password-on="click"
+                size="large"
+              >
+                <template #prefix>
+                  <n-icon :component="Lock" />
+                </template>
+              </n-input>
+            </n-form-item>
+          </div>
+        </n-form>
+
+        <n-form-item>
+          <n-button
+            type="primary"
+            @click="handleRegister"
+            :loading="registerLoading"
+            :disabled="!isRegisterFormValid"
+            block
+          >
+            注册
+          </n-button>
+        </n-form-item>
+
+        <div class="auth-footer">
+          <span>已有账户？</span>
+          <n-button type="primary" text @click="activeTab = 'login'"
+            >立即登录</n-button
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  useMessage,
+  NForm,
+  NFormItem,
+  NInput,
+  NCheckbox,
+  NButton,
+  NIcon,
+} from "naive-ui";
+import { User, Mail, Lock } from "@vicons/tabler";
+import { login, register } from "@/services/user";
+import { useConfigStore } from "@/stores/configStore";
+
+const route = useRoute();
+const router = useRouter();
+const message = useMessage();
+const configStore = useConfigStore();
+const loginFormRef = ref(null);
+const registerFormRef = ref(null);
+const activeTab = ref(route.query.action === "register" ? "register" : "login");
+
+const loginForm = reactive({
+  email: "",
+  password: "",
+});
+
+const registerForm = reactive({
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const loginLoading = ref(false);
+const registerLoading = ref(false);
+
+//检查登录表单是否完整填写
+const isLoginFormValid = computed(() => {
+  return loginForm.email.trim() !== "" && loginForm.password.trim() !== "";
+});
+
+//检查注册表单是否完整填写
+const isRegisterFormValid = computed(() => {
+  return (
+    registerForm.username.trim() !== "" &&
+    registerForm.email.trim() !== "" &&
+    registerForm.password.trim() !== "" &&
+    registerForm.confirmPassword.trim() !== ""
+  );
+});
+
+const loginRules = {
+  email: [
+    {
+      required: true,
+      message: "请输入电子邮箱",
+    },
+    {
+      type: "email",
+      message: "请输入正确的邮箱格式",
+    },
+  ],
+  password: [
+    {
+      required: true,
+      message: "请输入密码",
+    },
+    {
+      min: 6,
+      message: "密码至少6位",
+    },
+  ],
+};
+
+const registerRules = {
+  username: [
+    {
+      required: true,
+      message: "请输入用户名",
+    },
+  ],
+  email: [
+    {
+      required: true,
+      message: "请输入电子邮箱",
+    },
+    {
+      type: "email",
+      message: "请输入正确的邮箱格式",
+    },
+  ],
+  password: [
+    {
+      required: true,
+      message: "请输入密码",
+    },
+    {
+      min: 6,
+      message: "密码至少6位",
+    },
+  ],
+  confirmPassword: [
+    {
+      required: true,
+      message: "请确认密码",
+    },
+    {
+      validator: (rule, value) => {
+        if (value !== registerForm.password) {
+          return new Error("两次输入的密码不一致");
+        }
+        return true;
+      },
+    },
+  ],
+};
+
+const handleLogin = (e) => {
+  e.preventDefault();
+  loginFormRef.value?.validate((errors) => {
+    if (!errors) {
+      loginLoading.value = true;
+      login({
+        email: loginForm.email,
+        password: loginForm.password,
+      }).then(
+        (res) => {
+          loginLoading.value = false;
+          if (res.code === 201) {
+            message.success("登录成功");
+            configStore.setUserId(res.data.user.id);
+            configStore.setName(res.data.user.username);
+            configStore.setAvatar(res.data.user.avatar);
+            if (res.data && res.data.token) {
+              localStorage.setItem("jwtToken", res.data.token);
+              localStorage.setItem("refreshToken", res.data.refreshToken);
+              localStorage.setItem("isLoggedIn", "true");
+              sessionStorage.setItem("skipValidation", "true");
+            }
+            router.push("/");
+          } else {
+            message.error(res.message || "登录失败");
+          }
+        },
+        (err) => {
+          loginLoading.value = false;
+          if (err.response && err.response.data && err.response.data.message) {
+            message.error(err.response.data.message);
+          } else {
+            message.error(err.message || "登录失败");
+          }
+        }
+      );
+    } else {
+      if (errors.length > 0) {
+        message.error(errors[0][0].message);
+      } else {
+        message.error("请检查密码填写是否正确");
+      }
+    }
+  });
+};
+
+const handleRegister = (e) => {
+  e.preventDefault();
+  registerFormRef.value?.validate((errors) => {
+    if (!errors) {
+      registerLoading.value = true;
+      register({
+        username: registerForm.username,
+        email: registerForm.email,
+        password: registerForm.password,
+      }).then(
+        (res) => {
+          registerLoading.value = false;
+          if (res.code === 201) {
+            registerForm.username = "";
+            registerForm.email = "";
+            registerForm.password = "";
+            registerForm.confirmPassword = "";
+            activeTab.value = "login";
+          } else {
+            message.error(res.message || "注册失败");
+          }
+        },
+        (err) => {
+          registerLoading.value = false;
+          if (err.response && err.response.data && err.response.data.message) {
+            message.error(err.response.data.message);
+          } else {
+            message.error(err.message || "登录失败");
+          }
+        }
+      );
+    } else {
+      if (errors.length > 0) {
+        message.error(errors[0][0].message);
+      } else {
+        message.error("请检查表单填写是否正确");
+      }
+    }
+  });
+};
+</script>
+
+<style scoped lang="less">
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f6f7;
+  position: relative;
+
+  .logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+
+    img {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .auth-card {
+    width: 28rem;
+    padding: 4rem 2.5rem 2.5rem 2.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+    .title {
+      text-align: center;
+      margin-bottom: 30px;
+
+      img {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 15px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 24px;
+        color: #333;
+      }
+    }
+
+    :deep(.n-form-item) {
+      margin-bottom: 20px;
+
+      // 隐藏表单错误提示信息
+      .n-form-item-feedback-wrapper {
+        display: none !important;
+      }
+
+      // 隐藏必填红点
+      .n-form-item-label .n-form-item-label__asterisk {
+        display: none !important;
+      }
+    }
+
+    :deep(.n-button) {
+      height: 40px;
+    }
+
+    .input-group {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+
+      :deep(.n-form-item) {
+        margin-bottom: 15px;
+
+        // 隐藏表单错误提示信息
+        .n-form-item-feedback-wrapper {
+          display: none !important;
+        }
+
+        // 隐藏必填红点
+        .n-form-item-label .n-form-item-label__asterisk {
+          display: none !important;
+        }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+
+      span {
+        color: #666;
+        margin-right: 5px;
+      }
+    }
+  }
+}
+</style>

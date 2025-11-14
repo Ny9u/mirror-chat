@@ -5,7 +5,7 @@ export const useConfigStore = defineStore("config", {
   state: () => ({
     theme: "light",
     model: Models[0].key,
-    userId: 1,
+    userId: null,
     avatar: "",
     name: "",
   }),
@@ -15,6 +15,9 @@ export const useConfigStore = defineStore("config", {
     },
     setModel(model) {
       this.model = model;
+    },
+    setUserId(userId) {
+      this.userId = userId;
     },
     setAvatar(avatar) {
       this.avatar = avatar;

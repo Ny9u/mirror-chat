@@ -22,7 +22,28 @@
       </div>
     </div>
     <div class="tool">
+      <n-button
+        size="large"
+        v-if="!configStore.userId"
+        class="login-btn"
+        @click="goToLogin"
+      >
+        登录
+      </n-button>
+      <n-button
+        size="large"
+        v-if="!configStore.userId"
+        :class="[
+          'register-btn',
+          theme === '浅色主题' ? 'register-btn-dark' : 'register-btn-light',
+        ]"
+        @click="goToRegister"
+      >
+        注册
+      </n-button>
+
       <n-avatar
+        v-else
         round
         :src="configStore.avatar ? configStore.avatar : backupImg"
         class="avatar"
@@ -49,15 +70,39 @@
     </div>
     <div class="settings-options">
       <div class="setting-item">
-        <div class="setting-label">暗黑模式</div>
+        <div class="setting-label">
+          <n-icon
+            :component="Moon"
+            size="1.1em"
+            :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
+            style="margin-right: 0.3em"
+          />
+          暗黑模式
+        </div>
         <n-switch
           :value="theme === '浅色主题'"
           @update:value="handleSelect('theme')"
         />
       </div>
+      <div class="setting-item">
+        <div class="setting-label" @click="logout">
+          <n-icon
+            :component="Logout"
+            size="1.1em"
+            :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
+            style="margin-right: 0.3em"
+          />
+          退出登录
+        </div>
+      </div>
     </div>
   </div>
-  <div v-show="showSelect" class="select" :class="{ 'select-visible': showSelect }" @click.stop>
+  <div
+    v-show="showSelect"
+    class="select"
+    :class="{ 'select-visible': showSelect }"
+    @click.stop
+  >
     <div class="model-title">
       <div>模型</div>
       <n-tooltip placement="top" trigger="hover">
@@ -100,11 +145,16 @@ import {
   NSwitch,
   NButton,
 } from "naive-ui";
+import { Logout, Moon } from "@vicons/tabler";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import backupImg from "@/assets/avatar.svg";
 import { useConfigStore } from "@/stores/configStore";
+import { useRouter } from "vue-router";
+import { validate } from "@/services/user";
+
 const message = useMessage();
 const configStore = useConfigStore();
+const router = useRouter();
 const { proxy } = getCurrentInstance();
 import Models from "@/config/models.js";
 
@@ -140,6 +190,85 @@ const goToMyGithub = () => {
   window.open("https://github.com/Ny9u");
 };
 
+const goToLogin = async () => {
+  const token = localStorage.getItem("jwtToken");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+  if (token && isLoggedIn === "true") {
+    try {
+      const res = await validate();
+      if (res.code === 200) {
+        configStore.setUserId(res.data.id);
+        configStore.setName(res.data.username);
+        configStore.setAvatar(res.data.avatar);
+        message.success("登录成功");
+        sessionStorage.setItem("skipValidation", "true");
+      } else {
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("isLoggedIn");
+        router.push("/auth?tab=login");
+      }
+    } catch (error) {
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("isLoggedIn");
+      router.push("/auth?tab=login");
+    }
+  } else {
+    router.push("/auth?tab=login");
+  }
+};
+
+const autoLogin = async () => {
+  const shouldSkipValidation = sessionStorage.getItem("skipValidation");
+  if (shouldSkipValidation === "true") {
+    sessionStorage.removeItem("skipValidation");
+    return;
+  }
+
+  const token = localStorage.getItem("jwtToken");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+  if (token && isLoggedIn === "true") {
+    try {
+      const res = await validate();
+      if (res.code === 200) {
+        configStore.setUserId(res.data.id);
+        configStore.setName(res.data.username);
+        configStore.setAvatar(res.data.avatar);
+      } else {
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("isLoggedIn");
+        clearPersonalData();
+      }
+    } catch (error) {
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("isLoggedIn");
+      clearPersonalData();
+    }
+  }
+};
+
+const goToRegister = () => {
+  router.push("/auth?action=register");
+};
+
+const clearPersonalData = () => {
+  configStore.setUserId(null);
+  configStore.setName("");
+  configStore.setAvatar("");
+};
+
+const logout = () => {
+  localStorage.removeItem("jwtToken");
+  localStorage.removeItem("isLoggedIn");
+  sessionStorage.removeItem("skipJwtValidation");
+  clearPersonalData();
+};
+
 // const getModelList = async () => {
 //   Request({
 //     headers: {
@@ -159,11 +288,17 @@ const goToMyGithub = () => {
 // };
 
 onMounted(async () => {
+  await autoLogin();
   // await getModelList();
 });
 </script>
 
 <style lang="less" scoped>
+:root {
+  --primary-color: #18a058;
+  --hover-color: rgba(24, 160, 88, 0.1);
+}
+
 .header {
   width: 100vw;
   height: 3.6rem;
@@ -267,6 +402,30 @@ onMounted(async () => {
       margin: 0 1.07rem;
       background-color: var(--background-color);
     }
+
+    .login-btn {
+      border-radius: 10px;
+      background-color: #36ad6a;
+      color: white;
+    }
+
+    .register-btn {
+      margin: 0 1rem;
+      border-radius: 10px;
+      background-color: transparent;
+      border: 1px solid #333;
+      color: #333;
+    }
+
+    .register-btn-light {
+      border: 1px solid #333;
+      color: #333;
+    }
+
+    .register-btn-dark {
+      border: 1px solid #fff;
+      color: #fff;
+    }
   }
 }
 .settings {
@@ -293,7 +452,6 @@ onMounted(async () => {
   .user-info {
     display: flex;
     align-items: center;
-    padding-bottom: 1.33rem;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 1.33rem;
 
@@ -325,14 +483,42 @@ onMounted(async () => {
       align-items: center;
       padding: 0.8rem 0;
       border-bottom: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
 
       &:last-child {
         border-bottom: none;
       }
 
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
       .setting-label {
         font-size: 1.07rem;
         color: var(--text-color);
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        width: 100%;
+      }
+
+      .setting-label:hover {
+        background-color: var(--hover-color);
+        color: var(--primary-color);
+      }
+
+      .dark-mode .setting-label:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #ff6b6b;
+      }
+
+      .light-mode .setting-label:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #d32f2f;
       }
 
       .setting-value {

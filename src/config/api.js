@@ -2,9 +2,13 @@ export const api = {
   aliyun: "https://dashscope.aliyuncs.com/compatible-mode/v1",
   netSearch: "https://api.bochaai.com/v1/ai-search",
   getModels: "https://dashscope.aliyuncs.com/api/v1/deployments/models",
-  avatar: "http://127.0.0.1:4000/api/v1/avatar",
-  name: "http://127.0.0.1:4000/api/v1/name",
-  getUserInfo: "http://127.0.0.1:3000/api/v1/fetch",
+  avatar: "/api/v1/avatar",
+  name: "/api/v1/name",
+  getUserInfo: "/api/v1/fetch",
+  login: "/api/v1/user/login",
+  register: "/api/v1/user/register",
+  validate: "/api/v1/auth/validate",
+  refresh: "/api/v1/auth/refresh",
 };
 
 export default api;

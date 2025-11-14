@@ -6,6 +6,11 @@ const routes = [
     name: "Chat",
     component: () => import("../pages/chat/index.vue"),
   },
+  {
+    path: "/auth",
+    name: "Auth",
+    component: () => import("../pages/auth/index.vue"),
+  },
 ];
 
 const router = createRouter({

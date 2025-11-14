@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { darkTheme } from "naive-ui";
 import { NConfigProvider, NMessageProvider } from "naive-ui";
 import { useConfigStore } from "./stores/configStore";

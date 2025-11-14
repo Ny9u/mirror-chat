@@ -83,7 +83,6 @@ import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Loader } from "@vicons/tabler";
-import { getUserInfo } from "@/services/user.js";
 
 const props = defineProps({
   userInput: String,
@@ -305,15 +304,6 @@ const judgeTime = () => {
 };
 
 defineExpose({ sendMessage, fetchAI });
-const getInfo = async (id) => {
-  try {
-    const res = await getUserInfo({ userId: id });
-    configStore.setAvatar(res?.results[0].data[0].avatarUrl);
-    configStore.setName(res?.results[1].data[0].userName);
-  } catch (e) {
-    return message.error("获取用户信息失败");
-  }
-};
 const initTyped = () => {
   const time = judgeTime();
   new Typed("#typed", {
@@ -332,10 +322,6 @@ const initTyped = () => {
 };
 
 watch(() => configStore.name, initTyped);
-
-onBeforeMount(async () => {
-  getInfo(configStore.userId);
-});
 
 onMounted(() => {
   initTyped();

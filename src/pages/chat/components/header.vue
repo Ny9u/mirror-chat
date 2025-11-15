@@ -65,24 +65,19 @@
       />
       <div class="user-details">
         <div class="user-name">{{ configStore.name || "用户" }}</div>
-        <div class="user-id">ID: {{ configStore.userId }}</div>
       </div>
     </div>
     <div class="settings-options">
       <div class="setting-item">
-        <div class="setting-label">
+        <div class="setting-label" @click="openSettingPage">
           <n-icon
-            :component="Moon"
+            :component="Settings"
             size="1.1em"
             :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
             style="margin-right: 0.3em"
           />
-          暗黑模式
+          设置
         </div>
-        <n-switch
-          :value="theme === '浅色主题'"
-          @update:value="handleSelect('theme')"
-        />
       </div>
       <div class="setting-item">
         <div class="setting-label" @click="logout">
@@ -145,7 +140,7 @@ import {
   NSwitch,
   NButton,
 } from "naive-ui";
-import { Logout, Moon } from "@vicons/tabler";
+import { Logout, Settings } from "@vicons/tabler";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import backupImg from "@/assets/avatar.svg";
 import { useConfigStore } from "@/stores/configStore";
@@ -221,6 +216,13 @@ const goToLogin = async () => {
 };
 
 const autoLogin = async () => {
+  // 只在页面刷新时执行校验，通过检查是否存在performance.navigation.type === 1来判断,1表示页面通过刷新加载
+  const isPageRefresh = performance && performance.navigation.type === 1;
+
+  if (!isPageRefresh && configStore.userId) {
+    return;
+  }
+
   const shouldSkipValidation = sessionStorage.getItem("skipValidation");
   if (shouldSkipValidation === "true") {
     sessionStorage.removeItem("skipValidation");
@@ -230,7 +232,7 @@ const autoLogin = async () => {
   const token = localStorage.getItem("jwtToken");
   const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-  if (token && isLoggedIn === "true") {
+  if (!configStore.userId && token && isLoggedIn === "true") {
     try {
       const res = await validate();
       if (res.code === 200) {
@@ -267,6 +269,10 @@ const logout = () => {
   localStorage.removeItem("isLoggedIn");
   sessionStorage.removeItem("skipJwtValidation");
   clearPersonalData();
+};
+
+const openSettingPage = () => {
+  router.push("/setting");
 };
 
 // const getModelList = async () => {
@@ -463,14 +469,8 @@ onMounted(async () => {
 
     .user-details {
       .user-name {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 600;
-        color: var(--text-color);
-        margin-bottom: 0.5rem;
-      }
-
-      .user-id {
-        font-size: 0.93rem;
         color: var(--text-color);
       }
     }

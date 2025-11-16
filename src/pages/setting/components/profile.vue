@@ -60,7 +60,7 @@ import { useRouter } from "vue-router";
 import { useMessage, NIcon, NAvatar, NButton, NInput, NUpload } from "naive-ui";
 import { ArrowLeft, Plus } from "@vicons/tabler";
 import backupImg from "@/assets/avatar.svg";
-import { uploadAvatar } from "@/services/user";
+import { uploadAvatar, updateInfo } from "@/services/user";
 
 const configStore = useConfigStore();
 const router = useRouter();
@@ -73,7 +73,6 @@ const uploadHeaders = {
   Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
 };
 
-// 表单数据
 const profileData = reactive({
   name: configStore.name || "",
 });
@@ -97,10 +96,23 @@ const handleUploadFinish = ({ file, event }) => {
   return file;
 };
 
-// 保存资料
 const saveProfile = async () => {
-  configStore.setName(profileData.name);
-  router.push("/setting");
+  saving.value = true;
+  try {
+    const res = await updateInfo({
+      username: profileData.name,
+    });
+    if (res.code === 200) {
+      configStore.setName(profileData.name);
+      router.push("/setting");
+    } else {
+      message.error(res.message || "更新失败");
+    }
+  } catch (error) {
+    message.error("更新失败");
+  } finally {
+    saving.value = false;
+  }
 };
 </script>
 

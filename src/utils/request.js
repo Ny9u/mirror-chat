@@ -31,7 +31,7 @@ service.interceptors.request.use(
       "Content-Type": "application/json",
     };
 
-    const authRequiredApis = [api.validate];
+    const authRequiredApis = [api.validate, api.updateInfo];
     if (authRequiredApis.includes(config.url)) {
       const token = localStorage.getItem("jwtToken");
       if (token) {

@@ -41,6 +41,11 @@ export const uploadAvatar = async (avatarData) => {
   return res;
 };
 
+export const updateInfo = async (userData) => {
+  const res = await Request(api.updateInfo, "POST", userData);
+  return res;
+};
+
 export default {
   getAvatar,
   getName,
@@ -50,4 +55,5 @@ export default {
   validate,
   refresh,
   uploadAvatar,
+  updateInfo,
 };

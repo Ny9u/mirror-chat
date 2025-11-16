@@ -24,14 +24,14 @@
         <div class="setting-item" @click="editProfile">
           <div class="setting-label">
             <n-icon :component="User" size="1.2em" />
-            <span>编辑个人资料</span>
+            <span>个人资料</span>
           </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item" @click="showPasswordModal">
           <div class="setting-label">
             <n-icon :component="Key" size="1.2em" />
-            <span>密码安全</span>
+            <span>密码管理</span>
           </div>
         </div>
       </div>
@@ -69,13 +69,85 @@
         </div>
       </div>
     </div>
+
+    <!-- 密码管理 -->
+    <n-modal
+      v-model:show="showPasswordModalFlag"
+      preset="card"
+      style="width: 480px; height: 510px; border-radius: 12px; overflow: hidden"
+      :closable="false"
+      title="密码管理"
+      size="medium"
+      :segmented="{
+        content: true,
+        footer: 'soft',
+      }"
+    >
+      <template #header-extra>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="closePasswordModal"
+          size="1.6rem"
+        />
+      </template>
+      <n-form
+        :model="passwordForm"
+        :rules="passwordRules"
+        ref="passwordFormRef"
+        label-placement="top"
+        label-width="auto"
+      >
+        <n-form-item label="当前密码" path="currentPassword">
+          <n-input
+            v-model:value="passwordForm.currentPassword"
+            type="password"
+            show-password-on="click"
+            placeholder="请输入当前密码"
+            size="large"
+            style="border-radius: 8px"
+          />
+        </n-form-item>
+        <n-form-item label="新密码" path="newPassword">
+          <n-input
+            v-model:value="passwordForm.newPassword"
+            type="password"
+            show-password-on="click"
+            placeholder="请输入新密码"
+            size="large"
+            style="border-radius: 8px"
+          />
+        </n-form-item>
+        <n-form-item label="确认新密码" path="confirmPassword">
+          <n-input
+            v-model:value="passwordForm.confirmPassword"
+            type="password"
+            show-password-on="click"
+            placeholder="再次输入新密码"
+            size="large"
+            style="border-radius: 8px"
+          />
+        </n-form-item>
+      </n-form>
+      <div class="modal-footer">
+        <n-button
+          type="primary"
+          @click="updateUserPassword"
+          :loading="updatingPassword"
+          style="border-radius: 8px"
+        >
+          更新密码
+        </n-button>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
+import { updatePassword } from "@/services/user";
 import {
   useMessage,
   NAvatar,
@@ -83,6 +155,10 @@ import {
   NButton,
   NSwitch,
   NSelect,
+  NModal,
+  NForm,
+  NFormItem,
+  NInput,
 } from "naive-ui";
 import { User, Key, Moon, InfoCircle, Logout, X } from "@vicons/tabler";
 import backupImg from "@/assets/avatar.svg";
@@ -90,6 +166,59 @@ import backupImg from "@/assets/avatar.svg";
 const configStore = useConfigStore();
 const router = useRouter();
 const message = useMessage();
+
+// 密码管理相关状态
+const showPasswordModalFlag = ref(false);
+const updatingPassword = ref(false);
+const passwordFormRef = ref();
+const passwordForm = ref({
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+
+// 密码验证规则
+const passwordRules = {
+  currentPassword: {
+    required: true,
+    message: "请输入当前密码",
+    trigger: "blur",
+  },
+  newPassword: [
+    {
+      required: true,
+      message: "请输入新密码",
+    },
+    {
+      min: 6,
+      message: "密码长度至少为6位",
+    },
+    {
+      validator: (rule, value) => {
+        if (value === passwordForm.value.currentPassword) {
+          return new Error("新密码不能与当前密码相同");
+        }
+        return true;
+      },
+      trigger: "blur",
+    },
+  ],
+  confirmPassword: [
+    {
+      required: true,
+      message: "请确认新密码",
+    },
+    {
+      validator: (rule, value) => {
+        if (value !== passwordForm.value.newPassword) {
+          return new Error("两次输入的密码不一致");
+        }
+        return true;
+      },
+      trigger: "blur",
+    },
+  ],
+};
 
 const toggleTheme = (value) => {
   configStore.setTheme(value ? "dark" : "light");
@@ -115,6 +244,37 @@ const close = () => {
 
 const editProfile = () => {
   router.push("/setting/profile");
+};
+
+const showPasswordModal = () => {
+  showPasswordModalFlag.value = true;
+};
+
+const closePasswordModal = () => {
+  showPasswordModalFlag.value = false;
+};
+
+const updateUserPassword = async () => {
+  updatingPassword.value = true;
+  try {
+    await passwordFormRef.value.validate();
+
+    const res = await updatePassword({
+      oldPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+    });
+
+    if (res.code === 200) {
+      message.success("密码修改成功");
+      closePasswordModal();
+    } else {
+      message.error(res.message || "密码修改失败");
+    }
+  } catch (error) {
+    message.error(error.message || "密码修改失败");
+  } finally {
+    updatingPassword.value = false;
+  }
 };
 </script>
 
@@ -181,7 +341,7 @@ const editProfile = () => {
 
           .user-id {
             font-size: 0.9375rem;
-            color: var(--text-color-light);
+            color: var(--text-color);
           }
         }
       }
@@ -242,5 +402,23 @@ const editProfile = () => {
       }
     }
   }
+}
+:deep(.n-form-item) {
+  margin-bottom: 1rem;
+}
+:deep(.n-form-item-label__text) {
+  font-size: 1rem;
+}
+:deep(.n-input) {
+  height: 50px;
+  .n-input__input-el {
+    height: 50px;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
 }
 </style>

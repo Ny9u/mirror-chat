@@ -46,6 +46,11 @@ export const updateInfo = async (userData) => {
   return res;
 };
 
+export const updatePassword = async (passwordData) => {
+  const res = await Request(api.updatePassword, "POST", passwordData);
+  return res;
+};
+
 export default {
   getAvatar,
   getName,
@@ -56,4 +61,5 @@ export default {
   refresh,
   uploadAvatar,
   updateInfo,
+  updatePassword,
 };

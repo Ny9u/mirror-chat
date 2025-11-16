@@ -10,7 +10,8 @@ export const api = {
   validate: "/api/v1/auth/validate",
   refresh: "/api/v1/auth/refresh",
   uploadAvatar: "/api/v1/avatar/upload",
-  updateInfo: "/api/v1/user/update",
+  updateInfo: "/api/v1/user/updateInfo",
+  updatePassword: "/api/v1/user/updatePassword",
 };
 
 export default api;

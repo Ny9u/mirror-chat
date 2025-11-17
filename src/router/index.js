@@ -31,9 +31,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const requiresAuth = to.path !== "/auth";
+  const requiresAuth = ["Chat", "Setting", "Profile"];
 
-  if (requiresAuth) {
+  if (requiresAuth.includes(to.name)) {
     const configStore = useConfigStore();
 
     if (!configStore.userId) {
@@ -60,7 +60,11 @@ router.beforeEach(async (to, from, next) => {
           next("/auth");
         }
       } else {
-        next("/auth");
+        if (to.name !== "Chat") {
+          next("/auth");
+        } else {
+          next();
+        }
       }
     } else {
       next();

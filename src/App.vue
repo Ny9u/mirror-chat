@@ -1,17 +1,19 @@
 <template>
   <n-config-provider :theme="theme">
     <div class="main" :class="{ 'light-mode': configStore.theme === 'light' }">
-      <n-message-provider>
-        <router-view />
-      </n-message-provider>
+      <n-dialog-provider>
+        <n-message-provider>
+          <router-view />
+        </n-message-provider>
+      </n-dialog-provider>
     </div>
   </n-config-provider>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { computed, watch } from "vue";
 import { darkTheme } from "naive-ui";
-import { NConfigProvider, NMessageProvider } from "naive-ui";
+import { NConfigProvider, NMessageProvider, NDialogProvider } from "naive-ui";
 import { useConfigStore } from "./stores/configStore";
 
 const configStore = useConfigStore();
@@ -22,6 +24,19 @@ const theme = computed(() => {
   }
   return darkTheme;
 });
+
+watch(
+  () => configStore.theme,
+  (value) => {
+    const root = document.documentElement;
+    if (value === "light") {
+      root.classList.add("light-mode");
+    } else {
+      root.classList.remove("light-mode");
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="less" scoped>

@@ -76,7 +76,7 @@
       preset="card"
       style="width: 480px; height: 510px; border-radius: 12px; overflow: hidden"
       :closable="false"
-      title="密码管理"
+      :title="renderPasswordTitle"
       size="medium"
       :segmented="{
         content: true,
@@ -140,16 +140,57 @@
         </n-button>
       </div>
     </n-modal>
+    <!-- 关于我们 -->
+    <n-modal
+      v-model:show="showAboutModalFlag"
+      preset="card"
+      style="width: 480px; height: 420px; border-radius: 12px; overflow: hidden"
+      :closable="false"
+      :title="renderAboutTitle"
+      size="medium"
+      :segmented="{
+        content: true,
+        footer: 'soft',
+      }"
+    >
+      <template #header-extra>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="closeAboutModal"
+          size="1.6rem"
+        />
+      </template>
+      <div class="logo-section">
+        <div class="logo-container">
+          <div
+            :class="{
+              'logo-dark': configStore.theme === 'dark',
+              'logo-light': configStore.theme === 'light',
+            }"
+          ></div>
+        </div>
+        <div class="project-title">Mirror-Chat</div>
+        <div class="project-description">一个现代化的AI对话平台</div>
+        <div class="project-description">
+          欢迎体验 Mirror Chat，并向我们反馈您的宝贵意见
+        </div>
+        <div class="github-link" @click="openGithub">
+          <n-icon :component="BrandGithub" size="32" />
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, h } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { updatePassword } from "@/services/user";
 import {
   useMessage,
+  useDialog,
   NAvatar,
   NIcon,
   NButton,
@@ -159,8 +200,18 @@ import {
   NForm,
   NFormItem,
   NInput,
+  NDialog,
 } from "naive-ui";
-import { User, Key, Moon, InfoCircle, Logout, X } from "@vicons/tabler";
+import {
+  User,
+  Key,
+  Moon,
+  InfoCircle,
+  Logout,
+  X,
+  BrandGithub,
+  AlertTriangle,
+} from "@vicons/tabler";
 import backupImg from "@/assets/avatar.svg";
 
 const configStore = useConfigStore();
@@ -220,22 +271,66 @@ const passwordRules = {
   ],
 };
 
+const renderPasswordTitle = () =>
+  h("span", { style: "font-weight: 600;" }, "密码管理");
+
 const toggleTheme = (value) => {
   configStore.setTheme(value ? "dark" : "light");
 };
 
+const showAboutModalFlag = ref(false);
 const showAbout = () => {
-  message.info("Mirror-Chat v1.0.0");
+  showAboutModalFlag.value = true;
 };
 
+const closeAboutModal = () => {
+  showAboutModalFlag.value = false;
+};
+
+const renderAboutTitle = () =>
+  h("span", { style: "font-weight: 600;" }, "关于我们");
+
+const dialog = useDialog();
 const logout = () => {
-  localStorage.removeItem("jwtToken");
-  localStorage.removeItem("isLoggedIn");
-  configStore.setUserId(null);
-  configStore.setName("");
-  configStore.setAvatar("");
-  router.push("/auth?tab=login");
-  message.success("已退出登录");
+  dialog.warning({
+    title: "确认退出登录？",
+    content: "退出登录不会丢失任何数据，你仍可以登录此账号。",
+    positiveText: "退出登录",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #18a058;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 24, component: AlertTriangle }, null)]
+      ),
+    style: "height: 150px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "success",
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    negativeButtonProps: {
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    onPositiveClick: () => {
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("isLoggedIn");
+      configStore.setUserId(null);
+      configStore.setName("");
+      configStore.setAvatar("");
+      router.push("/");
+    },
+  });
 };
 
 const close = () => {
@@ -275,6 +370,10 @@ const updateUserPassword = async () => {
   } finally {
     updatingPassword.value = false;
   }
+};
+
+const openGithub = () => {
+  window.open("https://github.com/Ny9u", "_blank");
 };
 </script>
 
@@ -403,6 +502,50 @@ const updateUserPassword = async () => {
     }
   }
 }
+.logo-section {
+  text-align: center;
+
+  .logo-container {
+    width: 8rem;
+    height: 8rem;
+    margin: 0 auto;
+    margin-bottom: 1rem;
+  }
+
+  .logo-dark {
+    width: 8rem;
+    height: 8rem;
+    background: url("@/assets/logo.svg") no-repeat center;
+    background-size: contain;
+  }
+
+  .logo-light {
+    width: 8rem;
+    height: 8rem;
+    background: url("@/assets/logo_dark.svg") no-repeat center;
+    background-size: contain;
+  }
+
+  .project-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+  }
+
+  .project-description {
+    font-size: 0.875rem;
+    color: var(--text-color);
+  }
+
+  .github-link {
+    margin-top: 2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    color: var(--text-color);
+  }
+}
 :deep(.n-form-item) {
   margin-bottom: 1rem;
 }
@@ -410,15 +553,15 @@ const updateUserPassword = async () => {
   font-size: 1rem;
 }
 :deep(.n-input) {
-  height: 50px;
+  height: 3.125rem;
   .n-input__input-el {
-    height: 50px;
+    height: 3.125rem;
   }
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 16px 0;
+  padding: 1rem 0;
 }
 </style>

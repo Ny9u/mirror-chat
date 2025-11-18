@@ -9,6 +9,7 @@ export const api = {
   uploadAvatar: "/api/v1/avatar/upload",
   updateInfo: "/api/v1/user/updateInfo",
   updatePassword: "/api/v1/user/updatePassword",
+  deleteAccount: "/api/v1/user/deleteAccount",
 };
 
 export default api;

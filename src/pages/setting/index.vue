@@ -23,15 +23,22 @@
         <h2>账户</h2>
         <div class="setting-item" @click="editProfile">
           <div class="setting-label">
-            <n-icon :component="User" size="1.2em" />
+            <n-icon :component="User" size="1.35rem" />
             <span>个人资料</span>
           </div>
         </div>
 
         <div class="setting-item" @click="showPasswordModal">
           <div class="setting-label">
-            <n-icon :component="Key" size="1.2em" />
+            <n-icon :component="Key" size="1.35rem" />
             <span>密码管理</span>
+          </div>
+        </div>
+
+        <div class="setting-item" @click="openDeleteAccountDialog">
+          <div class="setting-label">
+            <n-icon :component="Trash" size="1.35rem" />
+            <span>删除账号</span>
           </div>
         </div>
       </div>
@@ -40,7 +47,7 @@
         <h2>偏好</h2>
         <div class="setting-item">
           <div class="setting-label">
-            <n-icon :component="Moon" size="1.2em" />
+            <n-icon :component="Moon" size="1.35rem" />
             <span>暗黑模式</span>
           </div>
           <div class="setting-action">
@@ -56,14 +63,14 @@
         <h2>其他</h2>
         <div class="setting-item" @click="showAbout">
           <div class="setting-label">
-            <n-icon :component="InfoCircle" size="1.2em" />
+            <n-icon :component="InfoCircle" size="1.35rem" />
             <span>关于我们</span>
           </div>
         </div>
 
         <div class="setting-item" @click="logout">
           <div class="setting-label">
-            <n-icon :component="Logout" size="1.2em" />
+            <n-icon :component="Logout" size="1.35rem" />
             <span>退出登录</span>
           </div>
         </div>
@@ -187,7 +194,7 @@
 import { ref, h } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
-import { updatePassword } from "@/services/user";
+import { updatePassword, deleteAccount } from "@/services/user";
 import {
   useMessage,
   useDialog,
@@ -211,6 +218,7 @@ import {
   X,
   BrandGithub,
   AlertTriangle,
+  Trash,
 } from "@vicons/tabler";
 import backupImg from "@/assets/avatar.svg";
 
@@ -273,6 +281,60 @@ const passwordRules = {
 
 const renderPasswordTitle = () =>
   h("span", { style: "font-weight: 600;" }, "密码管理");
+
+const openDeleteAccountDialog = () => {
+  dialog.warning({
+    title: "确认删除账号？",
+    content:
+      "删除账号后，你将无法找回账号信息，你的所有数据也会一并删除。此操作不可撤销。",
+    positiveText: "删除",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 24, component: AlertTriangle }, null)]
+      ),
+    style: "height: 170px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    negativeButtonProps: {
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    onPositiveClick: () => {
+      handleDeleteAccount();
+    },
+  });
+};
+
+const handleDeleteAccount = async () => {
+  const res = await deleteAccount();
+  if (res.code === 200) {
+    message.success("账号删除成功");
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("isLoggedIn");
+    configStore.setUserId(null);
+    configStore.setName("");
+    configStore.setAvatar("");
+    router.push("/");
+  } else {
+    message.error(res.message || "账号删除失败");
+  }
+};
 
 const toggleTheme = (value) => {
   configStore.setTheme(value ? "dark" : "light");

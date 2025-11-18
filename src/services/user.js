@@ -36,10 +36,12 @@ export const updatePassword = async (passwordData) => {
   return res;
 };
 
+export const deleteAccount = async (params) => {
+  const res = await Request(api.deleteAccount, "POST", params);
+  return res;
+};
+
 export default {
-  getAvatar,
-  getName,
-  getUserInfo,
   login,
   register,
   validate,
@@ -47,4 +49,5 @@ export default {
   uploadAvatar,
   updateInfo,
   updatePassword,
+  deleteAccount,
 };

@@ -12,4 +12,12 @@ export const api = {
   deleteAccount: "/api/v1/user/deleteAccount",
 };
 
-export default api;
+// 需要认证的API
+export const authRequiredApis = [
+  api.validate,
+  api.updateInfo,
+  api.updatePassword,
+  api.deleteAccount,
+];
+
+export default { api, authRequiredApis };

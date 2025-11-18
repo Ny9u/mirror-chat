@@ -408,6 +408,7 @@ onMounted(() => {
       font-size: 2rem;
       font-weight: bold;
       color: var(--text-color);
+      cursor: default;
     }
   }
 }

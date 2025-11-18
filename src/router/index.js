@@ -17,11 +17,13 @@ const routes = [
     path: "/setting",
     name: "Setting",
     component: () => import("@/pages/setting/index.vue"),
-  },
-  {
-    path: "/setting/profile",
-    name: "Profile",
-    component: () => import("@/pages/setting/components/profile.vue"),
+    children: [
+      {
+        path: "profile",
+        name: "Profile",
+        component: () => import("@/pages/setting/components/profile.vue"),
+      },
+    ],
   },
 ];
 

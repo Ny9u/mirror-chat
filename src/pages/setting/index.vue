@@ -507,6 +507,9 @@ const openGithub = () => {
         }
       }
     }
+    .header-content:hover {
+      cursor: default;
+    }
   }
 
   .setting-content {
@@ -524,6 +527,7 @@ const openGithub = () => {
         color: var(--text-color);
         font-size: 1.25rem;
         border-bottom: 1px solid var(--border-color);
+        cursor: default;
       }
 
       .setting-item {
@@ -538,6 +542,7 @@ const openGithub = () => {
         margin: 0.3125rem 0;
 
         &:hover {
+          cursor: default;
           background-color: rgba(0, 0, 0, 0.05);
         }
 

@@ -359,10 +359,10 @@ const handleRegister = (e) => {
 
   .logo {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 40px;
-    height: 40px;
+    top: 1.25rem;
+    left: 1.25rem;
+    width: 3rem;
+    height: 3rem;
 
     img {
       width: 100%;
@@ -379,23 +379,11 @@ const handleRegister = (e) => {
 
     .title {
       text-align: center;
-      margin-bottom: 30px;
-
-      img {
-        width: 60px;
-        height: 60px;
-        margin-bottom: 15px;
-      }
-
-      h2 {
-        margin: 0;
-        font-size: 24px;
-        color: #333;
-      }
+      margin-bottom: 1.875rem;
     }
 
     :deep(.n-form-item) {
-      margin-bottom: 20px;
+      margin-bottom: 1.25rem;
 
       // 隐藏表单错误提示信息
       .n-form-item-feedback-wrapper {
@@ -409,17 +397,22 @@ const handleRegister = (e) => {
     }
 
     :deep(.n-button) {
-      height: 40px;
+      height: 3rem;
+      border-radius: 0.5rem;
     }
 
     .input-group {
       border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+      border-radius: 0.625rem;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
 
       :deep(.n-form-item) {
-        margin-bottom: 15px;
+        margin-bottom: 1.25rem;
+
+        .n-form-item-label__text {
+          font-size: 1rem;
+        }
 
         // 隐藏表单错误提示信息
         .n-form-item-feedback-wrapper {

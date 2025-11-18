@@ -1,5 +1,5 @@
 import axios from "axios";
-import { api } from "../config/api";
+import { api, authRequiredApis } from "../config/api";
 import { refresh } from "../services/user.js";
 
 // 存储正在刷新token的Promise，防止多次刷新
@@ -31,12 +31,6 @@ service.interceptors.request.use(
       "Content-Type": "application/json",
     };
 
-    const authRequiredApis = [
-      api.validate,
-      api.updateInfo,
-      api.updatePassword,
-      api.deleteAccount,
-    ];
     if (authRequiredApis.includes(config.url)) {
       const token = localStorage.getItem("jwtToken");
       if (token) {

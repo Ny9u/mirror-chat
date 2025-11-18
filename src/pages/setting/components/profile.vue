@@ -22,10 +22,16 @@
           <div class="avatar-wrapper">
             <n-avatar
               round
-              :src="configStore.avatar || backupImg"
+              :src="configStore.avatar"
               class="user-avatar"
               :size="128"
-            />
+            >
+              <span
+                v-if="!configStore.avatar"
+                style="user-select: none; -webkit-user-select: none"
+                >{{ Global.getInitials(configStore.name) }}</span
+              >
+            </n-avatar>
             <div class="camera-icon">
               <n-icon :component="Plus" size="1.5rem" />
             </div>
@@ -59,8 +65,8 @@ import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { useMessage, NIcon, NAvatar, NButton, NInput, NUpload } from "naive-ui";
 import { ArrowLeft, Plus } from "@vicons/tabler";
-import backupImg from "@/assets/avatar.svg";
 import { uploadAvatar, updateInfo } from "@/services/user";
+import Global from "@/utils/global";
 
 const configStore = useConfigStore();
 const router = useRouter();

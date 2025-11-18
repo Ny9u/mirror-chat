@@ -20,9 +20,16 @@ const sortThinkingMessages = (chatHistory) => {
   return obj;
 };
 
+const getInitials = (name) => {
+  if (!name) return "U";
+  const initials = name.charAt(0).toUpperCase();
+  return initials;
+};
+
 let Global = {
   getRandomKey,
   sortThinkingMessages,
+  getInitials,
 };
 
 export default Global;

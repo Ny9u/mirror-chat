@@ -45,10 +45,16 @@
       <n-avatar
         v-else
         round
-        :src="configStore.avatar ? configStore.avatar : backupImg"
+        :src="configStore.avatar"
         class="avatar"
         @click="openSettings"
-      />
+      >
+        <span
+          v-if="!configStore.avatar"
+          style="user-select: none; -webkit-user-select: none"
+          >{{ Global.getInitials(configStore.name) }}</span
+        >
+      </n-avatar>
     </div>
   </div>
   <div
@@ -58,11 +64,13 @@
     @click.stop
   >
     <div class="user-info">
-      <n-avatar
-        round
-        :src="configStore.avatar ? configStore.avatar : backupImg"
-        class="user-avatar"
-      />
+      <n-avatar round :src="configStore.avatar" class="user-avatar">
+        <span
+          v-if="!configStore.avatar"
+          style="user-select: none; -webkit-user-select: none"
+          >{{ Global.getInitials(configStore.name) }}</span
+        >
+      </n-avatar>
       <div class="user-details">
         <div class="user-name">{{ configStore.name || "用户" }}</div>
       </div>
@@ -142,10 +150,10 @@ import {
 } from "naive-ui";
 import { Logout, Settings } from "@vicons/tabler";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
-import backupImg from "@/assets/avatar.svg";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { validate } from "@/services/user";
+import Global from "@/utils/global.js";
 
 const message = useMessage();
 const configStore = useConfigStore();
@@ -406,7 +414,6 @@ onMounted(async () => {
       width: 2.2rem;
       height: 2.2rem;
       margin: 0 1.07rem;
-      background-color: var(--background-color);
     }
 
     .login-btn {
@@ -465,6 +472,15 @@ onMounted(async () => {
       width: 4rem;
       height: 4rem;
       margin-right: 1.07rem;
+
+      :deep(.n-avatar__text) {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1rem;
+        font-weight: 600;
+      }
     }
 
     .user-details {

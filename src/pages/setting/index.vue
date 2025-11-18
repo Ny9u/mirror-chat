@@ -5,11 +5,13 @@
       <div class="header-content">
         <h1>设置</h1>
         <div class="user-info">
-          <n-avatar
-            round
-            :src="configStore.avatar || backupImg"
-            class="user-avatar"
-          />
+          <n-avatar round :src="configStore.avatar" class="user-avatar">
+            <span
+              v-if="!configStore.avatar"
+              style="user-select: none; -webkit-user-select: none"
+              >{{ Global.getInitials(configStore.name) }}</span
+            >
+          </n-avatar>
           <div class="user-details">
             <div class="user-name">{{ configStore.name || "用户" }}</div>
             <div class="user-id">ID: {{ configStore.userId }}</div>
@@ -220,7 +222,7 @@ import {
   AlertTriangle,
   Trash,
 } from "@vicons/tabler";
-import backupImg from "@/assets/avatar.svg";
+import Global from "@/utils/global";
 
 const configStore = useConfigStore();
 const router = useRouter();

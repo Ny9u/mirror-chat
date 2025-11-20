@@ -41,6 +41,11 @@ export const deleteAccount = async (params) => {
   return res;
 };
 
+export const sendVerificationCode = async (params) => {
+  const res = await Request(api.sendVerificationCode, "POST", params);
+  return res;
+};
+
 export default {
   login,
   register,
@@ -50,4 +55,5 @@ export default {
   updateInfo,
   updatePassword,
   deleteAccount,
+  sendVerificationCode,
 };

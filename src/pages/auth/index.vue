@@ -101,11 +101,10 @@
                 </template>
               </n-input>
             </n-form-item>
-            <n-form-item path="confirmPassword" label="确认密码">
+            <n-form-item path="verifyCode" label="验证码">
               <n-input
-                v-model:value="registerForm.confirmPassword"
-                type="password"
-                placeholder="再次输入您的密码"
+                v-model:value="registerForm.verificationCode"
+                placeholder="请输入验证码"
                 show-password-on="click"
                 size="large"
               >
@@ -113,6 +112,14 @@
                   <n-icon :component="Lock" />
                 </template>
               </n-input>
+              <n-button
+                type="primary"
+                style="margin-left: 1.5rem; height: 2.8rem"
+                @click="getVerifyCode"
+                :disabled="countdown > 0"
+              >
+                {{ verifyCodeButtonText }}
+              </n-button>
             </n-form-item>
           </div>
         </n-form>
@@ -153,7 +160,7 @@ import {
   NIcon,
 } from "naive-ui";
 import { User, Mail, Lock } from "@vicons/tabler";
-import { login, register } from "@/services/user";
+import { login, register, sendVerificationCode } from "@/services/user";
 import { useConfigStore } from "@/stores/configStore";
 import { encrypt } from "@/utils/encryption";
 
@@ -174,11 +181,12 @@ const registerForm = reactive({
   username: "",
   email: "",
   password: "",
-  confirmPassword: "",
+  verificationCode: "",
 });
 
 const loginLoading = ref(false);
 const registerLoading = ref(false);
+const countdown = ref(0);
 
 //检查登录表单是否完整填写
 const isLoginFormValid = computed(() => {
@@ -191,8 +199,12 @@ const isRegisterFormValid = computed(() => {
     registerForm.username.trim() !== "" &&
     registerForm.email.trim() !== "" &&
     registerForm.password.trim() !== "" &&
-    registerForm.confirmPassword.trim() !== ""
+    registerForm.verificationCode.trim() !== ""
   );
+});
+
+const verifyCodeButtonText = computed(() => {
+  return countdown.value > 0 ? `${countdown.value}秒后重新获取` : "获取验证码";
 });
 
 const loginRules = {
@@ -251,18 +263,10 @@ const registerRules = {
       message: "密码长度必须在6到14位之间",
     },
   ],
-  confirmPassword: [
+  verificationCode: [
     {
       required: true,
-      message: "请确认密码",
-    },
-    {
-      validator: (rule, value) => {
-        if (value !== registerForm.password) {
-          return new Error("两次输入的密码不一致");
-        }
-        return true;
-      },
+      message: "请输入验证码",
     },
   ],
 };
@@ -323,6 +327,7 @@ const handleRegister = async (e) => {
           username: registerForm.username,
           email: registerForm.email,
           password: registerForm.password,
+          verificationCode: registerForm.verificationCode,
         });
 
         const res = await register(encryptedData);
@@ -334,7 +339,7 @@ const handleRegister = async (e) => {
           registerForm.username = "";
           registerForm.email = "";
           registerForm.password = "";
-          registerForm.confirmPassword = "";
+          registerForm.verificationCode = "";
           activeTab.value = "login";
           message.success("注册成功，请登录");
         } else {
@@ -356,6 +361,43 @@ const handleRegister = async (e) => {
       }
     }
   });
+};
+
+let countdownTimer = null;
+const getVerifyCode = async (e) => {
+  e.preventDefault();
+  if (!registerForm.email) {
+    message.error("请输入电子邮箱");
+    return;
+  }
+  try {
+    const res = await sendVerificationCode({
+      email: registerForm.email,
+    });
+
+    if (res.code === 200) {
+      message.success("验证码发送成功");
+      countdown.value = 60;
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+      }
+      countdownTimer = setInterval(() => {
+        countdown.value--;
+        if (countdown.value <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+        }
+      }, 1000);
+    } else {
+      message.error(res.message || "验证码发送失败");
+    }
+  } catch (err) {
+    if (err.response && err.response.data && err.response.data.message) {
+      message.error(err.response.data.message);
+    } else {
+      message.error(err.message || "验证码发送失败");
+    }
+  }
 };
 </script>
 

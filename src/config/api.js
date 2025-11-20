@@ -10,6 +10,7 @@ export const api = {
   updateInfo: "/api/v1/user/updateInfo",
   updatePassword: "/api/v1/user/updatePassword",
   deleteAccount: "/api/v1/user/deleteAccount",
+  getPublicKey: "/api/v1/encryption/getPublicKey",
 };
 
 // 需要认证的API

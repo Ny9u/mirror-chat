@@ -26,10 +26,30 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    config.headers = {
-      ...config.headers,
-      "Content-Type": "application/json",
-    };
+    // 检查是否需要修改Content-Type
+    const isEncryptedData =
+      config.data &&
+      typeof config.data === "string" &&
+      config.data.startsWith("-----BEGIN RSA ENCRYPTED-----");
+
+    // 如果是加密数据，提取加密内容并设置Content-Type
+    if (isEncryptedData) {
+      const encryptedData = config.data
+        .replace("-----BEGIN RSA ENCRYPTED-----\n", "")
+        .replace("\n-----END RSA ENCRYPTED-----", "");
+
+      config.headers = {
+        ...config.headers,
+        "Content-Type": "text/plain",
+      };
+
+      config.data = encryptedData;
+    } else {
+      config.headers = {
+        ...config.headers,
+        "Content-Type": "application/json",
+      };
+    }
 
     if (authRequiredApis.includes(config.url)) {
       const token = localStorage.getItem("jwtToken");

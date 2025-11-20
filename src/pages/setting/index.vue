@@ -223,6 +223,7 @@ import {
   Trash,
 } from "@vicons/tabler";
 import Global from "@/utils/global";
+import { encrypt } from "@/utils/encryption";
 
 const configStore = useConfigStore();
 const router = useRouter();
@@ -418,10 +419,12 @@ const updateUserPassword = async () => {
   try {
     await passwordFormRef.value.validate();
 
-    const res = await updatePassword({
+    const encryptedData = await encrypt({
       oldPassword: passwordForm.value.currentPassword,
       newPassword: passwordForm.value.newPassword,
     });
+    
+    const res = await updatePassword(encryptedData);
 
     if (res.code === 200) {
       message.success("密码修改成功");

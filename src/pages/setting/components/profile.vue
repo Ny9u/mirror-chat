@@ -28,7 +28,11 @@
             >
               <span
                 v-if="!configStore.avatar"
-                style="user-select: none; -webkit-user-select: none"
+                style="
+                  user-select: none;
+                  -webkit-user-select: none;
+                  font-weight: bold;
+                "
                 >{{ Global.getInitials(configStore.name) }}</span
               >
             </n-avatar>

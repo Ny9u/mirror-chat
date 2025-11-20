@@ -155,6 +155,7 @@ import {
 import { User, Mail, Lock } from "@vicons/tabler";
 import { login, register } from "@/services/user";
 import { useConfigStore } from "@/stores/configStore";
+import { encrypt } from "@/utils/encryption";
 
 const route = useRoute();
 const router = useRouter();
@@ -223,6 +224,11 @@ const registerRules = {
       required: true,
       message: "请输入用户名",
     },
+    {
+      min: 1,
+      max: 12,
+      message: "用户名长度必须在1到12位之间",
+    },
   ],
   email: [
     {
@@ -241,7 +247,8 @@ const registerRules = {
     },
     {
       min: 6,
-      message: "密码至少6位",
+      max: 14,
+      message: "密码长度必须在6到14位之间",
     },
   ],
   confirmPassword: [
@@ -260,42 +267,42 @@ const registerRules = {
   ],
 };
 
-const handleLogin = (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
-  loginFormRef.value?.validate((errors) => {
+  loginFormRef.value?.validate(async (errors) => {
     if (!errors) {
       loginLoading.value = true;
-      login({
-        email: loginForm.email,
-        password: loginForm.password,
-      }).then(
-        (res) => {
-          loginLoading.value = false;
-          if (res.code === 201) {
-            message.success("登录成功");
-            configStore.setUserId(res.data.user.id);
-            configStore.setName(res.data.user.username);
-            configStore.setAvatar(res.data.user.avatar);
-            if (res.data && res.data.token) {
-              localStorage.setItem("jwtToken", res.data.token);
-              localStorage.setItem("refreshToken", res.data.refreshToken);
-              localStorage.setItem("isLoggedIn", "true");
-              sessionStorage.setItem("skipValidation", "true");
-            }
-            router.push("/");
-          } else {
-            message.error(res.message || "登录失败");
+      try {
+        const encryptedData = await encrypt({
+          email: loginForm.email,
+          password: loginForm.password,
+        });
+        const res = await login(encryptedData);
+
+        loginLoading.value = false;
+        if (res.code === 201) {
+          message.success("登录成功");
+          configStore.setUserId(res.data.user.id);
+          configStore.setName(res.data.user.username);
+          configStore.setAvatar(res.data.user.avatar);
+          if (res.data && res.data.token) {
+            localStorage.setItem("jwtToken", res.data.token);
+            localStorage.setItem("refreshToken", res.data.refreshToken);
+            localStorage.setItem("isLoggedIn", "true");
+            sessionStorage.setItem("skipValidation", "true");
           }
-        },
-        (err) => {
-          loginLoading.value = false;
-          if (err.response && err.response.data && err.response.data.message) {
-            message.error(err.response.data.message);
-          } else {
-            message.error(err.message || "登录失败");
-          }
+          router.push("/");
+        } else {
+          message.error(res.message || "登录失败");
         }
-      );
+      } catch (err) {
+        loginLoading.value = false;
+        if (err.response && err.response.data && err.response.data.message) {
+          message.error(err.response.data.message);
+        } else {
+          message.error(err.message || "登录失败");
+        }
+      }
     } else {
       if (errors.length > 0) {
         message.error(errors[0][0].message);
@@ -306,37 +313,41 @@ const handleLogin = (e) => {
   });
 };
 
-const handleRegister = (e) => {
+const handleRegister = async (e) => {
   e.preventDefault();
-  registerFormRef.value?.validate((errors) => {
+  registerFormRef.value?.validate(async (errors) => {
     if (!errors) {
       registerLoading.value = true;
-      register({
-        username: registerForm.username,
-        email: registerForm.email,
-        password: registerForm.password,
-      }).then(
-        (res) => {
-          registerLoading.value = false;
-          if (res.code === 201) {
-            registerForm.username = "";
-            registerForm.email = "";
-            registerForm.password = "";
-            registerForm.confirmPassword = "";
-            activeTab.value = "login";
-          } else {
-            message.error(res.message || "注册失败");
-          }
-        },
-        (err) => {
-          registerLoading.value = false;
-          if (err.response && err.response.data && err.response.data.message) {
-            message.error(err.response.data.message);
-          } else {
-            message.error(err.message || "登录失败");
-          }
+      try {
+        const encryptedData = await encrypt({
+          username: registerForm.username,
+          email: registerForm.email,
+          password: registerForm.password,
+        });
+
+        const res = await register(encryptedData);
+
+        registerLoading.value = false;
+        if (res.code === 201) {
+          loginForm.email = registerForm.email;
+          loginForm.password = registerForm.password;
+          registerForm.username = "";
+          registerForm.email = "";
+          registerForm.password = "";
+          registerForm.confirmPassword = "";
+          activeTab.value = "login";
+          message.success("注册成功，请登录");
+        } else {
+          message.error(res.message || "注册失败");
         }
-      );
+      } catch (err) {
+        registerLoading.value = false;
+        if (err.response && err.response.data && err.response.data.message) {
+          message.error(err.response.data.message);
+        } else {
+          message.error(err.message || "注册失败");
+        }
+      }
     } else {
       if (errors.length > 0) {
         message.error(errors[0][0].message);

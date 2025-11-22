@@ -580,6 +580,7 @@ const getVerifyCode = async (e) => {
   try {
     const res = await sendVerificationCode({
       email: registerForm.email,
+      type: "register",
     });
 
     if (res.code === 200) {
@@ -616,6 +617,7 @@ const getResetVerifyCode = async (e) => {
   try {
     const res = await sendVerificationCode({
       email: emailVerificationForm.email,
+      type: "reset",
     });
 
     if (res.code === 200) {

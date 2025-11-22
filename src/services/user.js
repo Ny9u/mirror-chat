@@ -46,6 +46,16 @@ export const sendVerificationCode = async (params) => {
   return res;
 };
 
+export const verifyCode = async (params) => {
+  const res = await Request(api.verifyCode, "POST", params);
+  return res;
+};
+
+export const resetPassword = async (passwordData) => {
+  const res = await Request(api.resetPassword, "POST", passwordData);
+  return res;
+};
+
 export default {
   login,
   register,
@@ -56,4 +66,6 @@ export default {
   updatePassword,
   deleteAccount,
   sendVerificationCode,
+  verifyCode,
+  resetPassword,
 };

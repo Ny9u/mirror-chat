@@ -12,6 +12,8 @@ export const api = {
   deleteAccount: "/api/v1/user/deleteAccount",
   getPublicKey: "/api/v1/encryption/getPublicKey",
   sendVerificationCode: "/api/v1/user/sendVerificationCode",
+  verifyCode: "/api/v1/user/verifyCode",
+  resetPassword: "/api/v1/user/resetPassword",
 };
 
 // 需要认证的API

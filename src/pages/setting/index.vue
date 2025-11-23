@@ -305,7 +305,7 @@ const openDeleteAccountDialog = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 24, component: AlertTriangle }, null)]
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -375,7 +375,7 @@ const logout = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 24, component: AlertTriangle }, null)]
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 150px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -423,7 +423,7 @@ const updateUserPassword = async () => {
       oldPassword: passwordForm.value.currentPassword,
       newPassword: passwordForm.value.newPassword,
     });
-    
+
     const res = await updatePassword(encryptedData);
 
     if (res.code === 200) {
@@ -465,6 +465,7 @@ const openGithub = () => {
     align-items: center;
     justify-content: center;
     border-radius: 0.625rem;
+    color: var(--text-color);
 
     &:hover {
       background-color: rgba(0, 0, 0, 0.1);

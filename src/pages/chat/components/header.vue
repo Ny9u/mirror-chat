@@ -4,8 +4,8 @@
       <div class="name" @click="goToMyGithub">
         <div
           :class="{
-            logo: theme === '浅色主题',
-            'logo-light': theme === '深色主题',
+            logo: configStore.theme === 'dark',
+            'logo-light': configStore.theme === 'light',
           }"
         ></div>
         <div class="title">Mirror-Chat</div>
@@ -14,8 +14,8 @@
         <div>{{ configStore.model }}</div>
         <div
           :class="{
-            down: theme === '浅色主题',
-            'down-light': theme === '深色主题',
+            down: configStore.theme === 'dark',
+            'down-light': configStore.theme === 'light',
             rotate: showSelect,
           }"
         ></div>
@@ -35,7 +35,9 @@
         v-if="!configStore.userId"
         :class="[
           'register-btn',
-          theme === '浅色主题' ? 'register-btn-dark' : 'register-btn-light',
+          configStore.theme === 'dark'
+            ? 'register-btn-dark'
+            : 'register-btn-light',
         ]"
         @click="goToRegister"
       >
@@ -112,8 +114,8 @@
         <template #trigger>
           <div
             :class="{
-              'model-question': theme === '浅色主题',
-              'model-question-light': theme === '深色主题',
+              'model-question': configStore.theme === 'dark',
+              'model-question-light': configStore.theme === 'light',
             }"
           ></div>
         </template>
@@ -161,7 +163,6 @@ const router = useRouter();
 const { proxy } = getCurrentInstance();
 import Models from "@/config/models.js";
 
-const theme = ref("深色主题"); // 默认主题为浅色，所以按钮展示为深色
 let showSelect = ref(false);
 let showSettings = ref(false);
 const openModelSelect = () => {
@@ -179,14 +180,6 @@ const closeSettings = () => {
 const selectModel = (model) => {
   configStore.setModel(model);
   showSelect.value = false;
-};
-const handleSelect = (key) => {
-  theme.value = theme.value === "深色主题" ? "浅色主题" : "深色主题";
-  if (theme.value === "深色主题") {
-    configStore.setTheme("light");
-  } else {
-    configStore.setTheme("dark");
-  }
 };
 
 const goToMyGithub = () => {
@@ -524,7 +517,6 @@ onMounted(async () => {
 
       .setting-label:hover {
         background-color: var(--hover-color);
-        color: var(--primary-color);
       }
 
       .dark-mode .setting-label:hover {

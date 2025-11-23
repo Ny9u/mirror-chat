@@ -23,33 +23,120 @@
               v-if="item.role === 'assistant'"
             />
             <div class="message">
-              <div v-for="(i, index) in item.content" :key="index">
-                <div class="think-container" v-if="i.type === 'thinking'">
-                  <div class="think">
-                    <n-spin
-                      size="small"
-                      description="思考中"
-                      v-if="!item.isFinishThinking"
-                    >
-                      <template #icon>
-                        <n-icon>
-                          <Loader />
-                        </n-icon>
-                      </template>
-                    </n-spin>
-                    <div v-html="i.data"></div>
+              <div class="title" v-if="item.role === 'assistant'">
+                Mirror
+                <div class="time">{{ item.time || "" }}</div>
+              </div>
+              <div class="content">
+                <div v-for="(i, index) in item.content" :key="index">
+                  <div class="think-container" v-if="i.type === 'thinking'">
+                    <div class="think">
+                      <n-spin
+                        size="small"
+                        description="思考中"
+                        v-if="!item.isFinishThinking"
+                      >
+                        <template #icon>
+                          <n-icon>
+                            <Loader />
+                          </n-icon>
+                        </template>
+                      </n-spin>
+                      <div v-html="i.data"></div>
+                    </div>
+                  </div>
+                  <div
+                    class="text-container"
+                    :style="{
+                      maxWidth: item.role === 'assistant' ? '63vw' : '560px',
+                    }"
+                    v-if="i.type === 'content'"
+                  >
+                    <div class="text">
+                      <div v-html="i.data"></div>
+                    </div>
                   </div>
                 </div>
-                <div
-                  class="text-container"
-                  :style="{
-                    maxWidth: item.role === 'assistant' ? '63vw' : '560px',
-                  }"
-                  v-if="i.type === 'content'"
-                >
-                  <div class="text">
-                    <div v-html="i.data"></div>
-                  </div>
+                <div class="tool" v-if="item.role === 'assistant'">
+                  <n-popover
+                    placement="bottom"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
+                      <n-button text size="large" @click="copyMessage(item)">
+                        <template #icon>
+                          <n-icon><Copy /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      复制
+                    </div>
+                  </n-popover>
+                  <n-popover
+                    placement="bottom"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
+                      <n-button
+                        text
+                        size="large"
+                        @click="regenerateResponse(item)"
+                      >
+                        <template #icon>
+                          <n-icon><Refresh /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      重新生成
+                    </div>
+                  </n-popover>
+                  <n-popover
+                    placement="bottom"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
+                      <n-button text size="large" @click="deleteMessage(item)">
+                        <template #icon>
+                          <n-icon><Trash /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      删除
+                    </div>
+                  </n-popover>
                 </div>
               </div>
             </div>
@@ -64,16 +151,18 @@
 </template>
 
 <script setup>
+import { computed, onMounted, ref, toRefs, watch, onBeforeMount, h } from "vue";
 import {
-  computed,
-  onMounted,
-  ref,
-  getCurrentInstance,
-  toRefs,
-  watch,
-  onBeforeMount,
-} from "vue";
-import { NVirtualList, NAvatar, useMessage, NSpin, NIcon } from "naive-ui";
+  NVirtualList,
+  NAvatar,
+  useMessage,
+  NSpin,
+  NIcon,
+  NButton,
+  NPopover,
+  useDialog,
+} from "naive-ui";
+import { Loader, Copy, Refresh, Trash, AlertTriangle } from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
 import userUrl from "@/assets/avatar.svg";
@@ -82,7 +171,8 @@ import Global from "@/utils/global.js";
 import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
-import { Loader } from "@vicons/tabler";
+import { api } from "@/config/api.js";
+import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
 
 const props = defineProps({
   userInput: String,
@@ -92,8 +182,8 @@ const props = defineProps({
 const { userInput, netSearch, deepThinking } = toRefs(props);
 
 const configStore = useConfigStore();
-const { proxy } = getCurrentInstance();
 const message = useMessage();
+const dialog = useDialog();
 const md = new MarkdownIt({
   html: true,
   linkify: true,
@@ -115,7 +205,7 @@ const role = ["assistant", "user"];
 // 初始化openai
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_ALIYUN_API_KEY, // 使用环境变量
-  baseURL: proxy.$api.aliyun,
+  baseURL: api.aliyun,
   dangerouslyAllowBrowser: true,
 });
 
@@ -130,6 +220,7 @@ const sendMessage = (userInput) => {
       },
     ],
     key: Global.getRandomKey(),
+    time: formatChineseTime(new Date()),
   });
   if (chatHistory.value.length > 2) {
     virtualListRef.value.scrollTo({
@@ -173,6 +264,7 @@ const fetchAI = async (signal) => {
       ],
       key: Global.getRandomKey(),
       isFinishThinking: false,
+      time: formatChineseTime(new Date()),
     });
     let lastScrollTime = 0;
     const scrollTime = 500;
@@ -253,6 +345,7 @@ const fetchAI = async (signal) => {
                 },
               ],
               key: Global.getRandomKey(),
+              time: formatChineseTime(new Date()),
             });
             hasPushed = true;
           }
@@ -287,25 +380,100 @@ const scrollToBottom = () => {
   });
 };
 
-const judgeTime = () => {
-  const date = new Date();
-  const hours = date.getHours();
-  if (hours >= 0 && hours < 6) {
-    return "凌晨";
-  } else if (hours >= 6 && hours < 11) {
-    return "早上";
-  } else if (hours >= 11 && hours < 14) {
-    return "中午";
-  } else if (hours >= 14 && hours < 18) {
-    return "下午";
-  } else {
-    return "晚上";
+const copyMessage = (item) => {
+  if (!item.content || item.content.length === 0) return;
+
+  let copyText = "";
+  item.content.forEach((content) => {
+    if (content.type === "content" && content.data) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = content.data;
+      copyText += tempDiv.textContent || tempDiv.innerText || "";
+      if (copyText) {
+        navigator.clipboard
+          .writeText(copyText)
+          .then(() => {
+            message.success("成功复制到剪贴板！");
+          })
+          .catch(() => {
+            message.error("复制失败");
+          });
+      }
+    }
+  });
+};
+
+const regenerateResponse = (item) => {
+  const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
+  if (index === -1) return;
+
+  chatHistory.value = chatHistory.value.slice(0, index);
+
+  let lastMessage = null;
+  let lastMessageIndex = null;
+  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+    if (chatHistory.value[i].role === "user") {
+      lastMessage = chatHistory.value[i];
+      lastMessageIndex = i;
+      break;
+    }
   }
+
+  if (lastMessage && lastMessageIndex !== null) {
+    chatHistory.value = chatHistory.value.slice(0, lastMessageIndex);
+    const userInput = lastMessage.content[0].data;
+    sendMessage(userInput);
+    fetchAI(new AbortController().signal);
+  }
+};
+
+const deleteMessage = (item) => {
+  dialog.warning({
+    title: "是否删除该条消息？",
+    content: "删除后，聊天记录不可恢复，对话内的文件也将被彻底删除。",
+    positiveText: "删除",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+      ),
+    style: "height: 170px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    negativeButtonProps: {
+      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+    },
+    onPositiveClick: () => {
+      const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
+      if (index !== -1) {
+        chatHistory.value.splice(index, 1);
+        sessionStorage.setItem(
+          "chatHistory",
+          JSON.stringify(chatHistory.value)
+        );
+      }
+    },
+  });
 };
 
 defineExpose({ sendMessage, fetchAI });
 const initTyped = () => {
-  const time = judgeTime();
+  const time = getChineseGreeting(new Date());
   new Typed("#typed", {
     strings: [
       `${
@@ -357,30 +525,62 @@ onMounted(() => {
       margin: 0 0.67rem;
     }
     .message {
-      display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 20px;
-      .text-container {
-        max-width: 37.33rem;
-        background: var(--message-color) no-repeat center;
-        border-radius: 0.53rem;
-        .text {
-          padding: 0.67rem 1.33rem;
-          font-size: 1.07rem;
-          caret-color: transparent;
-        }
+      &:hover .time {
+        opacity: 0.7 !important ;
       }
-      .think-container {
-        max-width: 60rem;
-        .think {
-          padding: 0.07rem 1.33rem;
-          font-size: 0.87rem;
+      .title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--text-color);
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        .time {
+          font-size: 0.8rem;
+          font-weight: normal;
           color: var(--text-color);
-          background: var(--think-color) no-repeat center;
-          border-left: 0.2rem solid var(--text-color);
+          opacity: 0;
+          transition: opacity 0.2s ease-in-out;
         }
       }
+      .content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        .text-container {
+          max-width: 37.33rem;
+          background: var(--message-color) no-repeat center;
+          border-radius: 0.53rem;
+          .text {
+            padding: 0.6rem 1.33rem;
+            font-size: 1.07rem;
+            caret-color: transparent;
+          }
+        }
+        .think-container {
+          max-width: 60rem;
+          .think {
+            padding: 0.07rem 1.33rem;
+            font-size: 0.87rem;
+            color: var(--text-color);
+            background: var(--think-color) no-repeat center;
+            border-left: 0.2rem solid var(--text-color);
+          }
+        }
+        .tool {
+          display: flex;
+          padding: 0.5rem 0;
+        }
+      }
+    }
+
+    ::v-deep(.n-button--text-type) {
+      background-color: transparent !important;
+      color: var(--text-color) !important;
+      opacity: 0.7;
+      transition: opacity 0.2s ease-in-out;
     }
 
     ::v-deep(.n-scrollbar-rail) {

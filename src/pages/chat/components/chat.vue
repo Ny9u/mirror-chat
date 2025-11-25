@@ -118,7 +118,10 @@ const sendMessage = async () => {
   if (netSearch.value) {
     // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
   }
-  listRef.value.sendMessage(inputValue.value.trim());
+  const isVaild = listRef.value.sendMessage(inputValue.value.trim());
+  if (!isVaild) {
+    return;
+  }
   inputValue.value = "";
   loading.value = true;
   abortController.value = new AbortController();

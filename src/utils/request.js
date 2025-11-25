@@ -167,13 +167,15 @@ service.interceptors.response.use(
  * @param {string} url - 接口地址
  * @param {string} method - 请求方法，默认为get
  * @param {Object} params - 请求参数
+ * @param {boolean} returnRawResponse - 是否返回原始响应，用于处理二进制数据
  * @returns {Promise} 返回Promise对象
  */
-export const Request = (url, method = "GET", params = {}) => {
+export const Request = (url, method = "GET", params = {}, returnRawResponse = false) => {
   return new Promise((resolve, reject) => {
     const config = {
       url: url,
       method: method,
+      responseType: returnRawResponse ? "arraybuffer" : "json",
     };
 
     if (method.toUpperCase() === "POST" || method.toUpperCase() === "PUT") {
@@ -184,7 +186,18 @@ export const Request = (url, method = "GET", params = {}) => {
 
     service(config)
       .then((response) => {
-        resolve(response.data);
+        if (returnRawResponse) {
+          // 返回原始响应，包含数据和响应头
+          resolve({
+            data: response.data,
+            headers: response.headers,
+            contentType: response.headers["content-type"],
+            contentLength: response.headers["content-length"],
+            duration: response.headers["x-audio-duration"],
+          });
+        } else {
+          resolve(response.data);
+        }
       })
       .catch((error) => {
         if (error.response && error.response.data) {

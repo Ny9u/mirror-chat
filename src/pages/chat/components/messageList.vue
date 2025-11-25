@@ -119,6 +119,31 @@
                     :show-arrow="false"
                   >
                     <template #trigger>
+                      <n-button text size="large" @click="playVoice(item)">
+                        <template #icon>
+                          <n-icon><Volume /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      语音朗读
+                    </div>
+                  </n-popover>
+                  <n-popover
+                    placement="bottom"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
                       <n-button text size="large" @click="deleteMessage(item)">
                         <template #icon>
                           <n-icon><Trash /></n-icon>
@@ -162,7 +187,14 @@ import {
   NPopover,
   useDialog,
 } from "naive-ui";
-import { Loader, Copy, Refresh, Trash, AlertTriangle } from "@vicons/tabler";
+import {
+  Loader,
+  Copy,
+  Refresh,
+  Trash,
+  AlertTriangle,
+  Volume,
+} from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
 import userUrl from "@/assets/avatar.svg";
@@ -173,6 +205,7 @@ import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { api } from "@/config/api.js";
 import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
+import TTSService from "@/services/ttsService.js";
 
 const props = defineProps({
   userInput: String,
@@ -194,7 +227,7 @@ const chatHistory = ref(
   JSON.parse(sessionStorage.getItem("chatHistory")) || [
     {
       role: "system",
-      content: "You are a helpful assistant.",
+      content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
       key: Global.getRandomKey(),
     },
   ]
@@ -211,6 +244,16 @@ const openai = new OpenAI({
 
 // 发送消息
 const sendMessage = (userInput) => {
+  if (netSearch.value) {
+    if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
+      message.error("当前模型不支持联网搜索");
+      return false;
+    }
+  }
+  if (deepThinking.value && !configStore.model.includes("qwq")) {
+    message.error("当前模型不支持深度思考");
+    return false;
+  }
   chatHistory.value.push({
     role: "user",
     content: [
@@ -228,20 +271,11 @@ const sendMessage = (userInput) => {
     });
   }
   sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+  return true;
 };
 
 const fetchAI = async (signal) => {
-  if (netSearch.value) {
-    if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
-      message.error("当前模型不支持联网搜索");
-      return;
-    }
-  }
   if (deepThinking.value) {
-    if (!configStore.model.includes("qwq")) {
-      message.error("当前模型不支持深度思考");
-      return;
-    }
     let reasoningContent = "";
     let answerContent = "";
     const stream = await openai.chat.completions.create({
@@ -424,6 +458,42 @@ const regenerateResponse = (item) => {
     const userInput = lastMessage.content[0].data;
     sendMessage(userInput);
     fetchAI(new AbortController().signal);
+  }
+};
+
+const playVoice = async (item) => {
+  try {
+    // 提取消息文本内容
+    let textToSpeak = "";
+    if (item.content && item.content.length > 0) {
+      item.content.forEach((content) => {
+        if (content.type === "content" && content.data) {
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = content.data;
+          textToSpeak += tempDiv.textContent || tempDiv.innerText || "";
+        }
+      });
+    }
+
+    if (!textToSpeak) {
+      message.warning("暂不支持播放");
+      return;
+    }
+
+    // 超出文本限制长度时采用降级方案
+    if (textToSpeak.length > 150) {
+      TTSService.playWithWebSpeechAPI(textToSpeak);
+      return;
+    }
+
+    try {
+      const audioData = await TTSService.synthesizeSpeech(textToSpeak);
+      await TTSService.playAudio(audioData);
+    } catch (error) {
+      message.error("语音播放失败: " + (error.message || "未知错误"));
+    }
+  } catch (error) {
+    message.error("语音播放失败: " + (error.message || "未知错误"));
   }
 };
 

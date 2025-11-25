@@ -14,6 +14,9 @@ export const api = {
   sendVerificationCode: "/api/v1/user/sendVerificationCode",
   verifyCode: "/api/v1/user/verifyCode",
   resetPassword: "/api/v1/user/resetPassword",
+  textToSpeech: "/api/v1/tts/textToSpeech",
+  getVoiceLists: "/api/v1/tts/getVoiceLists",
+  getVoiceModels: "/api/v1/tts/getVoiceModels",
 };
 
 // 需要认证的API

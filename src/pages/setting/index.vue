@@ -59,6 +59,21 @@
             />
           </div>
         </div>
+        <div class="setting-item">
+          <div class="setting-label">
+            <n-icon :component="Volume" size="1.35rem" />
+            <span>声音选择</span>
+          </div>
+          <div
+            class="setting-action voice-selector"
+            @click="showVoiceSelection"
+          >
+            <span class="current-voice">{{
+              configStore.voiceName || "智瑜"
+            }}</span>
+            <n-icon :component="ChevronRight" size="1.2rem" />
+          </div>
+        </div>
       </div>
 
       <div class="setting-section">
@@ -83,7 +98,7 @@
     <n-modal
       v-model:show="showPasswordModalFlag"
       preset="card"
-      style="width: 480px; height: 510px; border-radius: 12px; overflow: hidden"
+      style="width: 480px; height: 490px; border-radius: 12px; overflow: hidden"
       :closable="false"
       :title="renderPasswordTitle"
       size="medium"
@@ -143,12 +158,99 @@
           type="primary"
           @click="updateUserPassword"
           :loading="updatingPassword"
-          style="border-radius: 8px"
+          style="border-radius: 8px; padding: 1.3rem 1.5rem"
         >
           更新密码
         </n-button>
       </div>
     </n-modal>
+
+    <!-- 声音选择 -->
+    <n-modal
+      v-model:show="showVoiceModalFlag"
+      preset="card"
+      style="
+        width: 500px;
+        max-height: 600px;
+        border-radius: 12px;
+        overflow: hidden;
+      "
+      :closable="false"
+      :title="renderVoiceTitle"
+      size="medium"
+      :segmented="{
+        content: true,
+        footer: 'soft',
+      }"
+    >
+      <template #header-extra>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="closeVoiceModal"
+          size="1.6rem"
+        />
+      </template>
+
+      <div
+        class="voice-selection-container"
+        :class="{ 'dark-mode': configStore.theme === 'dark' }"
+      >
+        <div class="voice-list">
+          <div
+            v-for="voice in voiceList"
+            :key="voice.id"
+            class="voice-item"
+            :class="{ active: voice.id === selectedVoice.id }"
+            @click="selectVoice(voice)"
+          >
+            <div class="voice-info">
+              <div class="voice-name">{{ voice.name }}</div>
+              <div class="voice-description">
+                <span v-for="(desc, index) in voice.description" :key="index">
+                  {{ desc
+                  }}<span
+                    v-if="index < voice.description.length - 1"
+                    class="description-separator"
+                    >|</span
+                  >
+                </span>
+              </div>
+            </div>
+            <div class="voice-actions">
+              <n-button
+                circle
+                size="small"
+                type="primary"
+                ghost
+                @click.stop="previewVoice(voice)"
+              >
+                <template #icon>
+                  <n-icon :component="Volume" />
+                </template>
+              </n-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding-top: 1.5rem">
+        <n-button
+          @click="closeVoiceModal"
+          style="border-radius: 8px; padding: 1.3rem 1.5rem"
+        >
+          取消
+        </n-button>
+        <n-button
+          type="primary"
+          @click="confirmVoiceSelection"
+          style="border-radius: 8px; padding: 1.3rem 1.5rem"
+        >
+          确定
+        </n-button>
+      </div>
+    </n-modal>
+
     <!-- 关于我们 -->
     <n-modal
       v-model:show="showAboutModalFlag"
@@ -221,9 +323,13 @@ import {
   BrandGithub,
   AlertTriangle,
   Trash,
+  ChevronRight,
+  Volume,
+  Check,
 } from "@vicons/tabler";
 import Global from "@/utils/global";
 import { encrypt } from "@/utils/encryption";
+import TTSService from "@/services/ttsService.js";
 
 const configStore = useConfigStore();
 const router = useRouter();
@@ -307,15 +413,17 @@ const openDeleteAccountDialog = () => {
         },
         [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
-    style: "height: 170px; border-radius: 10px; overflow: hidden;",
+    style: "height: 180px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
     contentStyle: "font-size: 1rem; margin-bottom: 0px;",
     positiveButtonProps: {
       type: "error",
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
     negativeButtonProps: {
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
     onPositiveClick: () => {
       handleDeleteAccount();
@@ -377,15 +485,17 @@ const logout = () => {
         },
         [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
-    style: "height: 150px; border-radius: 10px; overflow: hidden;",
+    style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
     contentStyle: "font-size: 1rem; margin-bottom: 0px;",
     positiveButtonProps: {
       type: "success",
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
     negativeButtonProps: {
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
     onPositiveClick: () => {
       localStorage.removeItem("jwtToken");
@@ -442,6 +552,67 @@ const updateUserPassword = async () => {
 const openGithub = () => {
   window.open("https://github.com/Ny9u", "_blank");
 };
+
+const showVoiceModalFlag = ref(false);
+const voiceList = ref([]);
+const selectedVoice = ref({ id: configStore.voiceType });
+const currentVoiceName = ref("");
+
+const renderVoiceTitle = () =>
+  h("span", { style: "font-weight: 600;" }, "选择声音");
+
+const showVoiceSelection = async () => {
+  showVoiceModalFlag.value = true;
+  selectedVoice.value = {
+    id: configStore.voiceType,
+    name: configStore.voiceName,
+  };
+
+  if (voiceList.value.length === 0) {
+    try {
+      const voices = await TTSService.getVoiceLists();
+      voiceList.value = voices;
+      const currentVoice = voices.find((v) => v.id === configStore.voiceType);
+      currentVoiceName.value = currentVoice ? currentVoice.name : "智瑜";
+    } catch (error) {
+      message.error("获取音色列表失败: " + (error.message || "未知错误"));
+    }
+  } else {
+    const currentVoice = voiceList.value.find(
+      (v) => v.id === configStore.voiceType
+    );
+    currentVoiceName.value = currentVoice ? currentVoice.name : "智瑜";
+  }
+};
+
+const closeVoiceModal = () => {
+  showVoiceModalFlag.value = false;
+};
+
+const selectVoice = (voice) => {
+  selectedVoice.value = voice;
+};
+
+const confirmVoiceSelection = () => {
+  if (selectedVoice.value) {
+    configStore.setVoiceType(selectedVoice.value.id);
+    configStore.setVoiceName(selectedVoice.value.name);
+    currentVoiceName.value = selectedVoice.value.name;
+    closeVoiceModal();
+  } else {
+    message.warning("请选择一个音色");
+  }
+};
+
+const previewVoice = async (voice) => {
+  try {
+    const previewText = "你好，我是" + voice.name + ",很高兴认识你。";
+    const audioData = await TTSService.synthesizeSpeech(previewText, voice.id);
+    await TTSService.playAudio(audioData);
+  } catch (error) {
+    message.error("播放失败: " + (error.message || "未知错误"));
+  }
+};
 </script>
 
 <style lang="less" scoped>
@@ -479,7 +650,6 @@ const openGithub = () => {
       max-width: 800px;
       margin: 0 auto;
       padding: 1.25rem 0;
-      border-bottom: 1px solid var(--border-color);
       position: relative;
 
       h1 {
@@ -532,7 +702,6 @@ const openGithub = () => {
         padding-left: 1rem;
         color: var(--text-color);
         font-size: 1.25rem;
-        border-bottom: 1px solid var(--border-color);
         cursor: default;
       }
 
@@ -541,7 +710,6 @@ const openGithub = () => {
         justify-content: space-between;
         align-items: center;
         padding: 0.9375rem 0;
-        border-bottom: 1px solid var(--border-color);
         transition: background-color 0.3s ease;
         border-radius: 0.3125rem;
         padding: 0.9375rem;
@@ -570,6 +738,20 @@ const openGithub = () => {
         .setting-action {
           display: flex;
           align-items: center;
+          color: var(--text-color);
+          .current-voice {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-right: 0.5rem;
+          }
+          &.voice-selector {
+            border: 1px solid #00000014;
+            border-radius: 12px;
+            padding: 0.5rem 0.75rem;
+            background-color: transparent;
+            cursor: pointer;
+          }
         }
       }
     }
@@ -635,6 +817,70 @@ const openGithub = () => {
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 1rem 0;
+  gap: 0.75rem;
+}
+
+.voice-selection-container {
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  .voice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    .voice-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      &.active {
+        border-color: var(--primary-color);
+        background-color: rgba(24, 160, 88, 0.1);
+      }
+
+      .voice-info {
+        flex: 1;
+
+        .voice-name {
+          font-size: 1rem;
+          font-weight: 600;
+          margin-bottom: 0.25rem;
+          color: var(--text-color);
+          user-select: none;
+        }
+
+        .voice-description {
+          font-size: 0.95rem;
+          color: var(--text-color);
+          opacity: 0.75;
+          user-select: none;
+
+          .description-separator {
+            margin: 0 0.375rem;
+            opacity: 0.5;
+          }
+        }
+      }
+
+      .voice-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    }
+  }
 }
 </style>

@@ -28,15 +28,19 @@ class AudioCacheService {
   /**
    * 生成缓存键
    * @param {string} text - 文本内容
+   * @param {number} voiceType - 音色类型
    * @returns {string} 缓存键
    */
-  generateCacheKey(text) {
+  generateCacheKey(text, voiceType) {
+    // 组合文本和音色类型生成唯一的缓存键
+    const combinedInput = `${text}-${voiceType}`;
+
     // 使用简单的哈希函数生成缓存键
     let hash = 0;
-    if (text.length === 0) return hash.toString();
+    if (combinedInput.length === 0) return hash.toString();
 
-    for (let i = 0; i < text.length; i++) {
-      const char = text.charCodeAt(i);
+    for (let i = 0; i < combinedInput.length; i++) {
+      const char = combinedInput.charCodeAt(i);
       hash = (hash << 5) - hash + char;
       hash = hash & hash; // 转换为32位整数
     }
@@ -104,14 +108,15 @@ class AudioCacheService {
   /**
    * 保存音频数据到缓存
    * @param {string} text - 文本内容
+   * @param {number} voiceType - 音色类型
    * @param {Object} audioData - 音频数据对象
    * @param {string} audioData.audio - 音频数据（ArrayBuffer或Uint8Array）
    * @param {string} audioData.contentType - 内容类型
    */
-  saveAudioData(text, audioData) {
+  saveAudioData(text, voiceType, audioData) {
     if (!text || !audioData || !audioData.audio) return;
 
-    const cacheKey = this.generateCacheKey(text);
+    const cacheKey = this.generateCacheKey(text, voiceType);
     const timestamp = Date.now();
 
     // 将ArrayBuffer或Uint8Array转换为base64字符串以便存储
@@ -130,6 +135,7 @@ class AudioCacheService {
       audioData: audioBase64,
       contentType: audioData.contentType || "audio/mpeg",
       timestamp: timestamp,
+      voiceType: voiceType,
     };
 
     // 检查缓存大小
@@ -151,12 +157,13 @@ class AudioCacheService {
   /**
    * 从缓存获取音频数据
    * @param {string} text - 文本内容
+   * @param {number} voiceType - 音色类型
    * @returns {Object|null} 音频数据对象或null
    */
-  getAudioData(text) {
+  getAudioData(text, voiceType) {
     if (!text) return null;
 
-    const cacheKey = this.generateCacheKey(text);
+    const cacheKey = this.generateCacheKey(text, voiceType);
     const cachedItem = this.cache[cacheKey];
 
     if (!cachedItem) return null;
@@ -168,6 +175,7 @@ class AudioCacheService {
       audio: audioArray,
       contentType: cachedItem.contentType,
       duration: cachedItem.duration,
+      voiceType: cachedItem.voiceType,
       fromCache: true, // 标记这是来自缓存的数据
     };
   }

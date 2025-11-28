@@ -17,6 +17,7 @@ export const api = {
   textToSpeech: "/api/v1/tts/textToSpeech",
   getVoiceLists: "/api/v1/tts/getVoiceLists",
   getVoiceModels: "/api/v1/tts/getVoiceModels",
+  getVoiceLists: "/api/v1/tts/getVoiceLists",
 };
 
 // 需要认证的API

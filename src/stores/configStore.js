@@ -8,6 +8,8 @@ export const useConfigStore = defineStore("config", {
     userId: null,
     avatar: "",
     name: "",
+    voiceType: 101001,
+    voiceName: "智瑜",
   }),
   actions: {
     setTheme(theme) {
@@ -24,6 +26,12 @@ export const useConfigStore = defineStore("config", {
     },
     setName(name) {
       this.name = name;
+    },
+    setVoiceType(voiceType) {
+      this.voiceType = voiceType;
+    },
+    setVoiceName(voiceName) {
+      this.voiceName = voiceName;
     },
   },
 });

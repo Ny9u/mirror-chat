@@ -6,9 +6,9 @@ class TTSService {
   // 静态属性，用于跟踪当前正在播放的音频
   static currentAudio = null;
 
-  static async synthesizeSpeech(text) {
+  static async synthesizeSpeech(text, voiceType = 101001) {
     try {
-      const cachedAudioData = audioCacheService.getAudioData(text);
+      const cachedAudioData = audioCacheService.getAudioData(text, voiceType);
       if (cachedAudioData) {
         return cachedAudioData;
       }
@@ -19,6 +19,7 @@ class TTSService {
         "POST",
         {
           text,
+          voiceType,
         },
         true
       );
@@ -33,7 +34,7 @@ class TTSService {
           contentType: response.contentType || "audio/mpeg",
         };
 
-        audioCacheService.saveAudioData(text, audioData);
+        audioCacheService.saveAudioData(text, voiceType, audioData);
         return audioData;
       }
 
@@ -96,6 +97,10 @@ class TTSService {
       // 保存当前音频引用
       this.currentAudio = audio;
 
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = null;
+      }
+
       // 定义事件处理函数，以便后续可以移除监听器
       const handleAudioEnded = () => {
         // 如果是Blob URL，释放URL对象
@@ -110,6 +115,10 @@ class TTSService {
           this.currentAudio = null;
         }
         audio.removeEventListener("ended", handleAudioEnded);
+
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.metadata = null;
+        }
       };
 
       audio.addEventListener("ended", handleAudioEnded);
@@ -129,6 +138,10 @@ class TTSService {
         }
         audio.removeEventListener("ended", handleAudioEnded);
         audio.removeEventListener("error", handleAudioError);
+
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.metadata = null;
+        }
       };
 
       audio.addEventListener("error", handleAudioError);
@@ -170,6 +183,10 @@ class TTSService {
         throw error;
       }
     }
+
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = null;
+    }
   }
 
   /**
@@ -209,6 +226,19 @@ class TTSService {
         reject(error);
       }
     });
+  }
+
+  /**
+   * 获取音色列表
+   * @returns {Promise<Array>} 音色列表
+   */
+  static async getVoiceLists() {
+    try {
+      const response = await Request(api.getVoiceLists, "GET");
+      return response.data.voices || [];
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

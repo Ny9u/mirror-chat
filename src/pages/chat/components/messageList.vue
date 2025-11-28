@@ -487,7 +487,10 @@ const playVoice = async (item) => {
     }
 
     try {
-      const audioData = await TTSService.synthesizeSpeech(textToSpeak);
+      const audioData = await TTSService.synthesizeSpeech(
+        textToSpeak,
+        configStore.voiceType
+      );
       await TTSService.playAudio(audioData);
     } catch (error) {
       message.error("语音播放失败: " + (error.message || "未知错误"));

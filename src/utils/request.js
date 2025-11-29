@@ -26,14 +26,23 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    // 检查是否需要修改Content-Type
+    // 检查是否是FormData
+    const isFormData = config.data instanceof FormData;
+
+    // 检查是否是加密数据
     const isEncryptedData =
+      !isFormData &&
       config.data &&
       typeof config.data === "string" &&
       config.data.startsWith("-----BEGIN RSA ENCRYPTED-----");
 
+    // 如果是FormData，不设置Content-Type，让浏览器自动设置
+    if (isFormData) {
+      // 浏览器会自动设置正确的Content-Type和boundary
+      // 不要手动设置，否则会导致服务器无法正确解析
+    }
     // 如果是加密数据，提取加密内容并设置Content-Type
-    if (isEncryptedData) {
+    else if (isEncryptedData) {
       const encryptedData = config.data
         .replace("-----BEGIN RSA ENCRYPTED-----\n", "")
         .replace("\n-----END RSA ENCRYPTED-----", "");
@@ -44,7 +53,9 @@ service.interceptors.request.use(
       };
 
       config.data = encryptedData;
-    } else {
+    }
+    // 普通JSON数据
+    else {
       config.headers = {
         ...config.headers,
         "Content-Type": "application/json",
@@ -170,7 +181,12 @@ service.interceptors.response.use(
  * @param {boolean} returnRawResponse - 是否返回原始响应，用于处理二进制数据
  * @returns {Promise} 返回Promise对象
  */
-export const Request = (url, method = "GET", params = {}, returnRawResponse = false) => {
+export const Request = (
+  url,
+  method = "GET",
+  params = {},
+  returnRawResponse = false
+) => {
   return new Promise((resolve, reject) => {
     const config = {
       url: url,
@@ -188,6 +204,63 @@ export const Request = (url, method = "GET", params = {}, returnRawResponse = fa
       .then((response) => {
         if (returnRawResponse) {
           // 返回原始响应，包含数据和响应头
+          resolve({
+            data: response.data,
+            headers: response.headers,
+            contentType: response.headers["content-type"],
+            contentLength: response.headers["content-length"],
+            duration: response.headers["x-audio-duration"],
+          });
+        } else {
+          resolve(response.data);
+        }
+      })
+      .catch((error) => {
+        if (error.response && error.response.data) {
+          const backendError = error.response.data;
+          const customError = new Error(backendError.message || "请求失败");
+          customError.code = backendError.code;
+          customError.response = error.response;
+          reject(customError);
+        } else {
+          reject(error);
+        }
+      });
+  });
+};
+
+/**
+ * 专门用于发送FormData的请求方法
+ * @param {string} url - 接口地址
+ * @param {FormData} formData - FormData对象
+ * @param {Object} options - 其他请求选项
+ * @returns {Promise} 返回Promise对象
+ */
+export const FormDataRequest = (url, formData, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const config = {
+      url: url,
+      method: "POST",
+      data: formData,
+      responseType: options.responseType || "json",
+      onUploadProgress: options.onUploadProgress,
+      headers: {
+        ...options.headers,
+        // 不要设置Content-Type，让浏览器自动设置
+      },
+    };
+
+    // 添加认证信息
+    if (authRequiredApis.includes(url)) {
+      const token = localStorage.getItem("jwtToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    service(config)
+      .then((response) => {
+        if (options.returnRawResponse) {
           resolve({
             data: response.data,
             headers: response.headers,

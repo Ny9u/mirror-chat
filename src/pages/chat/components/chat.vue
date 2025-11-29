@@ -43,10 +43,25 @@
               搜索
             </n-button>
           </div>
-          <n-button text @click="handleSendClick">
-            <div v-show="!loading" class="upload"></div>
-            <div v-show="loading" class="loading"></div>
-          </n-button>
+          <div class="buttons">
+            <n-button text @click="handleRecordClick" :disabled="loading">
+              <div v-show="!recording" class="record-icon">
+                <n-icon size="24">
+                  <Microphone />
+                </n-icon>
+              </div>
+              <div v-show="recording" class="recording-indicator">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+            </n-button>
+            <div class="divider"></div>
+            <n-button text @click="handleSendClick">
+              <div v-show="!loading" class="upload"></div>
+              <div v-show="loading" class="loading"></div>
+            </n-button>
+          </div>
         </div>
       </div>
     </div>
@@ -57,9 +72,10 @@
 import { ref, computed, getCurrentInstance } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World, Atom } from "@vicons/tabler";
+import { World, Atom, Microphone } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { Request } from "@/utils/request.js";
+import { asrRecognize } from "@/services/asrService.js";
 
 const message = useMessage();
 const configStore = useConfigStore();
@@ -68,6 +84,7 @@ const listRef = ref(null);
 const netSearch = ref(false);
 const deepThinking = ref(false);
 const loading = ref(false);
+const recording = ref(false);
 const abortController = ref(null);
 
 const netColor = computed(() => {
@@ -153,6 +170,96 @@ const useNetSearch = () => {
 const useDeepThinking = () => {
   deepThinking.value = !deepThinking.value;
 };
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recognition = null;
+
+const handleRecordClick = () => {
+  if (recording.value) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+};
+
+const startRecording = async () => {
+  try {
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = "zh-CN";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        recording.value = true;
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputValue.value = transcript;
+      };
+
+      recognition.onerror = (event) => {
+        message.error("语音识别失败，请重试");
+        recording.value = false;
+      };
+
+      recognition.onend = () => {
+        recording.value = false;
+      };
+
+      recognition.start();
+    } else {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.onstart = () => {
+        recording.value = true;
+      };
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        recording.value = false;
+        // 将所有音频块合并成一个Blob对象
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "record.wav");
+        try {
+          const res = await asrRecognize(formData);
+          inputValue.value = res.data.ResultDetail[0].FinalSentence;
+        } catch (error) {
+          message.error("语音识别失败:", error);
+        }
+      };
+
+      mediaRecorder.start();
+    }
+  } catch (error) {
+    message.error("录音失败:", error);
+  }
+};
+
+const stopRecording = () => {
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
+
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+    mediaRecorder = null;
+  }
+
+  recording.value = false;
+};
 </script>
 
 <style lang="less" scoped>
@@ -215,6 +322,70 @@ const useDeepThinking = () => {
           }
           to {
             transform: rotate(360deg);
+          }
+        }
+        .buttons {
+          display: flex;
+          align-items: center;
+
+          .record-icon {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+
+            &:hover {
+              color: var(--primary-color);
+            }
+          }
+
+          .recording-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+
+            .dot {
+              display: inline-block;
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--text-color);
+              margin: 0 2px;
+              animation: pulse 1.4s infinite ease-in-out both;
+
+              &:nth-child(1) {
+                animation-delay: -0.32s;
+              }
+
+              &:nth-child(2) {
+                animation-delay: -0.16s;
+              }
+            }
+          }
+
+          .divider {
+            width: 1px;
+            height: 1.25rem;
+            background-color: var(--text-color);
+            opacity: 0.2;
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          80%,
+          100% {
+            transform: scale(0);
+            opacity: 0.5;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
           }
         }
       }

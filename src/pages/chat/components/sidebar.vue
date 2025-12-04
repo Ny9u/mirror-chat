@@ -23,11 +23,11 @@
               </n-icon>
               <div class="menu-text">新建对话</div>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" @click="navigateToCollection">
               <n-icon class="menu-icon" size="20">
                 <Bookmark />
               </n-icon>
-              <div class="menu-text">我的收藏</div>
+              <div class="menu-text">收藏夹</div>
             </div>
             <div class="menu-item">
               <n-icon class="menu-icon" size="20">
@@ -79,6 +79,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { NIcon } from "naive-ui";
 import {
   MessageCircle,
@@ -92,6 +93,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
+const router = useRouter();
 const configStore = useConfigStore();
 const isVisible = ref(false);
 let hideTimeout = null;
@@ -135,6 +137,11 @@ const formatTime = (date) => {
 const selectHistory = (id) => {
   activeHistoryId.value = id;
   // 这里可以添加加载历史对话的逻辑
+};
+
+// 导航到收藏夹页面
+const navigateToCollection = () => {
+  router.push("/collection");
 };
 
 const handleMouseEnter = () => {

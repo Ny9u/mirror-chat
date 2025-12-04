@@ -19,6 +19,10 @@ export const api = {
   getVoiceModels: "/api/v1/tts/getVoiceModels",
   getVoiceLists: "/api/v1/tts/getVoiceLists",
   asrRecognize: "/api/v1/asr/recognize",
+  addFavorites: "/api/v1/favorites",
+  getUserFavorites: "/api/v1/favorites/getUserFavorites",
+  removeFavorite: "/api/v1/favorites/removeFavorite",
+  getFavoriteDetail: "/api/v1/favorites/getFavoriteDetail",
 };
 
 // 需要认证的API

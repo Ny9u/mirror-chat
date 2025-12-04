@@ -59,7 +59,7 @@
                 </div>
                 <div class="tool" v-if="item.role === 'assistant'">
                   <n-popover
-                    placement="bottom"
+                    placement="top"
                     trigger="hover"
                     raw
                     :show-arrow="false"
@@ -84,7 +84,7 @@
                     </div>
                   </n-popover>
                   <n-popover
-                    placement="bottom"
+                    placement="top"
                     trigger="hover"
                     raw
                     :show-arrow="false"
@@ -113,7 +113,7 @@
                     </div>
                   </n-popover>
                   <n-popover
-                    placement="bottom"
+                    placement="top"
                     trigger="hover"
                     raw
                     :show-arrow="false"
@@ -139,27 +139,94 @@
                   </n-popover>
                   <n-popover
                     placement="bottom"
-                    trigger="hover"
+                    trigger="click"
                     raw
                     :show-arrow="false"
+                    class="message-actions-popover"
+                    v-model:show="popoverShowMap[item.key]"
                   >
                     <template #trigger>
-                      <n-button text size="large" @click="deleteMessage(item)">
-                        <template #icon>
-                          <n-icon><Trash /></n-icon>
+                      <n-popover
+                        placement="top"
+                        trigger="hover"
+                        raw
+                        :show-arrow="false"
+                      >
+                        <template #trigger>
+                          <n-button text size="large">
+                            <template #icon>
+                              <n-icon><Dots /></n-icon>
+                            </template>
+                          </n-button>
                         </template>
-                      </n-button>
+                        <div
+                          :style="{
+                            backgroundColor: '#000000',
+                            color: '#f1f2f8',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            fontSize: '14px',
+                          }"
+                        >
+                          更多
+                        </div>
+                      </n-popover>
                     </template>
                     <div
                       :style="{
-                        backgroundColor: '#000000',
-                        color: '#f1f2f8',
-                        borderRadius: '8px',
-                        padding: '6px 12px',
-                        fontSize: '14px',
+                        padding: '8px 8px',
                       }"
                     >
-                      删除
+                      <div
+                        style="
+                          padding: 8px 12px;
+                          border-radius: 10px;
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          transition: background-color 0.2s ease;
+                        "
+                        @click="favoriteMessage(item)"
+                        @mouseover="
+                          $event.currentTarget.style.backgroundColor =
+                            'rgba(0, 0, 0, 0.1)'
+                        "
+                        @mouseout="
+                          $event.currentTarget.style.backgroundColor =
+                            'transparent'
+                        "
+                      >
+                        <n-icon size="18">
+                          <Bookmark />
+                        </n-icon>
+                        <span>收藏</span>
+                      </div>
+                      <div
+                        style="
+                          padding: 8px 12px;
+                          border-radius: 10px;
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          transition: background-color 0.2s ease;
+                        "
+                        @click="deleteMessage(item)"
+                        @mouseover="
+                          $event.currentTarget.style.backgroundColor =
+                            'rgba(0, 0, 0, 0.1)'
+                        "
+                        @mouseout="
+                          $event.currentTarget.style.backgroundColor =
+                            'transparent'
+                        "
+                      >
+                        <n-icon size="18" color="rgba(249,57,32,1)">
+                          <Trash />
+                        </n-icon>
+                        <span style="color: rgba(249, 57, 32, 1)">删除</span>
+                      </div>
                     </div>
                   </n-popover>
                 </div>
@@ -186,6 +253,8 @@ import {
   NButton,
   NPopover,
   useDialog,
+  NList,
+  NListItem,
 } from "naive-ui";
 import {
   Loader,
@@ -194,6 +263,8 @@ import {
   Trash,
   AlertTriangle,
   Volume,
+  Dots,
+  Bookmark,
 } from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
@@ -206,6 +277,7 @@ import { useConfigStore } from "@/stores/configStore.js";
 import { api } from "@/config/api.js";
 import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
 import TTSService from "@/services/ttsService.js";
+import { addFavorites } from "@/services/user.js";
 
 const props = defineProps({
   userInput: String,
@@ -223,6 +295,7 @@ const md = new MarkdownIt({
   typographer: true,
 });
 const virtualListRef = ref(null);
+const popoverShowMap = ref({});
 const chatHistory = ref(
   JSON.parse(sessionStorage.getItem("chatHistory")) || [
     {
@@ -500,7 +573,7 @@ const playVoice = async (item) => {
   }
 };
 
-const deleteMessage = (item) => {
+const deleteMessage = (message) => {
   dialog.warning({
     title: "是否删除该条消息？",
     content: "删除后，聊天记录不可恢复，对话内的文件也将被彻底删除。",
@@ -542,6 +615,26 @@ const deleteMessage = (item) => {
       }
     },
   });
+};
+
+const favoriteMessage = async (msg) => {
+  const index = chatHistory.value.findIndex((item) => item.key === msg.key);
+  popoverShowMap.value[msg.key] = false;
+  if (index !== -1) {
+    let content = chatHistory.value.slice(index - 1, index + 1);
+    try {
+      const res = await addFavorites({
+        userId: configStore.userId,
+        title: chatHistory.value[index - 1].content[0].data.substring(0, 15),
+        conversation: JSON.stringify(content),
+      });
+      if (res.code === 201) {
+        message.success("收藏成功");
+      }
+    } catch (error) {
+      message.warning("收藏失败: " + (error.message || "未知错误"));
+    }
+  }
 };
 
 defineExpose({ sendMessage, fetchAI });
@@ -685,4 +778,8 @@ onMounted(() => {
     }
   }
 }
+</style>
+
+<style lang="less">
+@import "../styles/messagePopover.less";
 </style>

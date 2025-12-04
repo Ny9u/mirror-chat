@@ -56,6 +56,26 @@ export const resetPassword = async (passwordData) => {
   return res;
 };
 
+export const addFavorites = async (params) => {
+  const res = await Request(api.addFavorites, "POST", params);
+  return res;
+};
+
+export const getUserFavorites = async (params) => {
+  const res = await Request(api.getUserFavorites, "GET", params);
+  return res;
+};
+
+export const removeFavorite = async (params) => {
+  const res = await Request(api.removeFavorite, "POST", params);
+  return res;
+};
+
+export const getFavoriteDetail = async (params) => {
+  const res = await Request(api.getFavoriteDetail, "POST", params);
+  return res;
+};
+
 export default {
   login,
   register,
@@ -68,4 +88,8 @@ export default {
   sendVerificationCode,
   verifyCode,
   resetPassword,
+  addFavorites,
+  getUserFavorites,
+  removeFavorite,
+  getFavoriteDetail,
 };

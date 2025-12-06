@@ -26,12 +26,13 @@ const routes = [
   {
     path: "/collection",
     name: "Collection",
-    component: () => import("@/pages/chat/components/collection.vue"),
+    component: () => import("@/pages/collection/index.vue"),
   },
   {
     path: "/collection/:id",
     name: "CollectionDetail",
-    component: () => import("@/pages/chat/components/collectionDetail.vue"),
+    component: () =>
+      import("@/pages/collection/components/collectionDetail.vue"),
   },
 ];
 
@@ -41,13 +42,7 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const requiresAuth = [
-    "Chat",
-    "Setting",
-    "Profile",
-    "Collection",
-    "CollectionDetail",
-  ];
+  const requiresAuth = ["Chat", "Setting", "Profile", "Collection"];
 
   if (requiresAuth.includes(to.name)) {
     const configStore = useConfigStore();

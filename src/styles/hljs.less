@@ -1,0 +1,236 @@
+/* 代码块样式优化 */
+pre.hljs {
+  padding: 18px !important; /* 增大内边距，提升可读性 */
+  border-radius: 8px !important; /* 圆角适配现代UI */
+  margin: 16px 0 !important; /* 上下间距，区分正文 */
+  overflow-x: auto !important; /* 横向滚动（适配长代码） */
+  line-height: 1.6 !important; /* 行高适配中文 */
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monaco",
+    "PingFang SC", "Microsoft YaHei", monospace !important; /* 更现代的等宽字体 */
+  font-size: 14px !important; /* 字号适配阅读 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; /* 增强阴影效果 */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 添加边框增强区分度 */
+  position: relative !important; /* 为行号添加定位上下文 */
+
+  /* 暗色模式代码块背景 */
+  :root.dark-mode & {
+    background-color: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* 亮色模式代码块背景 */
+  :root.light-mode &,
+  .light-mode & {
+    background-color: #f6f8fa !important;
+    color: #24292e !important;
+    border-color: #e1e4e8 !important;
+  }
+}
+
+/* 代码高亮颜色优化 - 暗色模式 */
+.hljs-comment,
+.hljs-quote {
+  color: #6a9955 !important; /* VS Code风格的绿色注释 */
+  font-style: italic !important;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #569cd6 !important; /* VS Code风格的蓝色关键字 */
+  font-weight: bold !important;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #b5cea8 !important; /* VS Code风格的浅绿色数字 */
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: #9cdcfe !important; /* VS Code风格的浅蓝色变量 */
+}
+
+.hljs-string,
+.hljs-doctag {
+  color: #ce9178 !important; /* VS Code风格的橙色字符串 */
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: #dcdcaa !important; /* VS Code风格的黄色标题 */
+  font-weight: bold !important;
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #4ec9b0 !important; /* VS Code风格的青色类型 */
+}
+
+.hljs-tag {
+  color: #569cd6 !important; /* VS Code风格的蓝色标签 */
+}
+
+.hljs-name,
+.hljs-attribute {
+  color: #92c5f8 !important; /* 更亮的蓝色名称和属性 */
+}
+
+.hljs-regexp {
+  color: #d16969 !important; /* VS Code风格的红色正则表达式 */
+}
+
+.hljs-link {
+  color: #d7ba7d !important; /* VS Code风格的金色链接 */
+  text-decoration: underline !important;
+}
+
+.hljs-built_in,
+.hljs-builtin-name {
+  color: #dcdcaa !important; /* VS Code风格的黄色内置函数 */
+}
+
+.hljs-meta {
+  color: #d7ba7d !important; /* VS Code风格的金色元信息 */
+}
+
+.hljs-deletion {
+  background-color: rgba(
+    248,
+    81,
+    73,
+    0.2
+  ) !important; /* 更明显的红色删除背景 */
+  color: #f85149 !important;
+}
+
+.hljs-addition {
+  background-color: rgba(
+    46,
+    160,
+    67,
+    0.2
+  ) !important; /* 更明显的绿色添加背景 */
+  color: #3fb950 !important;
+}
+
+.hljs-emphasis {
+  font-style: italic !important;
+}
+
+.hljs-strong {
+  font-weight: bold !important;
+}
+
+/* 浅色模式代码高亮颜色优化 - GitHub风格 */
+:root.light-mode &,
+.light-mode & {
+  .hljs-comment,
+  .hljs-quote {
+    color: #6a737d !important; /* GitHub风格的灰色注释 */
+    font-style: italic !important;
+  }
+
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-subst {
+    color: #d73a49 !important; /* GitHub风格的红色关键字 */
+    font-weight: bold !important;
+  }
+
+  .hljs-number,
+  .hljs-literal {
+    color: #005cc5 !important; /* GitHub风格的蓝色数字 */
+  }
+
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-tag .hljs-attr {
+    color: #e36209 !important; /* GitHub风格的橙色变量 */
+  }
+
+  .hljs-string,
+  .hljs-doctag {
+    color: #032f62 !important; /* GitHub风格的深蓝色字符串 */
+  }
+
+  .hljs-title,
+  .hljs-section,
+  .hljs-selector-id {
+    color: #6f42c1 !important; /* GitHub风格的紫色标题 */
+    font-weight: bold !important;
+  }
+
+  .hljs-type,
+  .hljs-class .hljs-title {
+    color: #22863a !important; /* GitHub风格的绿色类型 */
+  }
+
+  .hljs-tag {
+    color: #22863a !important; /* GitHub风格的绿色标签 */
+  }
+
+  .hljs-name,
+  .hljs-attribute {
+    color: #6f42c1 !important; /* GitHub风格的紫色名称和属性 */
+  }
+
+  .hljs-regexp {
+    color: #22863a !important; /* GitHub风格的绿色正则表达式 */
+  }
+
+  .hljs-link {
+    color: #032f62 !important; /* GitHub风格的深蓝色链接 */
+    text-decoration: underline !important;
+  }
+
+  .hljs-built_in,
+  .hljs-builtin-name {
+    color: #e36209 !important; /* GitHub风格的橙色内置函数 */
+  }
+
+  .hljs-meta {
+    color: #005cc5 !important; /* GitHub风格的蓝色元信息 */
+  }
+
+  .hljs-deletion {
+    background-color: #ffebe9 !important; /* GitHub风格的浅红色删除背景 */
+    color: #d73a49 !important;
+  }
+
+  .hljs-addition {
+    background-color: #e6ffed !important; /* GitHub风格的浅绿色添加背景 */
+    color: #22863a !important;
+  }
+}
+
+/* 行内代码样式优化 */
+code.hljs {
+  padding: 3px 6px !important;
+  border-radius: 6px !important; /* 增加圆角 */
+  font-size: 13px !important;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace !important; /* 统一字体 */
+
+  /* 暗色模式行内代码 */
+  :root.dark-mode & {
+    background-color: rgba(78, 201, 176, 0.15) !important;
+    color: #4ec9b0 !important;
+    border: 1px solid rgba(78, 201, 176, 0.3) !important;
+  }
+
+  /* 亮色模式行内代码 - GitHub风格 */
+  :root.light-mode &,
+  .light-mode & {
+    background-color: rgba(
+      175,
+      184,
+      193,
+      0.2
+    ) !important; /* GitHub风格的浅灰色背景 */
+    color: #e36209 !important; /* 橙色文字，更加醒目 */
+    border: 1px solid rgba(175, 184, 193, 0.4) !important;
+  }
+}

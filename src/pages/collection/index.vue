@@ -81,7 +81,7 @@ const configStore = useConfigStore();
 const collections = ref([]);
 const totalPage = ref(0);
 const currentPage = ref(1);
-const pageSize = ref(20);
+const pageSize = ref(24);
 const loading = ref(true);
 
 const md = new MarkdownIt({
@@ -106,6 +106,7 @@ const loadCollections = async (page = 1) => {
     const res = await getUserFavorites({
       userId: configStore.userId,
       page: page,
+      limit: pageSize.value,
     });
 
     if (res.code === 200 && res.data) {

@@ -42,7 +42,7 @@
                           </n-icon>
                         </template>
                       </n-spin>
-                      <div v-html="i.data"></div>
+                      <div v-html="processContent(i.data)"></div>
                     </div>
                   </div>
                   <div
@@ -53,7 +53,7 @@
                     v-if="i.type === 'content'"
                   >
                     <div class="text">
-                      <div v-html="i.data"></div>
+                      <div v-html="processContent(i.data)"></div>
                     </div>
                   </div>
                 </div>
@@ -278,6 +278,28 @@ import { api } from "@/config/api.js";
 import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
 import TTSService from "@/services/ttsService.js";
 import { addFavorites } from "@/services/user.js";
+import hljs from "highlight.js/lib/core";
+// 按需导入常用语言包
+import javascript from "highlight.js/lib/languages/javascript";
+import python from "highlight.js/lib/languages/python";
+import java from "highlight.js/lib/languages/java";
+import json from "highlight.js/lib/languages/json";
+import bash from "highlight.js/lib/languages/bash";
+import cpp from "highlight.js/lib/languages/cpp";
+import "highlight.js/styles/github.css";
+
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("js", javascript);
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("py", python);
+hljs.registerLanguage("java", java);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("shell", bash);
+hljs.registerLanguage("sh", bash);
+hljs.registerLanguage("cpp", cpp);
+hljs.registerLanguage("c++", cpp);
+hljs.registerLanguage("c", cpp);
 
 const props = defineProps({
   userInput: String,
@@ -293,6 +315,21 @@ const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
+  breaks: true,
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return (
+          '<pre class="hljs"><code>' +
+          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+          "</code></pre>"
+        );
+      } catch (__) {}
+    }
+    return (
+      '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + "</code></pre>"
+    );
+  },
 });
 const virtualListRef = ref(null);
 const popoverShowMap = ref({});
@@ -305,6 +342,64 @@ const chatHistory = ref(
     },
   ]
 );
+
+// 处理内容，将Markdown转换为HTML并确保代码块高亮
+const processContent = (content) => {
+  // 如果内容已经是HTML格式，我们需要处理其中的代码块
+  if (/<[^>]+>/.test(content)) {
+    // 创建一个临时DOM元素来解析HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = content;
+
+    // 查找所有的pre和code标签
+    const codeBlocks = tempDiv.querySelectorAll("pre code");
+    codeBlocks.forEach((block) => {
+      const codeText = block.textContent;
+      // 尝试检测语言（如果有class属性）
+      const classes = block.className.split(" ");
+      const langClass = classes.find((c) => c.startsWith("language-"));
+      const lang = langClass ? langClass.replace("language-", "") : "";
+
+      // 使用highlight.js高亮代码
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          const highlighted = hljs.highlight(codeText, {
+            language: lang,
+            ignoreIllegals: true,
+          }).value;
+          block.innerHTML = highlighted;
+          block.classList.add("hljs");
+        } catch (__) {
+          // 如果高亮失败，至少添加hljs类以应用基本样式
+          block.classList.add("hljs");
+        }
+      } else {
+        // 尝试自动检测语言
+        try {
+          const result = hljs.highlightAuto(codeText);
+          block.innerHTML = result.value;
+          block.classList.add("hljs");
+          if (result.language) {
+            block.classList.add(`language-${result.language}`);
+          }
+        } catch (__) {
+          block.classList.add("hljs");
+        }
+      }
+    });
+
+    // 处理单独的code标签（不在pre内的）
+    const inlineCodes = tempDiv.querySelectorAll("code:not(pre code)");
+    inlineCodes.forEach((code) => {
+      code.classList.add("hljs");
+    });
+
+    return tempDiv.innerHTML;
+  }
+
+  // 如果不是HTML格式，使用MarkdownIt渲染
+  return md.render(content);
+};
 
 const role = ["assistant", "user"];
 
@@ -782,4 +877,5 @@ onMounted(() => {
 
 <style lang="less">
 @import "../styles/messagePopover.less";
+@import "@/styles/hljs.less";
 </style>

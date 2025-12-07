@@ -1,0 +1,171 @@
+/* 基础Markdown元素样式 */
+strong {
+  font-weight: 600 !important;
+  color: var(--text-color);
+}
+
+em {
+  font-style: italic !important;
+  color: var(--text-color);
+}
+
+blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--primary-color);
+  background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.1);
+  font-style: italic;
+  color: var(--text-color);
+  border-radius: 0 4px 4px 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+p {
+  margin: 0.5em 0;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
+ul,
+ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+  color: var(--text-color);
+}
+
+li {
+  margin: 0.25em 0;
+  color: var(--text-color);
+}
+
+/* 表格样式 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  color: var(--text-color);
+  background-color: var(--message-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(var(--text-color-rgb, 255, 255, 255), 0.1);
+}
+
+th {
+  font-weight: 600;
+  background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.15);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:nth-child(even) {
+  background-color: rgba(var(--text-color-rgb, 255, 255, 255), 0.05);
+}
+
+/* 代码块样式 */
+code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(var(--text-color-rgb, 255, 255, 255), 0.1);
+  border-radius: 3px;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace;
+}
+
+pre {
+  padding: 1em;
+  overflow: auto;
+  border-radius: 4px;
+  background-color: rgba(var(--text-color-rgb, 255, 255, 255), 0.1);
+}
+
+pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+/* 浅色模式适配 */
+.light-mode {
+  strong {
+    font-weight: 600 !important;
+    color: var(--text-color);
+  }
+
+  em {
+    font-style: italic !important;
+    color: var(--text-color);
+  }
+
+  blockquote {
+    border-left-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.05);
+    color: var(--text-color);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--text-color);
+  }
+
+  p {
+    color: var(--text-color);
+  }
+
+  ul,
+  ol {
+    color: var(--text-color);
+  }
+
+  li {
+    color: var(--text-color);
+  }
+
+  /* 浅色模式表格样式 */
+  table {
+    background-color: var(--message-color);
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+  }
+
+  th {
+    background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.1);
+  }
+
+  tr:nth-child(even) {
+    background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.05);
+  }
+
+  /* 浅色模式代码样式 */
+  code {
+    background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+  }
+
+  pre {
+    background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.05);
+  }
+}

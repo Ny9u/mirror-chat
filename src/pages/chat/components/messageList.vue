@@ -278,6 +278,7 @@ import { api } from "@/config/api.js";
 import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
 import TTSService from "@/services/ttsService.js";
 import { addFavorites } from "@/services/user.js";
+import { generateTitle } from "@/services/titleService.js";
 import hljs from "highlight.js/lib/core";
 // 按需导入常用语言包
 import javascript from "highlight.js/lib/languages/javascript";
@@ -720,7 +721,7 @@ const favoriteMessage = async (msg) => {
     try {
       const res = await addFavorites({
         userId: configStore.userId,
-        title: chatHistory.value[index - 1].content[0].data.substring(0, 15),
+        title: await generateTitle(content),
         conversation: JSON.stringify(content),
       });
       if (res.code === 201) {

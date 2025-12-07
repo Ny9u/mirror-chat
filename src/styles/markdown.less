@@ -2,11 +2,13 @@
 strong {
   font-weight: 600 !important;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 em {
   font-style: italic !important;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 blockquote {
@@ -17,6 +19,7 @@ blockquote {
   font-style: italic;
   color: var(--text-color);
   border-radius: 0 4px 4px 0;
+  font-family: var(--font-family);
 }
 
 h1,
@@ -28,12 +31,14 @@ h6 {
   margin: 1em 0 0.5em 0;
   font-weight: 600;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 p {
   margin: 0.5em 0;
   line-height: 1.6;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 ul,
@@ -41,11 +46,13 @@ ol {
   margin: 0.5em 0;
   padding-left: 2em;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 li {
   margin: 0.25em 0;
   color: var(--text-color);
+  font-family: var(--font-family);
 }
 
 /* 表格样式 */
@@ -57,6 +64,7 @@ table {
   background-color: var(--message-color);
   border-radius: 4px;
   overflow: hidden;
+  font-family: var(--font-family);
 }
 
 th,
@@ -64,12 +72,14 @@ td {
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid rgba(var(--text-color-rgb, 255, 255, 255), 0.1);
+  font-family: var(--font-family);
 }
 
 th {
   font-weight: 600;
   background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.15);
   border-bottom: 2px solid var(--primary-color);
+  font-family: var(--font-family);
 }
 
 tr:last-child td {
@@ -95,6 +105,7 @@ pre {
   overflow: auto;
   border-radius: 4px;
   background-color: rgba(var(--text-color-rgb, 255, 255, 255), 0.1);
+  font-family: var(--font-family);
 }
 
 pre code {
@@ -107,17 +118,20 @@ pre code {
   strong {
     font-weight: 600 !important;
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   em {
     font-style: italic !important;
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   blockquote {
     border-left-color: var(--primary-color);
     background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.05);
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   h1,
@@ -127,33 +141,40 @@ pre code {
   h5,
   h6 {
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   p {
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   ul,
   ol {
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   li {
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   /* 浅色模式表格样式 */
   table {
     background-color: var(--message-color);
+    font-family: var(--font-family);
   }
 
   th,
   td {
     border-bottom: 1px solid rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+    font-family: var(--font-family);
   }
 
   th {
     background-color: rgba(var(--primary-color-rgb, 24, 160, 88), 0.1);
+    font-family: var(--font-family);
   }
 
   tr:nth-child(even) {
@@ -167,5 +188,6 @@ pre code {
 
   pre {
     background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.05);
+    font-family: var(--font-family);
   }
 }

@@ -76,6 +76,26 @@ export const getFavoriteDetail = async (params) => {
   return res;
 };
 
+export const saveConversation = async (params) => {
+  const res = await Request(api.saveConversation, "POST", params);
+  return res;
+};
+
+export const getConversations = async (params) => {
+  const res = await Request(api.getConversations, "GET", params);
+  return res;
+};
+
+export const deleteConversation = async (params) => {
+  const res = await Request(api.deleteConversation, "POST", params);
+  return res;
+};
+
+export const getConversationDetail = async (params) => {
+  const res = await Request(api.getConversationDetail, "GET", params);
+  return res;
+};
+
 export default {
   login,
   register,
@@ -92,4 +112,8 @@ export default {
   getUserFavorites,
   removeFavorite,
   getFavoriteDetail,
+  saveConversation,
+  getConversations,
+  deleteConversation,
+  getConversationDetail,
 };

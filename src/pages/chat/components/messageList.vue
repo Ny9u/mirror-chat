@@ -243,7 +243,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, toRefs, watch, onBeforeMount, h } from "vue";
+import {
+  computed,
+  onMounted,
+  ref,
+  toRefs,
+  watch,
+  onBeforeMount,
+  onBeforeUnmount,
+  h,
+} from "vue";
 import {
   NVirtualList,
   NAvatar,
@@ -753,11 +762,44 @@ const initTyped = () => {
 
 watch(() => configStore.name, initTyped);
 
+const handleClearChatHistory = () => {
+  chatHistory.value = [
+    {
+      role: "system",
+      content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
+      key: Global.getRandomKey(),
+    },
+  ];
+  sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
+};
+
+const handleLoadChatHistory = (event) => {
+  const conversationData = event.detail.data;
+  if (conversationData) {
+    chatHistory.value = conversationData;
+    setTimeout(() => {
+      if (virtualListRef.value) {
+        virtualListRef.value.scrollTo({
+          position: "bottom",
+        });
+      }
+    }, 100);
+  }
+};
+
 onMounted(() => {
   initTyped();
   if (virtualListRef.value && chatHistory.value.length > 2) {
     scrollToBottom();
   }
+
+  window.addEventListener("clearChatHistory", handleClearChatHistory);
+  window.addEventListener("loadChatHistory", handleLoadChatHistory);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("clearChatHistory", handleClearChatHistory);
+  window.removeEventListener("loadChatHistory", handleLoadChatHistory);
 });
 </script>
 

@@ -17,7 +17,7 @@
 
         <div class="sidebar-content">
           <div class="menu-section">
-            <div class="menu-item">
+            <div class="menu-item" @click="createNewChat">
               <n-icon class="menu-icon" size="20">
                 <MessageCircle />
               </n-icon>
@@ -61,10 +61,18 @@
                   </div>
                 </div>
                 <div class="history-item-actions">
-                  <n-icon class="history-action-icon edit-icon" size="16">
+                  <n-icon
+                    class="history-action-icon edit-icon"
+                    size="16"
+                    @click.stop="handleEditTitle(item.id, item.title)"
+                  >
                     <Edit />
                   </n-icon>
-                  <n-icon class="history-action-icon delete-icon" size="16">
+                  <n-icon
+                    class="history-action-icon delete-icon"
+                    size="16"
+                    @click.stop="handleDeleteConversation(item.id)"
+                  >
                     <Trash />
                   </n-icon>
                 </div>
@@ -78,9 +86,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, h, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { NIcon } from "naive-ui";
+import { NIcon, NInput, NButton, useDialog, useMessage } from "naive-ui";
 import {
   MessageCircle,
   Bookmark,
@@ -88,60 +96,185 @@ import {
   Search,
   Edit,
   Trash,
+  AlertTriangle,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import {
+  saveConversation,
+  getConversations,
+  getConversationDetail,
+  deleteConversation,
+} from "@/services/user.js";
+import { generateTitle } from "@/services/titleService.js";
 
 const router = useRouter();
 const configStore = useConfigStore();
+const dialog = useDialog();
+const message = useMessage();
 const isVisible = ref(false);
 let hideTimeout = null;
 const activeHistoryId = ref(null);
+const historyList = ref([]);
+const editingId = ref(null);
+const editingTitle = ref("");
+const editInput = ref(null);
 
-// 模拟历史对话数据
-const historyList = ref([
-  {
-    id: 1,
-    title: "如何学习Vue.js框架",
-    updateTime: new Date(Date.now() - 1000 * 60 * 30), // 30分钟前
-  },
-  {
-    id: 2,
-    title: "JavaScript异步编程详解",
-    updateTime: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2小时前
-  },
-  {
-    id: 3,
-    title: "前端性能优化技巧",
-    updateTime: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1天前
-  },
-  {
-    id: 4,
-    title: "React Hooks使用指南",
-    updateTime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3天前
-  },
-  {
-    id: 5,
-    title: "CSS Grid布局完全指南",
-    updateTime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7), // 1周前
-  },
-]);
-
-// 格式化时间
 const formatTime = (date) => {
   return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
 };
 
-// 选择历史对话
-const selectHistory = (id) => {
-  activeHistoryId.value = id;
-  // 这里可以添加加载历史对话的逻辑
+const fetchHistoryList = async () => {
+  try {
+    const res = await getConversations({ userId: configStore.userId });
+    if (res.code === 200 && res.data) {
+      historyList.value = res.data.conversations.map((item) => ({
+        id: item.id,
+        title: item.title,
+        updateTime: new Date(item.updatedAt),
+      }));
+    } else {
+      historyList.value = [];
+      throw new Error(res.message);
+    }
+  } catch (error) {
+    historyList.value = [];
+    throw error;
+  }
 };
 
-// 导航到收藏夹页面
+const selectHistory = async (id) => {
+  if (id === activeHistoryId.value) {
+    return;
+  }
+  activeHistoryId.value = id;
+
+  const currentChatHistory =
+    JSON.parse(sessionStorage.getItem("chatHistory")) || [];
+
+  const currentConversationId =
+    currentChatHistory.length > 0 ? currentChatHistory[0].conversationId : null;
+
+  // 当前聊天记录为空时，直接加载历史对话
+  if (currentChatHistory.length <= 1) {
+    loadConversation(id);
+    return;
+  }
+
+  loadConversation(id);
+
+  (async () => {
+    try {
+      // 当前聊天记录不为空，且没有conversationId时，保存当前聊天
+      if (!currentConversationId) {
+        const title = await generateTitle(
+          currentChatHistory.slice(
+            currentChatHistory.length - 1,
+            currentChatHistory.length
+          )
+        );
+        await saveConversation({
+          userId: configStore.userId,
+          title: title,
+          content: JSON.stringify(currentChatHistory),
+        });
+      }
+      // 当前聊天记录不为空，且有conversationId时，保存当前聊天时带上conversationId
+      else {
+        const currentHistoryItem = historyList.value.find(
+          (item) => item.id === currentConversationId
+        );
+        const title = currentHistoryItem
+          ? currentHistoryItem.title
+          : await generateTitle(
+              currentChatHistory.slice(
+                currentChatHistory.length - 1,
+                currentChatHistory.length
+              )
+            );
+
+        await saveConversation({
+          userId: configStore.userId,
+          conversationId: currentConversationId,
+          title: title,
+          content: JSON.stringify(currentChatHistory),
+        });
+      }
+      // 保存完成后刷新历史列表
+      fetchHistoryList();
+    } catch (error) {
+      throw new Error("保存对话失败:", error.message);
+    }
+  })();
+};
+
+// 加载历史对话的独立函数
+const loadConversation = async (id) => {
+  try {
+    const res = await getConversationDetail({
+      conversationId: id,
+      userId: configStore.userId,
+    });
+    if (res.code === 200 && res.data) {
+      let conversationData = JSON.parse(res.data.content);
+
+      sessionStorage.setItem("chatHistory", JSON.stringify(conversationData));
+      window.dispatchEvent(
+        new CustomEvent("loadChatHistory", {
+          detail: { data: conversationData },
+        })
+      );
+    }
+  } catch (error) {
+    throw new Error("加载对话详情失败:" + error.message);
+  }
+};
+
 const navigateToCollection = () => {
   router.push("/collection");
+};
+
+const createNewChat = () => {
+  const chatHistory = JSON.parse(sessionStorage.getItem("chatHistory")) || [];
+
+  if (chatHistory.length > 1) {
+    (async () => {
+      try {
+        const currentConversationId =
+          chatHistory.length > 0 ? chatHistory[0].conversationId : null;
+
+        const saveParams = {
+          userId: configStore.userId,
+          content: JSON.stringify(chatHistory),
+        };
+
+        if (currentConversationId) {
+          const currentHistoryItem = historyList.value.find(
+            (item) => item.id === currentConversationId
+          );
+          saveParams.conversationId = currentConversationId;
+          saveParams.title = currentHistoryItem
+            ? currentHistoryItem.title
+            : await generateTitle(
+                chatHistory.slice(chatHistory.length - 1, chatHistory.length)
+              );
+        } else {
+          saveParams.title = await generateTitle(
+            chatHistory.slice(chatHistory.length - 1, chatHistory.length)
+          );
+        }
+
+        await saveConversation(saveParams);
+        fetchHistoryList();
+      } catch (error) {
+        throw new Error("创建新对话失败:" + error.message);
+      }
+    })();
+  }
+
+  activeHistoryId.value = null;
+  window.dispatchEvent(new CustomEvent("clearChatHistory"));
 };
 
 const handleMouseEnter = () => {
@@ -164,6 +297,158 @@ const handleSidebarMouseLeave = () => {
     isVisible.value = false;
   }, 300);
 };
+
+const handleEditTitle = (id, title) => {
+  editingId.value = id;
+  editingTitle.value = title;
+
+  const dialogRef = dialog.create({
+    title: "编辑对话标题",
+    content: () => {
+      return h("div", { style: "margin: 20px 0 10px;" }, [
+        h(NInput, {
+          value: editingTitle.value,
+          placeholder: "请输入对话标题",
+          ref: editInput,
+          onInput: (value) => {
+            editingTitle.value = value;
+          },
+          onKeyup: (e) => {
+            if (e.code === "Enter") {
+              if (saveTitleEdit()) {
+                dialogRef.destroy();
+              }
+            }
+          },
+        }),
+      ]);
+    },
+    positiveText: "保存",
+    negativeText: "取消",
+    onPositiveClick: () => saveTitleEdit(),
+    showIcon: false,
+    style: "height: 180px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "success",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    negativeButtonProps: {
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+  });
+};
+
+const saveTitleEdit = async () => {
+  if (!editingId.value || !editingTitle.value.trim()) {
+    return false;
+  }
+
+  try {
+    const originalItem = historyList.value.find(
+      (item) => item.id === editingId.value
+    );
+    const originalTitle = originalItem ? originalItem.title : "";
+    const newTitle = editingTitle.value.trim();
+
+    if (originalTitle === newTitle) {
+      editingId.value = null;
+      editingTitle.value = "";
+      return true;
+    }
+
+    await saveConversation({
+      userId: configStore.userId,
+      conversationId: editingId.value,
+      title: newTitle,
+    });
+
+    if (originalItem) {
+      originalItem.title = newTitle;
+    }
+
+    editingId.value = null;
+    editingTitle.value = "";
+
+    return true;
+  } catch (error) {
+    message.error("编辑失败:", error.message);
+    return false;
+  }
+};
+
+const handleDeleteConversation = (id) => {
+  const item = historyList.value.find((item) => item.id === id);
+  const title = item ? item.title : "该对话";
+
+  dialog.warning({
+    title: "确定删除对话？",
+    content: `确定要删除"${title}"吗？删除后，聊天记录将不可恢复。`,
+    positiveText: "删除",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+      ),
+    style: "height: 170px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    negativeButtonProps: {
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    onPositiveClick: async () => {
+      try {
+        deleteConversation({
+          conversationId: id,
+          userId: configStore.userId,
+        });
+
+        historyList.value = historyList.value.filter((item) => item.id !== id);
+
+        if (activeHistoryId.value === id) {
+          activeHistoryId.value = null;
+          sessionStorage.removeItem("chatHistory");
+          window.dispatchEvent(new CustomEvent("clearChatHistory"));
+        }
+      } catch (error) {
+        message.error("删除对话失败:", error.message);
+      }
+    },
+  });
+};
+
+onMounted(() => {
+  fetchHistoryList();
+  window.addEventListener("createNewChat", () => {
+    createNewChat();
+  });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("createNewChat", () => {
+    createNewChat();
+  });
+});
 </script>
 
 <style scoped lang="less">
@@ -177,10 +462,11 @@ const handleSidebarMouseLeave = () => {
 
   .trigger-zone {
     position: absolute;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%);
     left: 0;
     width: 9.375rem;
-    height: 100vh;
+    height: 90vh;
     pointer-events: auto;
   }
 
@@ -354,6 +640,15 @@ const handleSidebarMouseLeave = () => {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: color 0.2s ease;
+
+                &.edit-icon:hover {
+                  color: var(--primary-color);
+                }
+
+                &.delete-icon:hover {
+                  color: #d03050;
+                }
               }
             }
           }

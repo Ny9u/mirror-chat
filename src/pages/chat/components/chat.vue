@@ -300,7 +300,12 @@ const stopRecording = () => {
             border-radius: 10px;
           }
           :deep(.n-button:hover) {
-            background-color: rgba(24, 160, 88, 0.15);
+            background: linear-gradient(
+              135deg,
+              rgba(200, 240, 220, 0.6) 0%,
+              rgba(167, 243, 208, 0.55) 50%,
+              rgba(110, 231, 183, 0.5) 100%
+            );
             transition: all 0.3s ease;
           }
         }

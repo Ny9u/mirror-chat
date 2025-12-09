@@ -23,6 +23,10 @@ export const api = {
   getUserFavorites: "/api/v1/favorites/getUserFavorites",
   removeFavorite: "/api/v1/favorites/removeFavorite",
   getFavoriteDetail: "/api/v1/favorites/getFavoriteDetail",
+  saveConversation: "/api/v1/conversations/save",
+  getConversations: "/api/v1/conversations/list",
+  deleteConversation: "/api/v1/conversations/delete",
+  getConversationDetail: "/api/v1/conversations/details",
 };
 
 // 需要认证的API

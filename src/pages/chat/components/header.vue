@@ -8,7 +8,12 @@
             'logo-light': configStore.theme === 'light',
           }"
         ></div>
-        <div class="title">Mirror-Chat</div>
+        <div class="chat-button" @click="createNewChat">
+          <n-icon class="chat-button-icon" size="20">
+            <MessagePlus />
+          </n-icon>
+          <div class="chat-button-text">新对话</div>
+        </div>
       </div>
       <div class="model" @click="openModelSelect">
         <div>{{ configStore.model }}</div>
@@ -142,15 +147,13 @@
 <script setup>
 import {
   NAvatar,
-  NDropdown,
   NIcon,
   useMessage,
   NInfiniteScroll,
   NTooltip,
-  NSwitch,
   NButton,
 } from "naive-ui";
-import { Logout, Settings } from "@vicons/tabler";
+import { Logout, Settings, MessagePlus } from "@vicons/tabler";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
@@ -276,6 +279,10 @@ const openSettingPage = () => {
   router.push("/setting");
 };
 
+const createNewChat = () => {
+  window.dispatchEvent(new CustomEvent("createNewChat"));
+};
+
 // const getModelList = async () => {
 //   Request({
 //     headers: {
@@ -336,12 +343,49 @@ onMounted(async () => {
         margin: 0 1.07rem;
         background: url("@/assets/logo_dark.svg") no-repeat center;
       }
-      .title {
-        width: 10.13rem;
-        height: 2.14rem;
-        font-size: 1.47rem;
-        font-weight: 800;
-        color: var(--text-color);
+      .chat-button {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        margin: 0 0.8rem 0 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 20px;
+        color: var(--primary-color);
+        background-color: transparent;
+        border: 1px solid var(--primary-color);
+        font-size: 14px;
+
+        &:hover {
+          background: linear-gradient(
+            135deg,
+            rgba(200, 240, 220, 0.7) 0%,
+            rgba(167, 243, 208, 0.65) 50%,
+            rgba(110, 231, 183, 0.8) 100%
+          );
+          box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
+            0 0 10px rgba(110, 231, 183, 0.05);
+          transform: translateY(-1px);
+
+          .chat-button-icon {
+            color: black;
+          }
+
+          .chat-button-text {
+            color: black;
+          }
+        }
+
+        .chat-button-icon {
+          margin-right: 0.5rem;
+          color: var(--primary-color);
+          transition: color 0.2s ease;
+        }
+
+        .chat-button-text {
+          color: var(--primary-color);
+          transition: color 0.2s ease;
+        }
       }
     }
     .model {

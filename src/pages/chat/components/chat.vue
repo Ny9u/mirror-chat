@@ -26,22 +26,26 @@
         />
         <div class="tool">
           <div class="features">
-            <n-button ghost :color="thinkColor" @click="useDeepThinking">
-              <template #icon>
-                <n-icon>
-                  <Atom />
-                </n-icon>
-              </template>
-              深度思考
-            </n-button>
-            <n-button ghost :color="netColor" @click="useNetSearch">
-              <template #icon>
-                <n-icon>
-                  <World />
-                </n-icon>
-              </template>
-              搜索
-            </n-button>
+            <div
+              class="feature-button"
+              :class="{ active: deepThinking }"
+              @click="useDeepThinking"
+            >
+              <n-icon class="feature-button-icon" size="20">
+                <Atom />
+              </n-icon>
+              <div class="feature-button-text">深度思考</div>
+            </div>
+            <div
+              class="feature-button"
+              :class="{ active: netSearch }"
+              @click="useNetSearch"
+            >
+              <n-icon class="feature-button-icon" size="20">
+                <World />
+              </n-icon>
+              <div class="feature-button-text">搜索</div>
+            </div>
           </div>
           <div class="buttons">
             <n-button text @click="handleRecordClick" :disabled="loading">
@@ -69,16 +73,13 @@
 </template>
 
 <script setup>
-import { ref, computed, getCurrentInstance } from "vue";
+import { ref } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
 import { World, Atom, Microphone } from "@vicons/tabler";
-import { useConfigStore } from "@/stores/configStore.js";
-import { Request } from "@/utils/request.js";
 import { asrRecognize } from "@/services/asrService.js";
 
 const message = useMessage();
-const configStore = useConfigStore();
 const inputValue = ref("");
 const listRef = ref(null);
 const netSearch = ref(false);
@@ -86,20 +87,6 @@ const deepThinking = ref(false);
 const loading = ref(false);
 const recording = ref(false);
 const abortController = ref(null);
-
-const netColor = computed(() => {
-  if (netSearch.value) {
-    return "#7fe7c4";
-  }
-  return configStore.theme === "dark" ? "#ffffff" : "#000000";
-});
-
-const thinkColor = computed(() => {
-  if (deepThinking.value) {
-    return "#7fe7c4";
-  }
-  return configStore.theme === "dark" ? "#ffffff" : "#000000";
-});
 
 const handleInput = (value) => {
   inputValue.value = value;
@@ -296,6 +283,64 @@ const stopRecording = () => {
         .features {
           display: flex;
           gap: 10px;
+          .feature-button {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            margin: 0 0.8rem 0 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            color: var(--primary-color);
+            background-color: transparent;
+            font-size: 14px;
+            font-weight: 600;
+            user-select: none;
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.1);
+              transform: translateY(-1px);
+
+              .feature-button-icon {
+                color: var(--text-color);
+              }
+
+              .feature-button-text {
+                color: var(--text-color);
+              }
+            }
+
+            &.active {
+              background: linear-gradient(
+                135deg,
+                rgba(200, 240, 220, 0.7) 0%,
+                rgba(167, 243, 208, 0.65) 50%,
+                rgba(110, 231, 183, 0.8) 100%
+              );
+              box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
+                0 0 10px rgba(110, 231, 183, 0.05);
+              border: 1px solid var(--primary-color);
+
+              .feature-button-icon {
+                color: var(--text-color);
+              }
+
+              .feature-button-text {
+                color: var(--text-color);
+              }
+            }
+
+            .feature-button-icon {
+              margin-right: 0.5rem;
+              color: var(--text-color);
+              transition: color 0.2s ease;
+            }
+
+            .feature-button-text {
+              color: var(--text-color);
+              transition: color 0.2s ease;
+            }
+          }
           :deep(.n-button) {
             border-radius: 10px;
           }

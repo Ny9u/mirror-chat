@@ -42,8 +42,8 @@
           <div class="history-section">
             <div class="history-header">
               <div class="history-title">历史对话</div>
-              <n-icon class="history-icon search-icon" size="16">
-                <Search />
+              <n-icon class="history-icon" size="16">
+                <Clock />
               </n-icon>
             </div>
             <div class="history-list">
@@ -93,7 +93,7 @@ import {
   MessageCircle,
   Bookmark,
   Book,
-  Search,
+  Clock,
   Edit,
   Trash,
   AlertTriangle,
@@ -232,13 +232,17 @@ const loadConversation = async (id) => {
 };
 
 const navigateToCollection = () => {
+  if (!configStore.userId) {
+    message.warning("请先登录后再使用收藏夹");
+    return;
+  }
   router.push("/collection");
 };
 
 const createNewChat = () => {
   const chatHistory = JSON.parse(sessionStorage.getItem("chatHistory")) || [];
 
-  if (chatHistory.length > 1) {
+  if (configStore.userId && chatHistory.length > 1) {
     (async () => {
       try {
         const currentConversationId =
@@ -442,11 +446,19 @@ onMounted(() => {
   window.addEventListener("createNewChat", () => {
     createNewChat();
   });
+  window.addEventListener("clearHistoryList", () => {
+    historyList.value = [];
+    activeHistoryId.value = null;
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("createNewChat", () => {
     createNewChat();
+  });
+  window.removeEventListener("clearHistoryList", () => {
+    historyList.value = [];
+    activeHistoryId.value = null;
   });
 });
 </script>
@@ -488,6 +500,7 @@ onBeforeUnmount(() => {
       justify-content: space-between;
       align-items: center;
       padding: 1.1rem 1.4rem;
+      user-select: none;
 
       .sidebar-title {
         font-size: 1.25rem;
@@ -505,6 +518,11 @@ onBeforeUnmount(() => {
     .sidebar-content {
       flex: 1;
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
 
       .menu-section {
         padding: 1rem 0;
@@ -518,6 +536,7 @@ onBeforeUnmount(() => {
           transition: all 0.2s ease;
           border-radius: 8px;
           color: var(--text-color);
+          user-select: none;
 
           &:hover {
             background-color: rgba(0, 0, 0, 0.05);
@@ -559,6 +578,11 @@ onBeforeUnmount(() => {
           justify-content: space-between;
           align-items: center;
           padding: 1rem 0.8rem;
+          user-select: none;
+          position: sticky;
+          top: 0;
+          background-color: var(--sidebar-color);
+          z-index: 10;
 
           .history-title {
             font-size: 14px;

@@ -8,12 +8,12 @@
             'logo-light': configStore.theme === 'light',
           }"
         ></div>
-        <div class="chat-button" @click="createNewChat">
-          <n-icon class="chat-button-icon" size="20">
-            <MessagePlus />
-          </n-icon>
-          <div class="chat-button-text">新对话</div>
-        </div>
+      </div>
+      <div class="chat-button" @click="createNewChat">
+        <n-icon class="chat-button-icon" size="20">
+          <MessagePlus />
+        </n-icon>
+        <div class="chat-button-text">新对话</div>
       </div>
       <div class="model" @click="openModelSelect">
         <div>{{ configStore.model }}</div>
@@ -152,8 +152,9 @@ import {
   NInfiniteScroll,
   NTooltip,
   NButton,
+  useDialog,
 } from "naive-ui";
-import { Logout, Settings, MessagePlus } from "@vicons/tabler";
+import { Logout, Settings, MessagePlus, AlertTriangle } from "@vicons/tabler";
 import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
@@ -161,6 +162,7 @@ import { validate } from "@/services/user";
 import Global from "@/utils/global.js";
 
 const message = useMessage();
+const dialog = useDialog();
 const configStore = useConfigStore();
 const router = useRouter();
 const { proxy } = getCurrentInstance();
@@ -269,10 +271,48 @@ const clearPersonalData = () => {
 };
 
 const logout = () => {
-  localStorage.removeItem("jwtToken");
-  localStorage.removeItem("isLoggedIn");
-  sessionStorage.removeItem("skipJwtValidation");
-  clearPersonalData();
+  dialog.warning({
+    title: "确定退出登录？",
+    content: `退出登录不会丢失任何数据，你仍可以登录此账号。`,
+    positiveText: "退出登录",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+      ),
+    style: "height: 160px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
+    },
+    negativeButtonProps: {
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
+    },
+    onPositiveClick: () => {
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("isLoggedIn");
+      sessionStorage.removeItem("skipJwtValidation");
+      sessionStorage.removeItem("chatHistory");
+      clearPersonalData();
+      window.dispatchEvent(new CustomEvent("clearHistoryList"));
+      message.success("已退出登录");
+    },
+  });
 };
 
 const openSettingPage = () => {
@@ -343,49 +383,49 @@ onMounted(async () => {
         margin: 0 1.07rem;
         background: url("@/assets/logo_dark.svg") no-repeat center;
       }
-      .chat-button {
-        display: flex;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        margin: 0 0.8rem 0 0;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border-radius: 20px;
-        color: var(--primary-color);
-        background-color: transparent;
-        border: 1px solid var(--primary-color);
-        font-size: 14px;
+    }
+    .chat-button {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      margin: 0 0.8rem 0 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 20px;
+      color: var(--primary-color);
+      background-color: transparent;
+      border: 1px solid var(--primary-color);
+      font-size: 14px;
 
-        &:hover {
-          background: linear-gradient(
-            135deg,
-            rgba(200, 240, 220, 0.7) 0%,
-            rgba(167, 243, 208, 0.65) 50%,
-            rgba(110, 231, 183, 0.8) 100%
-          );
-          box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
-            0 0 10px rgba(110, 231, 183, 0.05);
-          transform: translateY(-1px);
-
-          .chat-button-icon {
-            color: black;
-          }
-
-          .chat-button-text {
-            color: black;
-          }
-        }
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(200, 240, 220, 0.7) 0%,
+          rgba(167, 243, 208, 0.65) 50%,
+          rgba(110, 231, 183, 0.8) 100%
+        );
+        box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
+          0 0 10px rgba(110, 231, 183, 0.05);
+        transform: translateY(-1px);
 
         .chat-button-icon {
-          margin-right: 0.5rem;
-          color: var(--primary-color);
-          transition: color 0.2s ease;
+          color: black;
         }
 
         .chat-button-text {
-          color: var(--primary-color);
-          transition: color 0.2s ease;
+          color: black;
         }
+      }
+
+      .chat-button-icon {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+        transition: color 0.2s ease;
+      }
+
+      .chat-button-text {
+        color: var(--primary-color);
+        transition: color 0.2s ease;
       }
     }
     .model {
@@ -615,6 +655,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    user-select: none;
     .model-question {
       width: 1.33rem;
       height: 1.33rem;
@@ -642,6 +683,7 @@ onMounted(async () => {
     transform: scale(1);
     padding: 0 1.33rem;
     box-sizing: border-box;
+    user-select: none;
     .model-name {
       width: 100%;
       font-weight: 600;
@@ -661,11 +703,7 @@ onMounted(async () => {
     }
   }
   .item.selected {
-    background: linear-gradient(
-      90deg,
-      rgba(24, 160, 88, 0.15),
-      rgba(24, 160, 88, 0.1)
-    );
+    background-color: rgba(0, 255, 119, 0.1);
     box-shadow: 0 4px 12px rgba(24, 160, 88, 0.15);
     transform: scale(1.02);
     border: 1px solid rgba(24, 160, 88, 0.2);
@@ -680,11 +718,7 @@ onMounted(async () => {
     transform: scale(1.01);
   }
   .item.selected:hover {
-    background: linear-gradient(
-      90deg,
-      rgba(24, 160, 88, 0.2),
-      rgba(24, 160, 88, 0.15)
-    );
+    background-color: rgba(0, 255, 119, 0.15);
     box-shadow: 0 6px 16px rgba(24, 160, 88, 0.2);
     transform: scale(1.03);
     border: 1px solid rgba(24, 160, 88, 0.25);

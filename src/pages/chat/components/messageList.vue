@@ -704,10 +704,12 @@ const deleteMessage = (message) => {
     contentStyle: "font-size: 1rem; margin-bottom: 0px;",
     positiveButtonProps: {
       type: "error",
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
     },
     negativeButtonProps: {
-      style: "height: 34px; border-radius: 8px; margin-top: 20px;",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
     },
     onPositiveClick: () => {
       const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
@@ -909,8 +911,7 @@ onBeforeUnmount(() => {
     justify-content: center;
     align-items: end;
     .welcome-text {
-      font-size: 2rem;
-      font-weight: bold;
+      font-size: 2.5rem;
       color: var(--text-color);
       cursor: default;
     }

@@ -436,6 +436,7 @@ onMounted(async () => {
       font-size: 1.2rem;
       font-weight: 600;
       color: var(--text-color);
+      user-select: none;
     }
     .down {
       width: 1.33rem;
@@ -503,17 +504,13 @@ onMounted(async () => {
       margin: 0 1rem;
       border-radius: 10px;
       background-color: transparent;
-      border: 1px solid #333;
-      color: #333;
     }
 
     .register-btn-light {
-      border: 1px solid #333;
       color: #333;
     }
 
     .register-btn-dark {
-      border: 1px solid #fff;
       color: #fff;
     }
   }
@@ -632,7 +629,7 @@ onMounted(async () => {
   border-radius: 1.07rem;
   position: absolute;
   top: 3.6rem;
-  left: 13.33rem;
+  left: 12rem;
   z-index: 999;
   caret-color: transparent;
   opacity: 0;

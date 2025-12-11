@@ -5,13 +5,13 @@
     </div>
     <div class="auth-card">
       <div class="title">
-        <h1>
+        <h1 ref="titleElement">
           {{
             activeTab === "login"
-              ? "登录到Mirror"
+              ? "登录到Mirror🤗"
               : activeTab === "reset"
-              ? "重置密码"
-              : "注册Mirror"
+              ? "重置密码🔑"
+              : "注册Mirror👋"
           }}
         </h1>
       </div>
@@ -277,7 +277,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   useMessage,
@@ -307,6 +307,7 @@ const loginFormRef = ref(null);
 const registerFormRef = ref(null);
 const emailVerificationFormRef = ref(null);
 const passwordResetFormRef = ref(null);
+const titleElement = ref(null);
 const activeTab = ref(route.query.action === "register" ? "register" : "login");
 const resetStep = ref(1); // 重置密码步骤：1-验证邮箱，2-设置新密码
 
@@ -368,6 +369,159 @@ const isPasswordResetFormValid = computed(() => {
 const verifyCodeButtonText = computed(() => {
   return countdown.value > 0 ? `${countdown.value}秒后重新获取` : "获取验证码";
 });
+
+const createTextFloatAnimation = () => {
+  if (!titleElement.value || !window.anime) return;
+
+  // 清除之前的动画
+  window.anime.remove(titleElement.value);
+
+  // 获取标题文本
+  const text = titleElement.value.innerText;
+
+  // 使用Array.from正确处理Unicode字符（包括表情符号）
+  const chars = Array.from(text).map((char, index) => {
+    const span = document.createElement("span");
+    span.innerText = char;
+    span.style.display = "inline-block";
+    span.style.transition = "all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    span.style.cursor = "pointer";
+    span.style.opacity = "0.9";
+    span.style.fontWeight = "bold";
+    return span;
+  });
+
+  titleElement.value.innerHTML = "";
+  chars.forEach((char) => titleElement.value.appendChild(char));
+
+  // 添加初始加载时的渐入动画
+  window.anime
+    .timeline({
+      easing: "easeOutExpo",
+      duration: 800,
+    })
+    .add({
+      targets: chars,
+      opacity: [0, 0.9],
+      translateY: [20, 0],
+      delay: window.anime.stagger(30),
+    });
+
+  // 添加呼吸效果
+  window.anime({
+    targets: titleElement.value,
+    opacity: [0.9, 1],
+    duration: 4000,
+    easing: "easeInOutSine",
+    direction: "alternate",
+    loop: true,
+  });
+
+  // 鼠标移动时记录位置和方向
+  let lastMouseX = 0;
+  let mouseDirection = "right";
+
+  // 为整个标题容器添加鼠标移动监听
+  titleElement.value.addEventListener("mousemove", function (e) {
+    const currentMouseX = e.clientX;
+    if (currentMouseX > lastMouseX) {
+      mouseDirection = "right";
+    } else if (currentMouseX < lastMouseX) {
+      mouseDirection = "left";
+    }
+    lastMouseX = currentMouseX;
+  });
+
+  // 为每个字符添加动画效果
+  chars.forEach((charElement, index) => {
+    charElement.addEventListener("mouseenter", function () {
+      // 根据鼠标移动方向设置不同的效果
+      const isMovingRight = mouseDirection === "right";
+      const color = isMovingRight ? "#18a058" : "#000000";
+
+      // 鼠标悬浮时的动画效果
+      window.anime({
+        targets: this,
+        translateY: -5,
+        scale: 1.1,
+        opacity: 1,
+        color: color,
+        duration: 300,
+        easing: "easeOutQuad",
+      });
+
+      // 添加波纹效果到相邻字符，也应用相同的颜色
+      const prevIndex = index - 1;
+      const nextIndex = index + 1;
+
+      if (prevIndex >= 0) {
+        window.anime({
+          targets: chars[prevIndex],
+          translateY: -3,
+          scale: 1.05,
+          color: color,
+          opacity: 0.9,
+          duration: 300,
+          easing: "easeOutQuad",
+        });
+      }
+
+      if (nextIndex < chars.length) {
+        window.anime({
+          targets: chars[nextIndex],
+          translateY: -3,
+          scale: 1.05,
+          color: color,
+          opacity: 0.9,
+          duration: 300,
+          easing: "easeOutQuad",
+        });
+      }
+    });
+
+    charElement.addEventListener("mouseleave", function () {
+      // 恢复原始状态
+      window.anime({
+        targets: this,
+        translateY: 0,
+        scale: 1,
+        opacity: 0.9,
+        color: "",
+        textShadow: "",
+        duration: 400,
+        easing: "easeOutExpo",
+      });
+
+      // 恢复相邻字符
+      const prevIndex = index - 1;
+      const nextIndex = index + 1;
+
+      if (prevIndex >= 0) {
+        window.anime({
+          targets: chars[prevIndex],
+          translateY: 0,
+          scale: 1,
+          color: "",
+          opacity: 0.9,
+          duration: 400,
+          easing: "easeOutExpo",
+        });
+      }
+
+      if (nextIndex < chars.length) {
+        window.anime({
+          targets: chars[nextIndex],
+          translateY: 0,
+          scale: 1,
+          color: "",
+          opacity: 0.9,
+          duration: 400,
+          easing: "easeOutExpo",
+        });
+      }
+    });
+  });
+};
 
 const loginRules = {
   email: [
@@ -732,6 +886,16 @@ const backToLogin = () => {
   resetStep.value = 1;
   activeTab.value = "login";
 };
+
+onMounted(() => {
+  createTextFloatAnimation();
+});
+
+watch(activeTab, () => {
+  setTimeout(() => {
+    createTextFloatAnimation();
+  }, 50);
+});
 </script>
 
 <style scoped lang="less">
@@ -742,6 +906,52 @@ const backToLogin = () => {
   min-height: 100vh;
   background-color: #f5f6f7;
   position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(
+        circle at 20% 30%,
+        rgba(46, 213, 115, 0.4) 0%,
+        rgba(10, 31, 15, 0) 50%
+      ),
+      radial-gradient(
+        circle at 80% 70%,
+        rgba(0, 184, 148, 0.4) 0%,
+        rgba(10, 31, 15, 0) 50%
+      ),
+      radial-gradient(
+        circle at 40% 80%,
+        rgba(72, 219, 151, 0.3) 0%,
+        rgba(10, 31, 15, 0) 50%
+      );
+    animation: floatingParticles 20s ease-in-out infinite;
+  }
+
+  @keyframes floatingParticles {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.8;
+    }
+    25% {
+      transform: translate(-10px, -5px) scale(1.05);
+      opacity: 0.9;
+    }
+    50% {
+      transform: translate(5px, -10px) scale(1);
+      opacity: 1;
+    }
+    75% {
+      transform: translate(10px, 5px) scale(1.02);
+      opacity: 0.9;
+    }
+  }
 
   .logo {
     position: absolute;
@@ -749,6 +959,8 @@ const backToLogin = () => {
     left: 1.25rem;
     width: 3rem;
     height: 3rem;
+    z-index: 10;
+    user-select: none;
 
     img {
       width: 100%;
@@ -759,17 +971,39 @@ const backToLogin = () => {
   .auth-card {
     width: 28rem;
     padding: 4rem 2.5rem 2.5rem 2.5rem;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: cardFloat 6s ease-in-out infinite;
+    position: relative;
+    z-index: 5;
+
+    @keyframes cardFloat {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    &:hover {
+      transform: translateY(-5px) scale(1.01);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
 
     .title {
       text-align: center;
-      margin-bottom: 1.875rem;
+      margin-bottom: 2.5rem;
+      user-select: none;
     }
 
     :deep(.n-form-item) {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
 
       // 隐藏表单错误提示信息
       .n-form-item-feedback-wrapper {
@@ -780,24 +1014,48 @@ const backToLogin = () => {
       .n-form-item-label .n-form-item-label__asterisk {
         display: none !important;
       }
+
+      .n-form-item-label__text {
+        color: #4a5568;
+        font-size: 0.9rem;
+        letter-spacing: 0.025em;
+      }
     }
 
     :deep(.n-button) {
-      height: 3rem;
-      border-radius: 0.5rem;
+      height: 3.2rem;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .input-group {
-      border: 1px solid #e0e0e0;
-      border-radius: 0.625rem;
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
+      border: 2px solid rgba(226, 232, 240, 0.8);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background: rgba(248, 250, 252, 0.8);
+      backdrop-filter: blur(10px);
+      user-select: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+
+      &:hover {
+        background: rgba(248, 250, 252, 0.8);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      }
 
       :deep(.n-form-item) {
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
 
         .n-form-item-label__text {
-          font-size: 1rem;
+          font-size: 0.95rem;
+          color: #4a5568;
+          font-weight: 600;
         }
 
         // 隐藏表单错误提示信息
@@ -812,19 +1070,30 @@ const backToLogin = () => {
       }
 
       .forget-password {
-        height: 1.9rem;
+        height: 2.2rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+
+        .n-button {
+          font-size: 0.9rem;
+          height: auto;
+          padding: 0.3rem 0.8rem;
+          background: none;
+        }
       }
     }
 
     .auth-footer {
       text-align: center;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(226, 232, 240, 0.5);
+      position: relative;
 
       span {
-        color: #666;
-        margin-right: 5px;
+        color: #718096;
+        margin-right: 8px;
+        font-weight: 500;
       }
     }
   }

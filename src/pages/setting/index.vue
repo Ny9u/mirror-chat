@@ -28,6 +28,9 @@
             <n-icon :component="User" size="1.35rem" />
             <span>个人资料</span>
           </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
+          </div>
         </div>
 
         <div class="setting-item" @click="showPasswordModal">
@@ -35,12 +38,18 @@
             <n-icon :component="Key" size="1.35rem" />
             <span>密码管理</span>
           </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
+          </div>
         </div>
 
         <div class="setting-item" @click="openDeleteAccountDialog">
           <div class="setting-label">
             <n-icon :component="Trash" size="1.35rem" />
             <span>删除账号</span>
+          </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
           </div>
         </div>
       </div>
@@ -83,12 +92,18 @@
             <n-icon :component="InfoCircle" size="1.35rem" />
             <span>关于我们</span>
           </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
+          </div>
         </div>
 
         <div class="setting-item" @click="logout">
           <div class="setting-label">
             <n-icon :component="Logout" size="1.35rem" />
             <span>退出登录</span>
+          </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
           </div>
         </div>
       </div>
@@ -739,18 +754,22 @@ const previewVoice = async (voice) => {
           display: flex;
           align-items: center;
           color: var(--text-color);
+          opacity: 0.7;
+
           .current-voice {
             font-size: 0.9rem;
             color: var(--text-color);
             opacity: 0.7;
             margin-right: 0.5rem;
           }
+
           &.voice-selector {
             border: 1px solid #00000014;
             border-radius: 12px;
             padding: 0.5rem 0.75rem;
             background-color: transparent;
             cursor: pointer;
+            opacity: 1;
           }
         }
       }

@@ -142,7 +142,7 @@
                     trigger="click"
                     raw
                     :show-arrow="false"
-                    class="message-actions-popover"
+                    class="actions-popover"
                     v-model:show="popoverShowMap[item.key]"
                   >
                     <template #trigger>

@@ -5,8 +5,18 @@ import { validate } from "@/services/user";
 const routes = [
   {
     path: "/",
+    name: "Home",
+    component: () => import("@/pages/chat/index.vue"),
+  },
+  {
+    path: "/chat/:id?",
     name: "Chat",
     component: () => import("@/pages/chat/index.vue"),
+  },
+  {
+    path: "/chat/history",
+    name: "ChatHistory",
+    component: () => import("@/pages/chat/components/history.vue"),
   },
   {
     path: "/auth",
@@ -42,7 +52,13 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const requiresAuth = ["Chat", "Setting", "Profile", "Collection"];
+  const requiresAuth = [
+    "Chat",
+    "ChatHistory",
+    "Setting",
+    "Profile",
+    "Collection",
+  ];
 
   if (requiresAuth.includes(to.name)) {
     const configStore = useConfigStore();
@@ -71,7 +87,7 @@ router.beforeEach(async (to, from, next) => {
           next("/auth");
         }
       } else {
-        if (to.name !== "Chat") {
+        if (to.name !== "Chat" && to.name !== "Home") {
           next("/auth");
         } else {
           next();

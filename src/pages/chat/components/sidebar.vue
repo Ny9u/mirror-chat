@@ -42,7 +42,7 @@
           <div class="history-section">
             <div class="history-header">
               <div class="history-title">历史对话</div>
-              <n-icon class="history-icon" size="16">
+              <n-icon class="history-icon" size="16" @click="navigateToHistory">
                 <Clock />
               </n-icon>
             </div>
@@ -86,9 +86,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h, onBeforeUnmount } from "vue";
-import { useRouter } from "vue-router";
-import { NIcon, NInput, NButton, useDialog, useMessage } from "naive-ui";
+import { ref, onMounted, h, onBeforeUnmount } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { NIcon, NInput, useDialog, useMessage } from "naive-ui";
 import {
   MessageCircle,
   Bookmark,
@@ -110,6 +110,7 @@ import {
 import { generateTitle } from "@/services/titleService.js";
 
 const router = useRouter();
+const route = useRoute();
 const configStore = useConfigStore();
 const dialog = useDialog();
 const message = useMessage();
@@ -237,6 +238,10 @@ const navigateToCollection = () => {
     return;
   }
   router.push("/collection");
+};
+
+const navigateToHistory = () => {
+  router.push("/chat/history");
 };
 
 const createNewChat = () => {
@@ -442,7 +447,12 @@ const handleDeleteConversation = (id) => {
 };
 
 onMounted(() => {
+  const conversationId = route.params.id;
   fetchHistoryList();
+  if (conversationId) {
+    activeHistoryId.value = conversationId;
+    loadConversation(conversationId);
+  }
   window.addEventListener("createNewChat", () => {
     createNewChat();
   });

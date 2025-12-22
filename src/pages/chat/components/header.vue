@@ -183,6 +183,18 @@ const closeSettings = () => {
   showSettings.value = false;
 };
 const selectModel = (model) => {
+  const modelConfig = Models.find((m) => m.key === model);
+
+  if (modelConfig && modelConfig.expiredTime) {
+    const expiredDate = new Date(modelConfig.expiredTime);
+    const currentDate = new Date();
+
+    if (currentDate >= expiredDate) {
+      message.warning("暂不可用,请选择其他模型");
+      return;
+    }
+  }
+
   configStore.setModel(model);
   showSelect.value = false;
 };

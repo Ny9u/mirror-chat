@@ -287,6 +287,9 @@ const createNewChat = () => {
 };
 
 const handleMouseEnter = () => {
+  if (!configStore.userId) {
+    return;
+  }
   if (hideTimeout) {
     clearTimeout(hideTimeout);
     hideTimeout = null;
@@ -302,6 +305,9 @@ const handleSidebarMouseEnter = () => {
 };
 
 const handleSidebarMouseLeave = () => {
+  if (!configStore.userId) {
+    return;
+  }
   hideTimeout = setTimeout(() => {
     isVisible.value = false;
   }, 300);
@@ -629,6 +635,7 @@ onBeforeUnmount(() => {
             justify-content: space-between;
             align-items: center;
             padding: 0.625rem;
+            margin: 0.125rem 0;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.2s;

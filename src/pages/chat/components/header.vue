@@ -365,6 +365,51 @@ onMounted(async () => {
   --hover-color: rgba(24, 160, 88, 0.1);
 }
 
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  8% {
+    background-position: 90% 10%;
+  }
+  16% {
+    background-position: 45% 90%;
+  }
+  24% {
+    background-position: 85% 25%;
+  }
+  32% {
+    background-position: 15% 75%;
+  }
+  40% {
+    background-position: 95% 60%;
+  }
+  48% {
+    background-position: 55% 15%;
+  }
+  56% {
+    background-position: 25% 85%;
+  }
+  64% {
+    background-position: 75% 35%;
+  }
+  72% {
+    background-position: 10% 45%;
+  }
+  80% {
+    background-position: 65% 80%;
+  }
+  88% {
+    background-position: 40% 20%;
+  }
+  96% {
+    background-position: 85% 70%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .header {
   width: 100vw;
   height: 3.6rem;
@@ -416,6 +461,8 @@ onMounted(async () => {
           rgba(167, 243, 208, 0.65) 50%,
           rgba(110, 231, 183, 0.8) 100%
         );
+        background-size: 300% 300%;
+        animation: gradientFlow 10s ease-in-out infinite;
         box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
           0 0 10px rgba(110, 231, 183, 0.05);
         transform: translateY(-1px);
@@ -516,6 +563,9 @@ onMounted(async () => {
       margin: 0 1rem;
       border-radius: 10px;
       background-color: transparent;
+      &:hover {
+        color: var(--primary-color);
+      }
     }
 
     .register-btn-light {

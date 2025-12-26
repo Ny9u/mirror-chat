@@ -57,6 +57,7 @@
           <n-form-item>
             <n-button
               type="primary"
+              style="font-size: 16px"
               @click="handleLogin"
               :loading="loginLoading"
               :disabled="!isLoginFormValid"
@@ -144,6 +145,7 @@
         <n-form-item>
           <n-button
             type="primary"
+            style="font-size: 16px"
             @click="handleRegister"
             :loading="registerLoading"
             :disabled="!isRegisterFormValid"
@@ -207,6 +209,7 @@
           <n-form-item>
             <n-button
               type="primary"
+              style="font-size: 16px"
               @click="handleVerifyEmail"
               :loading="resetLoading"
               :disabled="!isEmailVerificationFormValid"

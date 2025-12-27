@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h, onBeforeUnmount } from "vue";
+import { ref, onMounted, h, onBeforeUnmount, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { NIcon, NInput, useDialog, useMessage } from "naive-ui";
 import {
@@ -454,11 +454,19 @@ const handleDeleteConversation = (id) => {
 
 onMounted(() => {
   const conversationId = route.params.id;
-  fetchHistoryList();
   if (conversationId) {
     activeHistoryId.value = conversationId;
     loadConversation(conversationId);
   }
+  watch(
+    () => configStore.userId,
+    (newUserId) => {
+      if (newUserId) {
+        fetchHistoryList();
+      }
+    },
+    { immediate: true }
+  );
   window.addEventListener("createNewChat", () => {
     createNewChat();
   });

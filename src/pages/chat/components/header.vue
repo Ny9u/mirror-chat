@@ -16,7 +16,7 @@
         <div class="chat-button-text">新对话</div>
       </div>
       <div class="model" @click="openModelSelect">
-        <div>{{ configStore.model }}</div>
+        <div>{{ Models.find((m) => m.key === configStore.model).name }}</div>
         <div
           :class="{
             down: configStore.theme === 'dark',

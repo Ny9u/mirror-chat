@@ -15,6 +15,8 @@
             :style="{
               flexDirection: item.role === 'assistant' ? 'row' : 'row-reverse',
             }"
+            @mouseenter="handleMouseEnter(item.key)"
+            @mouseleave="handleMouseLeave(item.key)"
           >
             <n-avatar
               round
@@ -22,15 +24,26 @@
               class="avatar"
               v-if="item.role === 'assistant'"
             />
-            <div class="message">
+            <div
+              class="message"
+              :class="{ 'message-user': item.role !== 'assistant' }"
+            >
               <div class="title" v-if="item.role === 'assistant'">
                 Mirror
                 <div class="time">{{ item.time || "" }}</div>
               </div>
-              <div class="content">
+              <div
+                class="content"
+                :style="{
+                  width: editingMessageKey === item.key ? '800px' : '100%',
+                }"
+              >
                 <div v-for="(i, index) in item.content" :key="index">
-                  <div class="think-container" v-if="i.type === 'thinking'">
-                    <div class="think">
+                  <div class="think-wrapper" v-if="i.type === 'thinking'">
+                    <div
+                      class="think-title-bar"
+                      @click="toggleThinking(item.key)"
+                    >
                       <n-spin
                         size="small"
                         description="思考中"
@@ -42,7 +55,27 @@
                           </n-icon>
                         </template>
                       </n-spin>
-                      <div v-html="processContent(i.data)"></div>
+                      <span
+                        v-if="item.isFinishThinking"
+                        class="think-title-text"
+                      >
+                        思考过程
+                      </span>
+                      <n-icon
+                        class="toggle-icon"
+                        :class="{ collapsed: item.thinkingCollapsed }"
+                      >
+                        <ChevronDown />
+                      </n-icon>
+                    </div>
+                    <div
+                      class="think-content"
+                      :class="{ collapsed: item.thinkingCollapsed }"
+                    >
+                      <div
+                        class="think-content-inner"
+                        v-html="processContent(i.data)"
+                      ></div>
                     </div>
                   </div>
                   <div
@@ -50,14 +83,45 @@
                     :style="{
                       maxWidth: item.role === 'assistant' ? '63vw' : '560px',
                     }"
-                    v-if="i.type === 'content'"
+                    v-if="
+                      i.type === 'content' && editingMessageKey !== item.key
+                    "
                   >
                     <div class="text">
                       <div v-html="processContent(i.data)"></div>
                     </div>
                   </div>
                 </div>
-                <div class="tool" v-if="item.role === 'assistant'">
+                <!-- 编辑时显示独立的编辑器 -->
+                <div
+                  v-if="editingMessageKey === item.key"
+                  class="edit-container-full"
+                >
+                  <div class="edit-icon-btn" @click="cancelEdit">
+                    <n-icon size="26">
+                      <X />
+                    </n-icon>
+                  </div>
+                  <n-input
+                    ref="editInputRef"
+                    v-model:value="editContent"
+                    size="large"
+                    type="textarea"
+                    placeholder="请输入您的问题"
+                    rows="1"
+                    class="edit-input"
+                  />
+                  <div class="edit-icon-btn" @click="saveEdit(item)">
+                    <n-icon size="26">
+                      <Send />
+                    </n-icon>
+                  </div>
+                </div>
+                <div
+                  class="tool"
+                  v-if="item.role === 'assistant'"
+                  :class="{ 'tool-hidden': !hoveredMessageKey[item.key] }"
+                >
                   <n-popover
                     placement="top"
                     trigger="hover"
@@ -230,6 +294,155 @@
                     </div>
                   </n-popover>
                 </div>
+                <div
+                  v-else-if="editingMessageKey !== item.key"
+                  class="tool tool-user"
+                  :class="{ 'tool-hidden': !hoveredMessageKey[item.key] }"
+                >
+                  <n-popover
+                    v-if="showEditIcon(item)"
+                    placement="top"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
+                      <n-button text size="large" @click="editMessage(item)">
+                        <template #icon>
+                          <n-icon><Edit /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      编辑
+                    </div>
+                  </n-popover>
+                  <n-popover
+                    placement="top"
+                    trigger="hover"
+                    raw
+                    :show-arrow="false"
+                  >
+                    <template #trigger>
+                      <n-button text size="large" @click="copyMessage(item)">
+                        <template #icon>
+                          <n-icon><Copy /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    <div
+                      :style="{
+                        backgroundColor: '#000000',
+                        color: '#f1f2f8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '14px',
+                      }"
+                    >
+                      复制
+                    </div>
+                  </n-popover>
+                  <n-popover
+                    placement="bottom"
+                    trigger="click"
+                    raw
+                    :show-arrow="false"
+                    class="actions-popover"
+                    v-model:show="popoverShowMap[item.key]"
+                  >
+                    <template #trigger>
+                      <n-popover
+                        placement="top"
+                        trigger="hover"
+                        raw
+                        :show-arrow="false"
+                      >
+                        <template #trigger>
+                          <n-button text size="large">
+                            <template #icon>
+                              <n-icon><Dots /></n-icon>
+                            </template>
+                          </n-button>
+                        </template>
+                        <div
+                          :style="{
+                            backgroundColor: '#000000',
+                            color: '#f1f2f8',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            fontSize: '14px',
+                          }"
+                        >
+                          更多
+                        </div>
+                      </n-popover>
+                    </template>
+                    <div
+                      :style="{
+                        padding: '8px 8px',
+                      }"
+                    >
+                      <div
+                        style="
+                          padding: 8px 12px;
+                          border-radius: 10px;
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          transition: background-color 0.2s ease;
+                        "
+                        @click="favoriteMessage(item)"
+                        @mouseover="
+                          $event.currentTarget.style.backgroundColor =
+                            'rgba(0, 0, 0, 0.1)'
+                        "
+                        @mouseout="
+                          $event.currentTarget.style.backgroundColor =
+                            'transparent'
+                        "
+                      >
+                        <n-icon size="18">
+                          <Bookmark />
+                        </n-icon>
+                        <span>收藏</span>
+                      </div>
+                      <div
+                        style="
+                          padding: 8px 12px;
+                          border-radius: 10px;
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          transition: background-color 0.2s ease;
+                        "
+                        @click="deleteMessage(item)"
+                        @mouseover="
+                          $event.currentTarget.style.backgroundColor =
+                            'rgba(0, 0, 0, 0.1)'
+                        "
+                        @mouseout="
+                          $event.currentTarget.style.backgroundColor =
+                            'transparent'
+                        "
+                      >
+                        <n-icon size="18" color="rgba(249,57,32,1)">
+                          <Trash />
+                        </n-icon>
+                        <span style="color: rgba(249, 57, 32, 1)">删除</span>
+                      </div>
+                    </div>
+                  </n-popover>
+                </div>
               </div>
             </div>
           </div>
@@ -244,12 +457,11 @@
 
 <script setup>
 import {
-  computed,
+  nextTick,
   onMounted,
   ref,
   toRefs,
   watch,
-  onBeforeMount,
   onBeforeUnmount,
   h,
 } from "vue";
@@ -264,6 +476,7 @@ import {
   useDialog,
   NList,
   NListItem,
+  NInput,
 } from "naive-ui";
 import {
   Loader,
@@ -274,10 +487,13 @@ import {
   Volume,
   Dots,
   Bookmark,
+  Edit,
+  X,
+  Send,
+  ChevronDown,
 } from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
-import userUrl from "@/assets/avatar.svg";
 import OpenAI from "openai";
 import Global from "@/utils/global.js";
 import MarkdownIt from "markdown-it";
@@ -285,6 +501,7 @@ import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { api } from "@/config/api.js";
 import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
+import Models from "@/config/models.js";
 import TTSService from "@/services/ttsService.js";
 import { addFavorites } from "@/services/user.js";
 import { generateTitle } from "@/services/titleService.js";
@@ -343,6 +560,10 @@ const md = new MarkdownIt({
 });
 const virtualListRef = ref(null);
 const popoverShowMap = ref({});
+const hoveredMessageKey = ref({});
+const editingMessageKey = ref(null);
+const editContent = ref("");
+const editInputRef = ref(null);
 const chatHistory = ref(
   JSON.parse(sessionStorage.getItem("chatHistory")) || [
     {
@@ -422,15 +643,19 @@ const openai = new OpenAI({
 
 // 发送消息
 const sendMessage = (userInput) => {
+  const currentModel = Models.find((m) => m.key === configStore.model);
+
   if (netSearch.value) {
-    if (!configStore.model.includes("qwq") || /\d/.test(configStore.model)) {
+    if (!currentModel || !currentModel.netSearch) {
       message.error("当前模型不支持联网搜索");
       return false;
     }
   }
-  if (deepThinking.value && !configStore.model.includes("qwq")) {
-    message.error("当前模型不支持深度思考");
-    return false;
+  if (deepThinking.value) {
+    if (!currentModel || !currentModel.thinkingMode) {
+      message.error("当前模型不支持深度思考");
+      return false;
+    }
   }
   chatHistory.value.push({
     role: "user",
@@ -456,9 +681,11 @@ const fetchAI = async (signal) => {
   if (deepThinking.value) {
     let reasoningContent = "";
     let answerContent = "";
+    let hasStartedAnswer = false;
     const stream = await openai.chat.completions.create({
       model: configStore.model,
       messages: Global.sortThinkingMessages(chatHistory.value),
+      enable_thinking: Global.isEnableThinkingMode(configStore.model),
       stream: true,
       enable_search: netSearch.value,
       stream_options: {
@@ -476,15 +703,14 @@ const fetchAI = async (signal) => {
       ],
       key: Global.getRandomKey(),
       isFinishThinking: false,
+      thinkingCollapsed: false,
       time: formatChineseTime(new Date()),
     });
     let lastScrollTime = 0;
     const scrollTime = 500;
-    let shouldAbort = false;
     for await (const chunk of stream) {
       if (signal.aborted) {
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
-        shouldAbort = true;
         break;
       }
       if (!chunk.choices?.length) {
@@ -508,13 +734,18 @@ const fetchAI = async (signal) => {
       } else if (delta.content) {
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
         answerContent += delta.content;
+
+        if (!hasStartedAnswer) {
+          chatHistory.value[chatHistory.value.length - 1].content.push({
+            type: "content",
+            data: "",
+          });
+          hasStartedAnswer = true;
+        }
+
+        chatHistory.value[chatHistory.value.length - 1].content[1].data =
+          md.render(answerContent);
       }
-    }
-    if (!shouldAbort) {
-      chatHistory.value[chatHistory.value.length - 1].content.push({
-        type: "content",
-        data: md.render(answerContent),
-      });
     }
     scrollToBottom();
     sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
@@ -639,6 +870,63 @@ const regenerateResponse = (item) => {
   }
 };
 
+const showEditIcon = (item) => {
+  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+    if (chatHistory.value[i].role === "user") {
+      return chatHistory.value[i].key === item.key;
+    }
+  }
+  return false;
+};
+
+const editMessage = (item) => {
+  editingMessageKey.value = item.key;
+  editContent.value = item.content[0].data;
+
+  nextTick(() => {
+    if (editInputRef.value) {
+      editInputRef.value.focus();
+    }
+  });
+};
+
+const cancelEdit = () => {
+  editingMessageKey.value = null;
+  editContent.value = "";
+};
+
+const toggleThinking = (key) => {
+  const message = chatHistory.value.find((msg) => msg.key === key);
+  if (message) {
+    message.thinkingCollapsed = !message.thinkingCollapsed;
+  }
+};
+
+const saveEdit = (item) => {
+  if (!editContent.value.trim()) {
+    message.warning("请输入内容");
+    return;
+  }
+
+  const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
+  if (index === -1) return;
+  chatHistory.value = chatHistory.value.slice(0, index);
+
+  sendMessage(editContent.value);
+  fetchAI(new AbortController().signal);
+
+  editingMessageKey.value = null;
+  editContent.value = "";
+};
+
+const handleMouseEnter = (key) => {
+  hoveredMessageKey.value[key] = true;
+};
+
+const handleMouseLeave = (key) => {
+  hoveredMessageKey.value[key] = false;
+};
+
 const playVoice = async (item) => {
   try {
     // 提取消息文本内容
@@ -712,7 +1000,9 @@ const deleteMessage = (message) => {
         "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
     },
     onPositiveClick: () => {
-      const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
+      const index = chatHistory.value.findIndex(
+        (msg) => msg.key === message.key
+      );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
         sessionStorage.setItem(
@@ -728,7 +1018,18 @@ const favoriteMessage = async (msg) => {
   const index = chatHistory.value.findIndex((item) => item.key === msg.key);
   popoverShowMap.value[msg.key] = false;
   if (index !== -1) {
-    let content = chatHistory.value.slice(index - 1, index + 1);
+    let content = [];
+
+    if (msg.role === "assistant") {
+      if (index > 0) {
+        content = chatHistory.value.slice(index - 1, index + 1);
+      }
+    } else if (msg.role === "user") {
+      if (index < chatHistory.value.length - 1) {
+        content = chatHistory.value.slice(index, index + 2);
+      }
+    }
+
     try {
       const res = await addFavorites({
         userId: configStore.userId,
@@ -855,66 +1156,212 @@ onBeforeUnmount(() => {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.25rem;
-        .text-container {
-          max-width: 37.33rem;
-          background: var(--message-color) no-repeat center;
-          border-radius: 0.53rem;
-          .text {
-            padding: 0.6rem 1.33rem;
-            font-size: 1.07rem;
-            caret-color: transparent;
-          }
+      }
+      &.message-user .content {
+        align-items: flex-end;
+      }
+      .text-container {
+        max-width: 37.33rem;
+        display: flex;
+        background: var(--message-color) no-repeat center;
+        border-radius: 0.53rem;
+        .text {
+          width: 100%;
+          padding: 0.6rem 1.33rem;
+          font-size: 1.07rem;
+          caret-color: transparent;
         }
-        .think-container {
-          max-width: 60rem;
-          .think {
-            padding: 0.07rem 1.33rem;
-            font-size: 0.87rem;
-            color: var(--text-color);
-            background: var(--think-color) no-repeat center;
-            border-left: 0.2rem solid var(--text-color);
-          }
-        }
-        .tool {
+      }
+      .edit-container-full {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.33rem;
+
+        .edit-icon-btn {
           display: flex;
-          padding: 0.5rem 0;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: var(--primary-color);
+          opacity: 0.8;
+
+          &:hover {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+        }
+
+        .edit-input {
+          flex: 1;
+        }
+
+        ::v-deep(.n-input__textarea-el) {
+          background-color: transparent;
+          color: var(--text-color);
+          border: none;
+          resize: none;
+          font-size: 1.07rem;
+          line-height: 1.6;
+        }
+
+        ::v-deep(.n-input) {
+          background-color: transparent;
+          border: 2px solid var(--primary-color);
+          border-radius: 10px;
+        }
+
+        ::v-deep(.n-input__border) {
+          display: none;
+        }
+
+        ::v-deep(.n-input__state-border) {
+          display: none;
+        }
+      }
+      .think-wrapper {
+        width: 100%;
+        max-width: 60rem;
+        display: flex;
+        flex-direction: column;
+
+        .think-title-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1.33rem;
+          cursor: pointer;
+          user-select: none;
+          border-radius: 10px;
+          transition: background-color 0.2s ease;
+          width: fit-content;
+
+          &:hover {
+            background-color: rgba(140, 141, 155, 0.1);
+          }
+
+          :deep(.n-spin-description) {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #8c8d9b;
+          }
+
+          .think-title-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #8c8d9b;
+          }
+
+          .toggle-icon {
+            color: #8c8d9b;
+            transition: transform 0.3s ease;
+
+            &.collapsed {
+              transform: rotate(-90deg);
+            }
+          }
+        }
+
+        .think-content {
+          overflow: hidden;
+          opacity: 1;
+          transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+          &.collapsed {
+            max-height: 0;
+            opacity: 0;
+          }
+
+          .think-content-inner {
+            padding: 0.5rem 1.33rem 0.07rem 1.33rem;
+            font-size: 0.87rem;
+            color: #8c8d9b;
+            border-left: 0.2rem solid var(--primary-color);
+            transform: translateY(0);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+            :deep(p),
+            :deep(h1),
+            :deep(h2),
+            :deep(h3),
+            :deep(h4),
+            :deep(h5),
+            :deep(h6),
+            :deep(span),
+            :deep(div),
+            :deep(ul),
+            :deep(ol),
+            :deep(li) {
+              color: #8c8d9b;
+            }
+
+            :deep(a) {
+              color: #8c8d9b;
+              opacity: 0.8;
+
+              &:hover {
+                opacity: 1;
+              }
+            }
+          }
+
+          &.collapsed .think-content-inner {
+            transform: translateY(-10px);
+          }
+        }
+      }
+      .tool {
+        width: 100%;
+        display: flex;
+        padding-top: 0.5rem;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        &.tool-hidden {
+          visibility: hidden;
+          opacity: 0;
+        }
+        &.tool-user {
+          justify-content: flex-end;
         }
       }
     }
-
-    ::v-deep(.n-button--text-type) {
-      background-color: transparent !important;
-      color: var(--text-color) !important;
-      opacity: 0.7;
-      transition: opacity 0.2s ease-in-out;
-    }
-
-    ::v-deep(.n-scrollbar-rail) {
-      display: none;
-    }
-    ::v-deep(.n-avatar) {
-      background-color: transparent;
-    }
-    ::v-deep(.n-spin-body) {
-      flex-direction: row;
-      font-size: 1.07rem;
-      gap: 0.67rem;
-    }
-    ::v-deep(.n-spin-description) {
-      margin-top: 0rem;
-    }
   }
-  .welcome {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: end;
-    .welcome-text {
-      font-size: 2.5rem;
-      color: var(--text-color);
-      cursor: default;
-    }
+
+  ::v-deep(.n-button--text-type) {
+    background-color: transparent !important;
+    color: var(--text-color) !important;
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  ::v-deep(.n-scrollbar-rail) {
+    display: none;
+  }
+  ::v-deep(.n-avatar) {
+    background-color: transparent;
+  }
+  ::v-deep(.n-spin-body) {
+    flex-direction: row;
+    font-size: 1.07rem;
+    gap: 0.67rem;
+  }
+  ::v-deep(.n-spin-description) {
+    margin-top: 0rem;
+  }
+}
+.welcome {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  .welcome-text {
+    font-size: 2.5rem;
+    color: var(--text-color);
+    cursor: default;
   }
 }
 </style>

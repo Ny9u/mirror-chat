@@ -1,4 +1,6 @@
 import _ from "lodash";
+import Models from "@/config/models.js";
+
 const getRandomKey = () => {
   return Math.random().toString(36).substring(2, 15);
 };
@@ -26,10 +28,16 @@ const getInitials = (name) => {
   return initials;
 };
 
+const isEnableThinkingMode = (model) => {
+  const config = Models.find((m) => m.key === model);
+  return config?.thinkingMode || false;
+};
+
 let Global = {
   getRandomKey,
   sortThinkingMessages,
   getInitials,
+  isEnableThinkingMode,
 };
 
 export default Global;

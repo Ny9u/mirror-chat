@@ -6,43 +6,43 @@ const routes = [
   {
     path: "/",
     name: "Home",
-    component: () => import("@/pages/chat/index.vue"),
+    component: () => import("@/views/chat/index.vue"),
   },
   {
     path: "/chat/:id?",
     name: "Chat",
-    component: () => import("@/pages/chat/index.vue"),
+    component: () => import("@/views/chat/index.vue"),
   },
   {
     path: "/chat/history",
     name: "ChatHistory",
-    component: () => import("@/pages/chat/components/history.vue"),
+    component: () => import("@/views/chat/components/history.vue"),
   },
   {
     path: "/auth",
     name: "Auth",
-    component: () => import("@/pages/auth/index.vue"),
+    component: () => import("@/views/auth/index.vue"),
   },
   {
     path: "/setting",
     name: "Setting",
-    component: () => import("@/pages/setting/index.vue"),
+    component: () => import("@/views/setting/index.vue"),
   },
   {
     path: "/setting/profile",
     name: "Profile",
-    component: () => import("@/pages/setting/components/profile.vue"),
+    component: () => import("@/views/setting/components/profile.vue"),
   },
   {
     path: "/collection",
     name: "Collection",
-    component: () => import("@/pages/collection/index.vue"),
+    component: () => import("@/views/collection/index.vue"),
   },
   {
     path: "/collection/:id",
     name: "CollectionDetail",
     component: () =>
-      import("@/pages/collection/components/collectionDetail.vue"),
+      import("@/views/collection/components/collectionDetail.vue"),
   },
 ];
 

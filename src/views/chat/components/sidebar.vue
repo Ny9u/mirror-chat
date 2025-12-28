@@ -29,7 +29,7 @@
               </n-icon>
               <div class="menu-text">收藏夹</div>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" @click="navigateToKnowledge">
               <n-icon class="menu-icon" size="20">
                 <Book />
               </n-icon>
@@ -238,6 +238,14 @@ const navigateToCollection = () => {
     return;
   }
   router.push("/collection");
+};
+
+const navigateToKnowledge = () => {
+  if (!configStore.userId) {
+    message.warning("请先登录后再使用知识库");
+    return;
+  }
+  router.push("/knowledge");
 };
 
 const navigateToHistory = () => {

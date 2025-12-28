@@ -96,6 +96,11 @@ export const getConversationDetail = async (params) => {
   return res;
 };
 
+export const uploadKnowledge = async (knowledgeData) => {
+  const res = await Request(api.uploadKnowledge, "POST", knowledgeData);
+  return res;
+};
+
 export default {
   login,
   register,

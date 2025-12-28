@@ -44,6 +44,16 @@ const routes = [
     component: () =>
       import("@/views/collection/components/collectionDetail.vue"),
   },
+  {
+    path: "/knowledge",
+    name: "Knowledge",
+    component: () => import("@/views/knowledge/index.vue"),
+  },
+  {
+    path: "/knowledge/:id",
+    name: "KnowledgeDetail",
+    component: () => import("@/views/knowledge/components/knowledgeDetail.vue"),
+  },
 ];
 
 const router = createRouter({
@@ -58,6 +68,8 @@ router.beforeEach(async (to, from, next) => {
     "Setting",
     "Profile",
     "Collection",
+    "Knowledge",
+    "KnowledgeDetail",
   ];
 
   if (requiresAuth.includes(to.name)) {

@@ -28,6 +28,9 @@ export const api = {
   deleteConversation: "/api/v1/conversations/delete",
   getConversationDetail: "/api/v1/conversations/details",
   uploadKnowledge: "/api/v1/knowledge/upload",
+  getKnowledgeList: "/api/v1/knowledge/list",
+  deleteKnowledge: "/api/v1/knowledge/delete",
+  getKnowledgeDetail: "/api/v1/knowledge/detail",
 };
 
 // 需要认证的API

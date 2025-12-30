@@ -101,24 +101,17 @@ export const uploadKnowledge = async (knowledgeData) => {
   return res;
 };
 
-export default {
-  login,
-  register,
-  validate,
-  refresh,
-  uploadAvatar,
-  updateInfo,
-  updatePassword,
-  deleteAccount,
-  sendVerificationCode,
-  verifyCode,
-  resetPassword,
-  addFavorites,
-  getUserFavorites,
-  removeFavorite,
-  getFavoriteDetail,
-  saveConversation,
-  getConversations,
-  deleteConversation,
-  getConversationDetail,
+export const getKnowledgeList = async (params) => {
+  const res = await Request(api.getKnowledgeList, "POST", params);
+  return res;
+};
+
+export const deleteKnowledge = async (params) => {
+  const res = await Request(api.deleteKnowledge, "POST", params);
+  return res;
+};
+
+export const getKnowledgeDetail = async (params) => {
+  const res = await Request(api.getKnowledgeDetail, "POST", params);
+  return res;
 };

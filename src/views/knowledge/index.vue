@@ -20,7 +20,7 @@
     </n-popover>
     <div class="knowledge-header">
       <h2>知识库</h2>
-      <div class="knowledge-stats">共 {{ totalPage }} 个知识库</div>
+      <div class="knowledge-stats">共 {{ totalPage }} 个文件</div>
     </div>
 
     <div class="knowledge-grid" v-if="knowledgeList.length">
@@ -37,11 +37,11 @@
             </n-icon>
           </div>
           <div class="item-info">
-            <div class="item-title">{{ item.name }}</div>
+            <div class="item-title">{{ item.fileName }}</div>
             <div class="item-date">{{ formatDate(item.createdAt) }}</div>
           </div>
         </div>
-        <div class="item-description">{{ item.description || "暂无描述" }}</div>
+        <div class="item-description">{{ item.preview || "暂无描述" }}</div>
         <div class="item-meta">
           <div class="item-size">{{ formatFileSize(item.size) }}</div>
           <div class="item-type">{{ item.type }}</div>
@@ -56,7 +56,7 @@
             text
             size="small"
             type="error"
-            @click.stop="deleteKnowledge(item.id)"
+            @click.stop="deleteKnowledge(item)"
           >
             <template #icon>
               <n-icon><Trash /></n-icon>
@@ -126,7 +126,12 @@ import {
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { formatDate } from "@/utils/date.js";
-import { uploadKnowledge } from "@/services/user.js";
+import {
+  uploadKnowledge,
+  getKnowledgeList,
+  deleteKnowledge as deleteKnowledgeApi,
+  getKnowledgeDetail,
+} from "@/services/user.js";
 
 const router = useRouter();
 const message = useMessage();
@@ -151,12 +156,18 @@ const loadKnowledgeList = async (page = 1) => {
   loading.value = true;
   knowledgeList.value = [];
   try {
-    // const allKnowledge = await KnowledgeService.getAllKnowledge();
-    // // 模拟分页逻辑
-    // totalPage.value = allKnowledge.length;
-    // const startIndex = (page - 1) * pageSize.value;
-    // const endIndex = startIndex + pageSize.value;
-    // knowledgeList.value = allKnowledge.slice(startIndex, endIndex);
+    const res = await getKnowledgeList({
+      userId: configStore.userId,
+      page,
+      pageSize: pageSize.value,
+    });
+
+    if (res.code === 200) {
+      knowledgeList.value = res.data?.list || [];
+      totalPage.value = res.data?.pagination?.totalPages || 0;
+    } else {
+      message.error(res.message || "获取知识库数据失败");
+    }
   } catch (error) {
     message.error("获取知识库数据失败:", error);
     knowledgeList.value = [];
@@ -182,31 +193,17 @@ const handleUpload = async ({ file, onFinish, onError }) => {
     const res = await uploadKnowledge(formData);
 
     if (res.code === 200) {
-      const newKnowledge = {
-        id: res.data?.id || Date.now(),
-        name: file.name,
-        size: file.file?.size || 1024,
-        type: file.file?.type || "未知类型",
-        description: res.data?.description || "新上传的文件",
-        createdAt: new Date(res.data?.createdAt) || new Date(),
-        content: file.file,
-      };
-
-      knowledgeList.value.push(newKnowledge);
-      message.success(`文件 "${file.name}" 上传成功`);
+      await loadKnowledgeList();
+      message.success(`"${file.name}" 上传成功`);
       onFinish();
     } else {
-      message.error(res.message || `文件 "${file.name}" 上传失败`);
+      message.error(res.message || `"${file.name}" 上传失败`);
       onError();
     }
   } catch (error) {
-    message.error(`文件 "${file.name}" 上传失败`);
+    message.error(`"${file.name}" 上传失败`);
     onError();
   }
-};
-
-const handleFileListChange = (fileList) => {
-  console.log("文件列表变化:", fileList);
 };
 
 const showUploadDialog = () => {
@@ -221,7 +218,6 @@ const showUploadDialog = () => {
             "directory-dnd": true,
             max: 10,
             "custom-request": handleUpload,
-            "onUpdate:file-list": handleFileListChange,
           },
           {
             default: () =>
@@ -271,13 +267,78 @@ const showUploadDialog = () => {
   });
 };
 
-const openKnowledge = (item) => {
-  router.push(`/knowledge/${item.id}`);
+const openKnowledge = async (item) => {
+  try {
+    let content = item.content;
+
+    if (!content) {
+      const res = await getKnowledgeDetail({
+        userId: configStore.userId,
+        id: item.id,
+      });
+
+      if (res.code === 200) {
+        content = res.data?.data?.content || "暂无内容";
+        item.content = content;
+      } else {
+        message.error(res.message || "获取知识库详情失败");
+        return;
+      }
+    }
+
+    const d = dialog.create({
+      title: item.fileName || "知识库详情",
+      content: () =>
+        h(
+          "div",
+          {
+            style:
+              "max-height: 60vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.2) transparent;",
+          },
+          [
+            h(
+              "pre",
+              {
+                style:
+                  "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color); white-space: pre-wrap; word-break: break-word; font-family: inherit;",
+              },
+              content
+            ),
+          ]
+        ),
+      showIcon: false,
+      style: "width: 50vw; max-width: 800px;",
+      titleStyle: "font-weight: 600;",
+      positiveText: "关闭",
+      positiveButtonProps: {
+        style: "height: 34px; border-radius: 8px; padding: 1.3rem 1.5rem;",
+      },
+      onPositiveClick: () => {
+        d.destroy();
+      },
+    });
+  } catch (error) {
+    message.error("获取知识库详情失败");
+  }
 };
 
-const deleteKnowledge = (id) => {
-  knowledgeList.value = knowledgeList.value.filter((item) => item.id !== id);
-  message.success("删除成功");
+const deleteKnowledge = async (item) => {
+  try {
+    const res = await deleteKnowledgeApi({
+      userId: configStore.userId,
+      id: item.id,
+      fileName: item.fileName,
+    });
+
+    if (res.code === 200) {
+      message.success("删除成功");
+      await loadKnowledgeList(currentPage.value);
+    } else {
+      message.error(res.message || "删除失败");
+    }
+  } catch (error) {
+    message.error("删除失败");
+  }
 };
 
 const goBack = () => {
@@ -423,23 +484,27 @@ onMounted(async () => {
 
       .item-description {
         flex: 1;
+        background-color: #ffffff85;
+        border-radius: 10px;
+        padding: 0.75rem;
         font-size: 14px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        margin-bottom: 0.75rem;
+        overflow: auto;
         opacity: 0.8;
+        white-space: pre-wrap;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        &::-webkit-scrollbar {
+          display: none;
+        }
       }
 
       .item-meta {
         display: flex;
-        gap: 3rem;
-        margin-bottom: 0.75rem;
+        margin: 0.75rem 0px;
         font-size: 12px;
         opacity: 0.6;
         flex-wrap: nowrap;
+        justify-content: space-between;
         align-items: center;
 
         .item-size {

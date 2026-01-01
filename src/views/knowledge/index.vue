@@ -32,16 +32,14 @@
       >
         <div class="item-header">
           <div class="item-icon">
-            <n-icon size="32">
-              <FileText />
-            </n-icon>
+            <img :src="getFileIcon(item.fileName)" alt="file icon" />
           </div>
           <div class="item-info">
             <div class="item-title">{{ item.fileName }}</div>
             <div class="item-date">{{ formatDate(item.createdAt) }}</div>
           </div>
         </div>
-        <div class="item-description">{{ item.preview || "暂无描述" }}</div>
+        <div class="item-description" v-html="getPreviewContent(item)"></div>
         <div class="item-meta">
           <div class="item-size">{{ formatFileSize(item.size) }}</div>
           <div class="item-type">{{ item.type }}</div>
@@ -120,9 +118,9 @@ import {
   X,
   Eye,
   Upload,
-  FileText,
   Database,
   CloudUpload,
+  AlertTriangle,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { formatDate } from "@/utils/date.js";
@@ -132,6 +130,9 @@ import {
   deleteKnowledge as deleteKnowledgeApi,
   getKnowledgeDetail,
 } from "@/services/user.js";
+import MarkdownIt from "markdown-it";
+
+const md = new MarkdownIt();
 
 const router = useRouter();
 const message = useMessage();
@@ -146,6 +147,30 @@ const loading = ref(true);
 const totalPages = computed(() => {
   return Math.ceil(totalPage.value / pageSize.value);
 });
+const getFileIcon = (fileName) => {
+  if (!fileName) return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  switch (ext) {
+    case "pdf":
+      return new URL("@/assets/PDF.svg", import.meta.url).href;
+    case "doc":
+    case "docx":
+      return new URL("@/assets/DOCX.svg", import.meta.url).href;
+    case "xls":
+    case "xlsx":
+      return new URL("@/assets/XLS.svg", import.meta.url).href;
+    case "txt":
+    case "md":
+    default:
+      return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  }
+};
+
+const getPreviewContent = (item) => {
+  const content = item.preview || "暂无描述";
+  const isMarkdown = item.type === "markdown";
+  return isMarkdown ? md.render(content) : content;
+};
 
 const handlePageChange = async (page) => {
   currentPage.value = page;
@@ -164,7 +189,7 @@ const loadKnowledgeList = async (page = 1) => {
 
     if (res.code === 200) {
       knowledgeList.value = res.data?.list || [];
-      totalPage.value = res.data?.pagination?.totalPages || 0;
+      totalPage.value = res.data?.pagination?.total || 0;
     } else {
       message.error(res.message || "获取知识库数据失败");
     }
@@ -197,7 +222,7 @@ const handleUpload = async ({ file, onFinish, onError }) => {
       message.success(`"${file.name}" 上传成功`);
       onFinish();
     } else {
-      message.error(res.message || `"${file.name}" 上传失败`);
+      message.error(res.message || `"${file.name}" 上传失败}`);
       onError();
     }
   } catch (error) {
@@ -215,9 +240,10 @@ const showUploadDialog = () => {
           NUpload,
           {
             multiple: true,
-            "directory-dnd": true,
+            directoryDnd: true,
             max: 10,
-            "custom-request": handleUpload,
+            accept: ".pdf,.doc,.docx,.xls,.xlsx,.txt,.md",
+            customRequest: handleUpload,
           },
           {
             default: () =>
@@ -246,7 +272,8 @@ const showUploadDialog = () => {
                       NP,
                       { depth: 3, style: "margin: 8px 0 0 0" },
                       {
-                        default: () => "支持上传多种格式的文档",
+                        default: () =>
+                          "支持上传pdf、docx、xlsx、txt、md等格式的文档",
                       }
                     ),
                   ],
@@ -286,6 +313,8 @@ const openKnowledge = async (item) => {
       }
     }
 
+    const isMarkdown = item.fileName?.toLowerCase().endsWith(".md");
+
     const d = dialog.create({
       title: item.fileName || "知识库详情",
       content: () =>
@@ -296,14 +325,20 @@ const openKnowledge = async (item) => {
               "max-height: 60vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.2) transparent;",
           },
           [
-            h(
-              "pre",
-              {
-                style:
-                  "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color); white-space: pre-wrap; word-break: break-word; font-family: inherit;",
-              },
-              content
-            ),
+            isMarkdown
+              ? h("div", {
+                  style:
+                    "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color);",
+                  innerHTML: md.render(content),
+                })
+              : h(
+                  "pre",
+                  {
+                    style:
+                      "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color); white-space: pre-wrap; word-break: break-word; font-family: inherit;",
+                  },
+                  content
+                ),
           ]
         ),
       showIcon: false,
@@ -323,22 +358,57 @@ const openKnowledge = async (item) => {
 };
 
 const deleteKnowledge = async (item) => {
-  try {
-    const res = await deleteKnowledgeApi({
-      userId: configStore.userId,
-      id: item.id,
-      fileName: item.fileName,
-    });
+  dialog.warning({
+    title: "确定删除文件？",
+    content: `确定要删除"${item.fileName}"吗？删除后，文件将不可恢复。`,
+    positiveText: "删除",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+      ),
+    style: "height: 170px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    negativeButtonProps: {
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    onPositiveClick: async () => {
+      try {
+        const res = await deleteKnowledgeApi({
+          userId: configStore.userId,
+          id: item.id,
+          fileName: item.fileName,
+        });
 
-    if (res.code === 200) {
-      message.success("删除成功");
-      await loadKnowledgeList(currentPage.value);
-    } else {
-      message.error(res.message || "删除失败");
-    }
-  } catch (error) {
-    message.error("删除失败");
-  }
+        if (res.code === 200) {
+          message.success("删除成功");
+          await loadKnowledgeList(currentPage.value);
+        } else {
+          message.error(res.message || "删除失败");
+        }
+      } catch (error) {
+        message.error("删除失败");
+      }
+    },
+  });
 };
 
 const goBack = () => {
@@ -460,6 +530,11 @@ onMounted(async () => {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+
+          img {
+            width: 32px;
+            height: 32px;
+          }
         }
 
         .item-info {
@@ -490,11 +565,71 @@ onMounted(async () => {
         font-size: 14px;
         overflow: auto;
         opacity: 0.8;
-        white-space: pre-wrap;
+        user-select: none;
         scrollbar-width: none;
         -ms-overflow-style: none;
         &::-webkit-scrollbar {
           display: none;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          margin: 0.5rem 0 0.25rem 0;
+          font-weight: 600;
+          font-size: 1.1em;
+        }
+
+        p {
+          margin: 0.25rem 0;
+        }
+
+        ul,
+        ol {
+          margin: 0.25rem 0;
+          padding-left: 1.5rem;
+        }
+
+        li {
+          margin: 0.1rem 0;
+        }
+
+        code {
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.9em;
+        }
+
+        pre {
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 0.5rem;
+          border-radius: 6px;
+          overflow-x: auto;
+          margin: 0.5rem 0;
+        }
+
+        pre code {
+          background-color: transparent;
+          padding: 0;
+        }
+
+        blockquote {
+          border-left: 3px solid var(--primary-color);
+          padding-left: 0.75rem;
+          margin: 0.5rem 0;
+          opacity: 0.8;
+        }
+
+        strong {
+          font-weight: 600;
+        }
+
+        em {
+          font-style: italic;
         }
       }
 

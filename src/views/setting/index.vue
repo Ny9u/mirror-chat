@@ -43,6 +43,16 @@
           </div>
         </div>
 
+        <div class="setting-item" @click="showLLMModal">
+          <div class="setting-label">
+            <n-icon :component="Server" size="1.35rem" />
+            <span>LLM 配置</span>
+          </div>
+          <div class="setting-action">
+            <n-icon :component="ChevronRight" size="1.3rem" />
+          </div>
+        </div>
+
         <div class="setting-item" @click="openDeleteAccountDialog">
           <div class="setting-label">
             <n-icon :component="Trash" size="1.35rem" />
@@ -180,6 +190,67 @@
       </div>
     </n-modal>
 
+    <!-- LLM配置 -->
+    <n-modal
+      v-model:show="showLLMModalFlag"
+      preset="card"
+      style="width: 480px; height: 380px; border-radius: 12px; overflow: hidden"
+      :closable="false"
+      :title="renderLLMTitle"
+      size="medium"
+      :segmented="{
+        content: true,
+        footer: 'soft',
+      }"
+    >
+      <template #header-extra>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="closeLLMModal"
+          size="1.6rem"
+        />
+      </template>
+      <n-spin :show="loadingLLMConfig" size="medium">
+        <n-form
+          :model="llmForm"
+          :rules="llmRules"
+          ref="llmFormRef"
+          label-placement="top"
+          label-width="auto"
+        >
+          <n-form-item label="Base URL" path="baseURL">
+            <n-input
+              v-model:value="llmForm.baseURL"
+              placeholder="请输入 BaseURL"
+              size="large"
+              style="border-radius: 8px"
+            />
+          </n-form-item>
+          <n-form-item label="API Key" path="apiKey">
+            <n-input
+              v-model:value="llmForm.apiKey"
+              type="password"
+              show-password-on="click"
+              placeholder="请输入 API Key"
+              size="large"
+              style="border-radius: 8px"
+            />
+          </n-form-item>
+        </n-form>
+      </n-spin>
+      <div class="modal-footer">
+        <n-button
+          type="primary"
+          @click="updateLLMConfig"
+          :loading="updatingLLM"
+          style="border-radius: 8px; padding: 1.3rem 1.5rem"
+        >
+          保存配置
+        </n-button>
+      </div>
+    </n-modal>
+
     <!-- 声音选择 -->
     <n-modal
       v-model:show="showVoiceModalFlag"
@@ -313,7 +384,12 @@
 import { ref, h } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
-import { updatePassword, deleteAccount } from "@/services/user";
+import {
+  updatePassword,
+  deleteAccount,
+  setModelConfig,
+  getModelConfig,
+} from "@/services/user";
 import {
   useMessage,
   useDialog,
@@ -321,12 +397,11 @@ import {
   NIcon,
   NButton,
   NSwitch,
-  NSelect,
   NModal,
   NForm,
   NFormItem,
   NInput,
-  NDialog,
+  NSpin,
 } from "naive-ui";
 import {
   User,
@@ -340,7 +415,7 @@ import {
   Trash,
   ChevronRight,
   Volume,
-  Check,
+  Server,
 } from "@vicons/tabler";
 import Global from "@/utils/global";
 import { encrypt } from "@/utils/encryption";
@@ -349,6 +424,84 @@ import TTSService from "@/services/ttsService.js";
 const configStore = useConfigStore();
 const router = useRouter();
 const message = useMessage();
+
+// LLM配置相关状态
+const showLLMModalFlag = ref(false);
+const updatingLLM = ref(false);
+const loadingLLMConfig = ref(false);
+const llmFormRef = ref();
+const llmForm = ref({
+  baseURL: "",
+  apiKey: "",
+});
+
+const llmRules = {
+  baseURL: {
+    required: true,
+    message: "请输入Base URL",
+    trigger: "blur",
+  },
+  apiKey: {
+    required: true,
+    message: "请输入API Key",
+    trigger: "blur",
+  },
+};
+
+const renderLLMTitle = () =>
+  h("span", { style: "font-weight: 600;" }, "LLM 配置");
+
+const showLLMModal = async () => {
+  showLLMModalFlag.value = true;
+  loadingLLMConfig.value = true;
+
+  try {
+    const res = await getModelConfig();
+
+    if (res.code === 200 && res.data) {
+      llmForm.value = {
+        baseURL: res.data.baseURL || "",
+        apiKey: res.data.apiKey || "",
+      };
+    }
+  } catch (error) {
+    message.error("获取LLM配置失败");
+    llmForm.value = {
+      baseURL: "",
+      apiKey: "",
+    };
+  } finally {
+    loadingLLMConfig.value = false;
+  }
+};
+
+const closeLLMModal = () => {
+  showLLMModalFlag.value = false;
+};
+
+const updateLLMConfig = async () => {
+  updatingLLM.value = true;
+  try {
+    await llmFormRef.value.validate();
+
+    const formData = new FormData();
+    formData.append("baseURL", llmForm.value.baseURL);
+    formData.append("apiKey", llmForm.value.apiKey);
+
+    const res = await setModelConfig(formData);
+
+    if (res.code === 200) {
+      message.success("LLM配置保存成功");
+      closeLLMModal();
+    } else {
+      message.error(res.message || "LLM配置保存失败");
+    }
+  } catch (error) {
+    message.error(error.message || "LLM配置保存失败");
+  } finally {
+    updatingLLM.value = false;
+  }
+};
 
 // 密码管理相关状态
 const showPasswordModalFlag = ref(false);

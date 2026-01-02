@@ -115,3 +115,13 @@ export const getKnowledgeDetail = async (params) => {
   const res = await Request(api.getKnowledgeDetail, "POST", params);
   return res;
 };
+
+export const setModelConfig = async (params) => {
+  const res = await Request(api.setModelConfig, "POST", params);
+  return res;
+};
+
+export const getModelConfig = async (params) => {
+  const res = await Request(api.getModelConfig, "POST", params);
+  return res;
+};

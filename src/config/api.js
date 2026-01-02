@@ -31,6 +31,8 @@ export const api = {
   getKnowledgeList: "/api/v1/knowledge/list",
   deleteKnowledge: "/api/v1/knowledge/delete",
   getKnowledgeDetail: "/api/v1/knowledge/detail",
+  setModelConfig: "/api/v1/user/setModelConfig",
+  getModelConfig: "/api/v1/user/getModelConfig",
 };
 
 // 需要认证的API
@@ -39,6 +41,8 @@ export const authRequiredApis = [
   api.updateInfo,
   api.updatePassword,
   api.deleteAccount,
+  api.setModelConfig,
+  api.getModelConfig,
 ];
 
 export default { api, authRequiredApis };

@@ -329,7 +329,7 @@ const loadCollectionDetail = async () => {
     if (res.code === 200 && res.data) {
       collectionDetail.value = res.data.favorite;
       try {
-        const conversationData = JSON.parse(res.data.favorite.conversation);
+        const conversationData = res.data.favorite.conversation;
         chatHistory.value = Array.isArray(conversationData)
           ? conversationData
           : [];

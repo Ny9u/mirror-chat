@@ -319,7 +319,6 @@ const logout = () => {
       localStorage.removeItem("jwtToken");
       localStorage.removeItem("isLoggedIn");
       sessionStorage.removeItem("skipJwtValidation");
-      sessionStorage.removeItem("chatHistory");
       clearPersonalData();
       window.dispatchEvent(new CustomEvent("clearHistoryList"));
       message.success("已退出登录");

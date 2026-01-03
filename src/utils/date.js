@@ -5,10 +5,13 @@
 // 格式化为24小时制中国时间
 export const formatChineseTime = (date = new Date()) => {
   const chinaTime = new Date(date);
+  const year = chinaTime.getFullYear();
+  const month = String(chinaTime.getMonth() + 1).padStart(2, "0");
+  const day = String(chinaTime.getDate()).padStart(2, "0");
   const hours = String(chinaTime.getHours()).padStart(2, "0");
   const minutes = String(chinaTime.getMinutes()).padStart(2, "0");
 
-  return `${hours}:${minutes}`;
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
 // 判断当前时间段

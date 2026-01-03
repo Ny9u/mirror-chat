@@ -51,7 +51,7 @@
                 v-for="item in historyList"
                 :key="item.id"
                 class="history-item"
-                :class="{ active: item.id === activeHistoryId }"
+                :class="{ active: item.id === configStore.chatId }"
                 @click="selectHistory(item.id)"
               >
                 <div class="history-item-content">
@@ -107,7 +107,6 @@ import {
   getConversationDetail,
   deleteConversation,
 } from "@/services/user.js";
-import { generateTitle } from "@/services/titleService.js";
 
 const router = useRouter();
 const route = useRoute();
@@ -116,7 +115,6 @@ const dialog = useDialog();
 const message = useMessage();
 const isVisible = ref(false);
 let hideTimeout = null;
-const activeHistoryId = ref(null);
 const historyList = ref([]);
 const editingId = ref(null);
 const editingTitle = ref("");
@@ -146,68 +144,11 @@ const fetchHistoryList = async () => {
 };
 
 const selectHistory = async (id) => {
-  if (id === activeHistoryId.value) {
+  if (id === configStore.chatId) {
     return;
   }
-  activeHistoryId.value = id;
-
-  const currentChatHistory =
-    JSON.parse(sessionStorage.getItem("chatHistory")) || [];
-
-  const currentConversationId =
-    currentChatHistory.length > 0 ? currentChatHistory[0].conversationId : null;
-
-  // 当前聊天记录为空时，直接加载历史对话
-  if (currentChatHistory.length <= 1) {
-    loadConversation(id);
-    return;
-  }
-
+  configStore.chatId = id;
   loadConversation(id);
-
-  (async () => {
-    try {
-      // 当前聊天记录不为空，且没有conversationId时，保存当前聊天
-      if (!currentConversationId) {
-        const title = await generateTitle(
-          currentChatHistory.slice(
-            currentChatHistory.length - 1,
-            currentChatHistory.length
-          )
-        );
-        await saveConversation({
-          userId: configStore.userId,
-          title: title,
-          content: JSON.stringify(currentChatHistory),
-        });
-      }
-      // 当前聊天记录不为空，且有conversationId时，保存当前聊天时带上conversationId
-      else {
-        const currentHistoryItem = historyList.value.find(
-          (item) => item.id === currentConversationId
-        );
-        const title = currentHistoryItem
-          ? currentHistoryItem.title
-          : await generateTitle(
-              currentChatHistory.slice(
-                currentChatHistory.length - 1,
-                currentChatHistory.length
-              )
-            );
-
-        await saveConversation({
-          userId: configStore.userId,
-          conversationId: currentConversationId,
-          title: title,
-          content: JSON.stringify(currentChatHistory),
-        });
-      }
-      // 保存完成后刷新历史列表
-      fetchHistoryList();
-    } catch (error) {
-      throw new Error("保存对话失败:", error.message);
-    }
-  })();
 };
 
 // 加载历史对话的独立函数
@@ -218,9 +159,25 @@ const loadConversation = async (id) => {
       userId: configStore.userId,
     });
     if (res.code === 200 && res.data) {
-      let conversationData = JSON.parse(res.data.content);
+      let conversationData;
+      if (Array.isArray(res.data.content)) {
+        conversationData = [
+          {
+            role: "system",
+            content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
+          },
+          ...res.data.content[0],
+        ];
+      } else {
+        conversationData = [
+          {
+            role: "system",
+            content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
+          },
+          ...JSON.parse(res.data.content[0]),
+        ];
+      }
 
-      sessionStorage.setItem("chatHistory", JSON.stringify(conversationData));
       window.dispatchEvent(
         new CustomEvent("loadChatHistory", {
           detail: { data: conversationData },
@@ -253,44 +210,8 @@ const navigateToHistory = () => {
 };
 
 const createNewChat = () => {
-  const chatHistory = JSON.parse(sessionStorage.getItem("chatHistory")) || [];
-
-  if (configStore.userId && chatHistory.length > 1) {
-    (async () => {
-      try {
-        const currentConversationId =
-          chatHistory.length > 0 ? chatHistory[0].conversationId : null;
-
-        const saveParams = {
-          userId: configStore.userId,
-          content: JSON.stringify(chatHistory),
-        };
-
-        if (currentConversationId) {
-          const currentHistoryItem = historyList.value.find(
-            (item) => item.id === currentConversationId
-          );
-          saveParams.conversationId = currentConversationId;
-          saveParams.title = currentHistoryItem
-            ? currentHistoryItem.title
-            : await generateTitle(
-                chatHistory.slice(chatHistory.length - 1, chatHistory.length)
-              );
-        } else {
-          saveParams.title = await generateTitle(
-            chatHistory.slice(chatHistory.length - 1, chatHistory.length)
-          );
-        }
-
-        await saveConversation(saveParams);
-        fetchHistoryList();
-      } catch (error) {
-        throw new Error("创建新对话失败:" + error.message);
-      }
-    })();
-  }
-
-  activeHistoryId.value = null;
+  configStore.chatId = null;
+  fetchHistoryList();
   window.dispatchEvent(new CustomEvent("clearChatHistory"));
 };
 
@@ -448,9 +369,8 @@ const handleDeleteConversation = (id) => {
 
         historyList.value = historyList.value.filter((item) => item.id !== id);
 
-        if (activeHistoryId.value === id) {
-          activeHistoryId.value = null;
-          sessionStorage.removeItem("chatHistory");
+        if (configStore.chatId === id) {
+          configStore.chatId = null;
           window.dispatchEvent(new CustomEvent("clearChatHistory"));
         }
       } catch (error) {
@@ -463,7 +383,7 @@ const handleDeleteConversation = (id) => {
 onMounted(() => {
   const conversationId = route.params.id;
   if (conversationId) {
-    activeHistoryId.value = conversationId;
+    configStore.chatId = conversationId;
     loadConversation(conversationId);
   }
   watch(
@@ -480,7 +400,7 @@ onMounted(() => {
   });
   window.addEventListener("clearHistoryList", () => {
     historyList.value = [];
-    activeHistoryId.value = null;
+    configStore.chatId = null;
   });
 });
 
@@ -490,7 +410,7 @@ onBeforeUnmount(() => {
   });
   window.removeEventListener("clearHistoryList", () => {
     historyList.value = [];
-    activeHistoryId.value = null;
+    configStore.chatId = null;
   });
 });
 </script>

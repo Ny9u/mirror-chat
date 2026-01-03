@@ -494,17 +494,15 @@ import {
 } from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
-import OpenAI from "openai";
 import Global from "@/utils/global.js";
 import MarkdownIt from "markdown-it";
 import Typed from "typed.js";
 import { useConfigStore } from "@/stores/configStore.js";
-import { api } from "@/config/api.js";
-import { formatChineseTime, getChineseGreeting } from "@/utils/date.js";
+import { getChineseGreeting } from "@/utils/date.js";
 import Models from "@/config/models.js";
 import TTSService from "@/services/ttsService.js";
 import { addFavorites } from "@/services/user.js";
-import { generateTitle } from "@/services/titleService.js";
+import { chat } from "@/services/chat.js";
 import hljs from "highlight.js/lib/core";
 // 按需导入常用语言包
 import javascript from "highlight.js/lib/languages/javascript";
@@ -564,15 +562,14 @@ const hoveredMessageKey = ref({});
 const editingMessageKey = ref(null);
 const editContent = ref("");
 const editInputRef = ref(null);
-const chatHistory = ref(
-  JSON.parse(sessionStorage.getItem("chatHistory")) || [
-    {
-      role: "system",
-      content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
-      key: Global.getRandomKey(),
-    },
-  ]
-);
+const chatHistory = ref([
+  {
+    role: "system",
+    content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
+    key: "",
+    time: "",
+  },
+]);
 
 // 处理内容，将Markdown转换为HTML并确保代码块高亮
 const processContent = (content) => {
@@ -632,15 +629,6 @@ const processContent = (content) => {
   return md.render(content);
 };
 
-const role = ["assistant", "user"];
-
-// 初始化openai
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_ALIYUN_API_KEY, // 使用环境变量
-  baseURL: api.aliyun,
-  dangerouslyAllowBrowser: true,
-});
-
 // 发送消息
 const sendMessage = (userInput) => {
   const currentModel = Models.find((m) => m.key === configStore.model);
@@ -665,34 +653,27 @@ const sendMessage = (userInput) => {
         data: userInput,
       },
     ],
-    key: Global.getRandomKey(),
-    time: formatChineseTime(new Date()),
+    key: "",
+    time: "",
   });
   if (chatHistory.value.length > 2) {
     virtualListRef.value.scrollTo({
       position: "bottom",
     });
   }
-  sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
   return true;
 };
 
 const fetchAI = async (signal) => {
+  const chatId = configStore.chatId || undefined;
+
   if (deepThinking.value) {
     let reasoningContent = "";
     let answerContent = "";
     let hasStartedAnswer = false;
-    const stream = await openai.chat.completions.create({
-      model: configStore.model,
-      messages: Global.sortThinkingMessages(chatHistory.value),
-      enable_thinking: Global.isEnableThinkingMode(configStore.model),
-      stream: true,
-      enable_search: netSearch.value,
-      stream_options: {
-        include_usage: true,
-        forced_search: netSearch.value,
-      },
-    });
+    let messageKey = "";
+    let messageTime = "";
+
     chatHistory.value.push({
       role: "assistant",
       content: [
@@ -701,113 +682,185 @@ const fetchAI = async (signal) => {
           data: reasoningContent,
         },
       ],
-      key: Global.getRandomKey(),
-      isFinishThinking: false,
-      thinkingCollapsed: false,
-      time: formatChineseTime(new Date()),
+      key: "",
+      time: "",
     });
+
     let lastScrollTime = 0;
     const scrollTime = 500;
-    for await (const chunk of stream) {
+
+    try {
+      await chat(
+        {
+          content: userInput.value,
+          chatId,
+          model: configStore.model,
+          enableThinking: true,
+          enableSearch: netSearch.value,
+        },
+        (chunk) => {
+          // 处理思考过程
+          if (chunk.key) {
+            messageKey = chunk.key;
+            chatHistory.value[chatHistory.value.length - 1].key = messageKey;
+          }
+          if (chunk.time) {
+            messageTime = chunk.time;
+            chatHistory.value[chatHistory.value.length - 1].time = messageTime;
+          }
+          if (chunk.reasoningContent) {
+            reasoningContent += chunk.reasoningContent;
+            chatHistory.value[chatHistory.value.length - 1].content[0].data =
+              md.render(reasoningContent);
+
+            const now = Date.now();
+            if (now - lastScrollTime > scrollTime) {
+              virtualListRef.value.scrollTo({
+                position: "bottom",
+              });
+              lastScrollTime = now;
+            }
+          } else if (chunk.content) {
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
+            answerContent += chunk.content;
+
+            if (!hasStartedAnswer) {
+              chatHistory.value[chatHistory.value.length - 1].content.push({
+                type: "content",
+                data: "",
+              });
+              hasStartedAnswer = true;
+            }
+
+            chatHistory.value[chatHistory.value.length - 1].content[1].data =
+              md.render(answerContent);
+
+            const now = Date.now();
+            if (now - lastScrollTime > scrollTime) {
+              virtualListRef.value.scrollTo({
+                position: "bottom",
+              });
+              lastScrollTime = now;
+            }
+          }
+
+          if (chunk.chatId) {
+            configStore.setChatId(chunk.chatId);
+          }
+        },
+        (result) => {
+          scrollToBottom();
+        },
+        (error) => {
+          if (signal.aborted) {
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
+          } else {
+            message.error(error.message || "请求服务失败");
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
+          }
+        }
+      );
+
+      return answerContent;
+    } catch (error) {
       if (signal.aborted) {
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
-        break;
-      }
-      if (!chunk.choices?.length) {
-        continue;
-      }
-
-      const delta = chunk.choices[0].delta;
-
-      // 处理思考过程
-      if (delta.reasoning_content) {
-        reasoningContent += delta.reasoning_content;
-        chatHistory.value[chatHistory.value.length - 1].content[0].data =
-          md.render(reasoningContent);
-        const now = Date.now();
-        if (now - lastScrollTime > scrollTime) {
-          virtualListRef.value.scrollTo({
-            position: "bottom",
-          });
-          lastScrollTime = now;
-        }
-      } else if (delta.content) {
+      } else {
+        message.error(error.message || "请求服务失败");
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
-        answerContent += delta.content;
-
-        if (!hasStartedAnswer) {
-          chatHistory.value[chatHistory.value.length - 1].content.push({
-            type: "content",
-            data: "",
-          });
-          hasStartedAnswer = true;
-        }
-
-        chatHistory.value[chatHistory.value.length - 1].content[1].data =
-          md.render(answerContent);
       }
     }
-    scrollToBottom();
-    sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
-    return answerContent;
   } else {
-    const stream = await openai.chat.completions.create({
-      model: configStore.model,
-      messages: Global.sortThinkingMessages(chatHistory.value),
-      stream: true,
-      enable_search: netSearch.value,
-      stream_options: {
-        include_usage: true,
-        forced_search: netSearch.value,
-      },
-    });
-    if (!stream) {
-      throw new Error("请求服务失败");
-    }
     let fullContent = "";
-    let hasPushed = false;
+    let messageKey = "";
+    let messageTime = "";
+
+    chatHistory.value.push({
+      role: "assistant",
+      content: [
+        {
+          type: "content",
+          data: "",
+        },
+      ],
+      key: "",
+      time: "",
+    });
 
     let lastScrollTime = 0;
     const scrollTime = 500;
     let shouldAbort = false;
-    for await (const chunk of stream) {
-      if (signal.aborted) {
-        shouldAbort = true;
-        break;
-      }
-      if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
-        if (chunk.choices[0].delta.content) {
-          fullContent = fullContent + chunk.choices[0].delta.content;
-          if (!hasPushed) {
-            chatHistory.value.push({
-              role: "assistant",
-              content: [
-                {
-                  type: "content",
-                  data: fullContent,
-                },
-              ],
-              key: Global.getRandomKey(),
-              time: formatChineseTime(new Date()),
-            });
-            hasPushed = true;
+
+    try {
+      await chat(
+        {
+          content: userInput.value,
+          chatId,
+          model: configStore.model,
+          enableThinking: false,
+          enableSearch: netSearch.value,
+        },
+        (chunk) => {
+          if (signal.aborted) {
+            shouldAbort = true;
           }
-          chatHistory.value[chatHistory.value.length - 1].content[0].data =
-            md.render(fullContent);
+
+          if (chunk.key) {
+            messageKey = chunk.key;
+            chatHistory.value[chatHistory.value.length - 1].key = messageKey;
+          }
+          if (chunk.time) {
+            messageTime = chunk.time;
+            chatHistory.value[chatHistory.value.length - 1].time = messageTime;
+          }
+          if (chunk.content) {
+            fullContent += chunk.content;
+
+            chatHistory.value[chatHistory.value.length - 1].content[0].data =
+              md.render(fullContent);
+
+            const now = Date.now();
+            if (now - lastScrollTime > scrollTime) {
+              virtualListRef.value.scrollTo({
+                position: "bottom",
+              });
+              lastScrollTime = now;
+            }
+          }
+
+          if (chunk.chatId) {
+            configStore.setChatId(chunk.chatId);
+          }
+        },
+        (result) => {
+          if (!shouldAbort) {
+            scrollToBottom();
+          }
+        },
+        (error) => {
+          if (signal.aborted) {
+            shouldAbort = true;
+          } else {
+            message.error(error.message || "请求服务失败");
+          }
         }
-        const now = Date.now();
-        if (now - lastScrollTime > scrollTime) {
-          virtualListRef.value.scrollTo({
-            position: "bottom",
-          });
-          lastScrollTime = now;
-        }
+      );
+
+      return fullContent;
+    } catch (error) {
+      if (signal.aborted) {
+        chatHistory.value.pop();
+      } else {
+        message.error(error.message || "请求服务失败");
+        chatHistory.value.pop();
       }
     }
-    if (!shouldAbort) {
-      sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
-    }
-    return fullContent;
   }
 };
 const getAvatar = (role) => {
@@ -1005,43 +1058,25 @@ const deleteMessage = (message) => {
       );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
-        sessionStorage.setItem(
-          "chatHistory",
-          JSON.stringify(chatHistory.value)
-        );
       }
     },
   });
 };
 
 const favoriteMessage = async (msg) => {
-  const index = chatHistory.value.findIndex((item) => item.key === msg.key);
   popoverShowMap.value[msg.key] = false;
-  if (index !== -1) {
-    let content = [];
 
-    if (msg.role === "assistant") {
-      if (index > 0) {
-        content = chatHistory.value.slice(index - 1, index + 1);
-      }
-    } else if (msg.role === "user") {
-      if (index < chatHistory.value.length - 1) {
-        content = chatHistory.value.slice(index, index + 2);
-      }
+  try {
+    const res = await addFavorites({
+      userId: configStore.userId,
+      conversationId: configStore.chatId,
+      key: msg.key,
+    });
+    if (res.code === 201) {
+      message.success("收藏成功");
     }
-
-    try {
-      const res = await addFavorites({
-        userId: configStore.userId,
-        title: await generateTitle(content),
-        conversation: JSON.stringify(content),
-      });
-      if (res.code === 201) {
-        message.success("收藏成功");
-      }
-    } catch (error) {
-      message.warning("收藏失败: " + (error.message || "未知错误"));
-    }
+  } catch (error) {
+    message.warning("收藏失败: " + (error.message || "未知错误"));
   }
 };
 
@@ -1073,7 +1108,6 @@ const handleClearChatHistory = () => {
       key: Global.getRandomKey(),
     },
   ];
-  sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory.value));
 };
 
 const handleLoadChatHistory = (event) => {

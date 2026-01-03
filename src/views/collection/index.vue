@@ -108,15 +108,12 @@ const loadCollections = async (page = 1) => {
       page: page,
       limit: pageSize.value,
     });
-
     if (res.code === 200 && res.data) {
       collections.value = res.data.favorites.map((item) => ({
         id: item.id,
         title: item.title,
-        content: md.render(
-          JSON.parse(item.conversation)[1]?.content[0]?.data || ""
-        ),
-        originalContent: JSON.parse(item.conversation),
+        content: md.render(item.conversation[1]?.content[0]?.data || ""),
+        originalContent: item.conversation,
         date: item.createdAt,
       }));
       totalPage.value = res.data.total;

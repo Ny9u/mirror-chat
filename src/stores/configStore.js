@@ -10,6 +10,7 @@ export const useConfigStore = defineStore("config", {
     name: "",
     voiceType: 101001,
     voiceName: "智瑜",
+    chatId: "",
   }),
   actions: {
     setTheme(theme) {
@@ -32,6 +33,9 @@ export const useConfigStore = defineStore("config", {
     },
     setVoiceName(voiceName) {
       this.voiceName = voiceName;
+    },
+    setChatId(chatId) {
+      this.chatId = chatId;
     },
   },
 });

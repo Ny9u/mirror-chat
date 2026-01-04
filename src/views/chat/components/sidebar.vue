@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, h, onBeforeUnmount, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { NIcon, NInput, useDialog, useMessage } from "naive-ui";
 import {
@@ -99,6 +99,7 @@ import {
   AlertTriangle,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -111,34 +112,43 @@ import {
 const router = useRouter();
 const route = useRoute();
 const configStore = useConfigStore();
+const historyStore = useHistoryStore();
 const dialog = useDialog();
 const message = useMessage();
 const isVisible = ref(false);
 let hideTimeout = null;
-const historyList = ref([]);
 const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
+
+const historyList = computed(() => historyStore.historyList); 
 
 const formatTime = (date) => {
   return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
 };
 
-const fetchHistoryList = async () => {
+const fetchHistoryList = async (forceRefresh = false) => {
   try {
+    if (historyStore.isHistoryListLoaded && !forceRefresh) {
+      return;
+    }
+
     const res = await getConversations({ userId: configStore.userId });
     if (res.code === 200 && res.data) {
-      historyList.value = res.data.conversations.map((item) => ({
-        id: item.id,
-        title: item.title,
-        updateTime: new Date(item.updatedAt),
-      }));
+      historyStore.setHistoryList(
+        res.data.conversations.map((item) => ({
+          id: item.id,
+          title: item.title,
+          updateTime: new Date(item.updatedAt),
+        }))
+      );
+      historyStore.setHistoryListLoaded(true);
     } else {
-      historyList.value = [];
+      historyStore.setHistoryList([]);
       throw new Error(res.message);
     }
   } catch (error) {
-    historyList.value = [];
+    historyStore.setHistoryList([]);
     throw error;
   }
 };
@@ -211,7 +221,7 @@ const navigateToHistory = () => {
 
 const createNewChat = () => {
   configStore.chatId = null;
-  fetchHistoryList();
+  fetchHistoryList(true);
   window.dispatchEvent(new CustomEvent("clearChatHistory"));
 };
 
@@ -311,7 +321,7 @@ const saveTitleEdit = async () => {
     });
 
     if (originalItem) {
-      originalItem.title = newTitle;
+      historyStore.updateHistoryListItem(editingId.value, { title: newTitle });
     }
 
     editingId.value = null;
@@ -367,17 +377,25 @@ const handleDeleteConversation = (id) => {
           userId: configStore.userId,
         });
 
-        historyList.value = historyList.value.filter((item) => item.id !== id);
+        historyStore.removeFromHistoryList(id);
 
         if (configStore.chatId === id) {
           configStore.chatId = null;
           window.dispatchEvent(new CustomEvent("clearChatHistory"));
         }
+
+        fetchHistoryList(true);
       } catch (error) {
         message.error("删除对话失败:", error.message);
       }
     },
   });
+};
+
+const handleClearHistoryList = () => {
+  historyStore.setHistoryList([]);
+  configStore.chatId = null;
+  historyStore.setHistoryListLoaded(false);
 };
 
 onMounted(() => {
@@ -388,30 +406,26 @@ onMounted(() => {
   }
   watch(
     () => configStore.userId,
-    (newUserId) => {
-      if (newUserId) {
+    (newUserId, oldUserId) => {
+      if (newUserId && !oldUserId) {
+        // 首次登录时加载历史列表
         fetchHistoryList();
+      } else if (!newUserId && oldUserId) {
+        // 退出登录时清空状态
+        historyStore.setHistoryList([]);
+        historyStore.setHistoryListLoaded(false);
+        configStore.chatId = null;
       }
-    },
-    { immediate: true }
+    }
   );
-  window.addEventListener("createNewChat", () => {
-    createNewChat();
-  });
-  window.addEventListener("clearHistoryList", () => {
-    historyList.value = [];
-    configStore.chatId = null;
-  });
+
+  window.addEventListener("createNewChat", createNewChat);
+  window.addEventListener("clearHistoryList", handleClearHistoryList);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("createNewChat", () => {
-    createNewChat();
-  });
-  window.removeEventListener("clearHistoryList", () => {
-    historyList.value = [];
-    configStore.chatId = null;
-  });
+  window.removeEventListener("createNewChat", createNewChat);
+  window.removeEventListener("clearHistoryList", handleClearHistoryList);
 });
 </script>
 

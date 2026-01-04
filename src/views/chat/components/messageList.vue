@@ -780,18 +780,7 @@ const fetchAI = async (signal) => {
     let fullContent = "";
     let messageKey = "";
     let messageTime = "";
-
-    chatHistory.value.push({
-      role: "assistant",
-      content: [
-        {
-          type: "content",
-          data: "",
-        },
-      ],
-      key: "",
-      time: "",
-    });
+    let assistantMessageAdded = false;
 
     let lastScrollTime = 0;
     const scrollTime = 500;
@@ -807,6 +796,20 @@ const fetchAI = async (signal) => {
           enableSearch: netSearch.value,
         },
         (chunk) => {
+          if (!assistantMessageAdded) {
+            chatHistory.value.push({
+              role: "assistant",
+              content: [
+                {
+                  type: "content",
+                  data: "",
+                },
+              ],
+              key: "",
+              time: "",
+            });
+            assistantMessageAdded = true;
+          }
           if (signal.aborted) {
             shouldAbort = true;
           }

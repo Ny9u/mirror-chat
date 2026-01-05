@@ -404,6 +404,11 @@ onMounted(() => {
     configStore.chatId = conversationId;
     loadConversation(conversationId);
   }
+  
+  if (configStore.userId) {
+    fetchHistoryList();
+  }
+  
   watch(
     () => configStore.userId,
     (newUserId, oldUserId) => {

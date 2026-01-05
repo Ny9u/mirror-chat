@@ -6,6 +6,7 @@
           :userInput="inputValue"
           :netSearch="netSearch"
           :deepThinking="deepThinking"
+          :knowledgeBase="knowledgeBase"
           ref="listRef"
         ></messageList>
       </div>
@@ -46,6 +47,16 @@
               </n-icon>
               <div class="feature-button-text">搜索</div>
             </div>
+            <div
+              class="feature-button"
+              :class="{ active: knowledgeBase }"
+              @click="useKnowledgeBase"
+            >
+              <n-icon class="feature-button-icon" size="20">
+                <Book />
+              </n-icon>
+              <div class="feature-button-text">知识库</div>
+            </div>
           </div>
           <div class="buttons">
             <n-button text @click="handleRecordClick" :disabled="loading">
@@ -76,7 +87,7 @@
 import { ref } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World, Atom, Microphone } from "@vicons/tabler";
+import { World, Atom, Microphone, Book } from "@vicons/tabler";
 import { asrRecognize } from "@/services/asrService.js";
 
 const message = useMessage();
@@ -84,6 +95,7 @@ const inputValue = ref("");
 const listRef = ref(null);
 const netSearch = ref(false);
 const deepThinking = ref(false);
+const knowledgeBase = ref(false);
 const loading = ref(false);
 const recording = ref(false);
 const abortController = ref(null);
@@ -156,6 +168,10 @@ const useNetSearch = () => {
 
 const useDeepThinking = () => {
   deepThinking.value = !deepThinking.value;
+};
+
+const useKnowledgeBase = () => {
+  knowledgeBase.value = !knowledgeBase.value;
 };
 
 let mediaRecorder = null;

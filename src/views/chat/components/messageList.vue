@@ -530,8 +530,9 @@ const props = defineProps({
   userInput: String,
   netSearch: Boolean,
   deepThinking: Boolean,
+  knowledgeBase: Boolean,
 });
-const { userInput, netSearch, deepThinking } = toRefs(props);
+const { userInput, netSearch, deepThinking, knowledgeBase } = toRefs(props);
 
 const configStore = useConfigStore();
 const message = useMessage();
@@ -697,6 +698,7 @@ const fetchAI = async (signal) => {
           model: configStore.model,
           enableThinking: true,
           enableSearch: netSearch.value,
+          enableKnowledge: knowledgeBase.value,
         },
         (chunk) => {
           // 处理思考过程
@@ -794,6 +796,7 @@ const fetchAI = async (signal) => {
           model: configStore.model,
           enableThinking: false,
           enableSearch: netSearch.value,
+          enableKnowledge: knowledgeBase.value,
         },
         (chunk) => {
           if (!assistantMessageAdded) {

@@ -554,8 +554,18 @@ onMounted(async () => {
 
     .login-btn {
       border-radius: 10px;
-      background-color: #36ad6a;
-      color: white;
+      background: linear-gradient(
+        135deg,
+        rgba(200, 240, 220, 0.7) 0%,
+        rgba(167, 243, 208, 0.65) 50%,
+        rgba(110, 231, 183, 0.8) 100%
+      );
+      background-size: 300% 300%;
+      animation: gradientFlow 8s ease-in-out infinite;
+      color: #333;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3),
+        0 0 15px rgba(0, 200, 255, 0.2);
     }
 
     .register-btn {

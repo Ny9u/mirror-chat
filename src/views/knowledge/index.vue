@@ -221,9 +221,7 @@ const downloadKnowledgeToLocal = async (item) => {
       id: item.id,
     });
 
-    const blob = new Blob([res], {
-      type: "text/plain;charset=utf-8",
-    });
+    const blob = res instanceof Blob ? res : new Blob([res]);
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

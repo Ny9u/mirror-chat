@@ -117,7 +117,7 @@ export const getKnowledgeDetail = async (params) => {
 };
 
 export const downloadKnowledge = async (params) => {
-  const res = await Request(api.downloadKnowledge, "POST", params);
+  const res = await Request(api.downloadKnowledge, "POST", params, "blob");
   return res;
 };
 

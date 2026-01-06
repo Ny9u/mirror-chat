@@ -185,13 +185,13 @@ export const Request = (
   url,
   method = "GET",
   params = {},
-  returnRawResponse = false
+  responseType = "json"
 ) => {
   return new Promise((resolve, reject) => {
     const config = {
       url: url,
       method: method,
-      responseType: returnRawResponse ? "arraybuffer" : "json",
+      responseType: responseType,
     };
 
     if (method.toUpperCase() === "POST" || method.toUpperCase() === "PUT") {
@@ -202,7 +202,7 @@ export const Request = (
 
     service(config)
       .then((response) => {
-        if (returnRawResponse) {
+        if (responseType === "arraybuffer") {
           // 返回原始响应，包含数据和响应头
           resolve({
             data: response.data,

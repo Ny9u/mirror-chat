@@ -21,7 +21,7 @@ class TTSService {
           text,
           voiceType,
         },
-        true
+        "arraybuffer"
       );
 
       // 后端直接返回Buffer数据，包装成对象格式

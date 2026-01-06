@@ -23,6 +23,21 @@
       <div class="knowledge-stats">共 {{ totalPage }} 个文件</div>
     </div>
 
+    <div class="filter-section">
+      <div
+        v-for="(filter, index) in filters"
+        :key="filter.key"
+        class="filter-button"
+        :class="{
+          active: activeFilters.includes(filter.key),
+          [`filter-${index + 1}`]: true,
+        }"
+        @click="setActiveFilter(filter.key)"
+      >
+        {{ filter.label }}
+      </div>
+    </div>
+
     <div class="knowledge-grid" v-if="knowledgeList.length">
       <div
         v-for="item in knowledgeList"
@@ -152,6 +167,26 @@ const loading = ref(true);
 const totalPages = computed(() => {
   return Math.ceil(totalPage.value / pageSize.value);
 });
+
+const filters = [
+  { key: "all", label: "全部" },
+  { key: "pdf", label: "PDF" },
+  { key: "doc", label: "DOC" },
+  { key: "xls", label: "XLS" },
+  { key: "txt", label: "TXT" },
+  { key: "md", label: "MD" },
+];
+
+const activeFilters = ref(["all"]);
+
+const filterTypeMap = {
+  pdf: [1],
+  doc: [2, 3],
+  xls: [4, 5],
+  txt: [6],
+  md: [7],
+  all: [],
+};
 const getFileIcon = (fileName) => {
   if (!fileName) return new URL("@/assets/Markdown.svg", import.meta.url).href;
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
@@ -177,6 +212,27 @@ const getPreviewContent = (item) => {
   return isMarkdown ? md.render(content) : content;
 };
 
+const setActiveFilter = async (filterKey) => {
+  if (filterKey === "all") {
+    activeFilters.value = ["all"];
+  } else {
+    const index = activeFilters.value.indexOf(filterKey);
+    if (index > -1) {
+      // 双击取消选中
+      activeFilters.value.splice(index, 1);
+    } else {
+      activeFilters.value = activeFilters.value.filter((f) => f !== "all");
+      activeFilters.value.push(filterKey);
+    }
+
+    if (activeFilters.value.length === 0) {
+      activeFilters.value = ["all"];
+    }
+  }
+  currentPage.value = 1;
+  await loadKnowledgeList();
+};
+
 const handlePageChange = async (page) => {
   currentPage.value = page;
   await loadKnowledgeList(page);
@@ -186,11 +242,22 @@ const loadKnowledgeList = async (page = 1) => {
   loading.value = true;
   knowledgeList.value = [];
   try {
-    const res = await getKnowledgeList({
+    const params = {
       userId: configStore.userId,
       page,
       pageSize: pageSize.value,
-    });
+    };
+
+    if (!activeFilters.value.includes("all")) {
+      // 合并所有选中类型的types
+      const allTypes = [];
+      activeFilters.value.forEach((filter) => {
+        allTypes.push(...filterTypeMap[filter]);
+      });
+      params.types = allTypes;
+    }
+
+    const res = await getKnowledgeList(params);
 
     if (res.code === 200) {
       knowledgeList.value = res.data?.list || [];
@@ -518,6 +585,139 @@ onMounted(async () => {
       font-size: 14px;
       color: var(--text-color-3);
       margin-bottom: 16px;
+    }
+  }
+
+  .filter-section {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+
+    .filter-button {
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--select-color);
+      background-color: var(--message-color);
+      color: var(--text-color);
+      user-select: none;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        background-size: 300% 300%;
+        animation: gradientFlow 8s ease-in-out infinite;
+        color: #333;
+        border: 1px solid transparent;
+      }
+
+      // All - 主题绿色
+      &.filter-1 {
+        &:hover {
+          background-color: rgba(0, 255, 136, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            rgba(0, 255, 136, 0.25) 0%,
+            rgba(0, 255, 115, 0.35) 50%,
+            rgba(50, 255, 149, 0.4) 100%
+          );
+          box-shadow: 0 2px 8px rgba(0, 255, 136, 0.4),
+            0 0 10px rgba(0, 200, 255, 0.25);
+        }
+      }
+
+      // PDF - 暗红色
+      &.filter-2 {
+        &:hover {
+          background-color: rgba(192, 57, 43, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            #c0392b 0%,
+            #e74c3c 50%,
+            #c0392b 100%
+          );
+          box-shadow: 0 2px 8px rgba(192, 57, 43, 0.4),
+            0 0 10px rgba(231, 76, 60, 0.25);
+        }
+      }
+
+      // DOC - 蓝色
+      &.filter-3 {
+        &:hover {
+          background-color: rgba(41, 128, 185, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            #2980b9 0%,
+            #3498db 50%,
+            #2980b9 100%
+          );
+          box-shadow: 0 2px 8px rgba(41, 128, 185, 0.4),
+            0 0 10px rgba(52, 152, 219, 0.25);
+        }
+      }
+
+      // XLS - 绿色
+      &.filter-4 {
+        &:hover {
+          background-color: rgba(39, 174, 96, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            #27ae60 0%,
+            #2ecc71 50%,
+            #27ae60 100%
+          );
+          box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4),
+            0 0 10px rgba(46, 204, 113, 0.25);
+        }
+      }
+
+      // TXT - 灰色
+      &.filter-5 {
+        &:hover {
+          background-color: rgba(127, 140, 141, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            #7f8c8d 0%,
+            #95a5a6 50%,
+            #7f8c8d 100%
+          );
+          box-shadow: 0 2px 8px rgba(127, 140, 141, 0.4),
+            0 0 10px rgba(149, 165, 166, 0.25);
+        }
+      }
+
+      // MD - 深灰色
+      &.filter-6 {
+        &:hover {
+          background-color: rgba(44, 62, 80, 0.15);
+        }
+        &.active {
+          background: linear-gradient(
+            135deg,
+            #2c3e50 0%,
+            #34495e 50%,
+            #2c3e50 100%
+          );
+          box-shadow: 0 2px 8px rgba(44, 62, 80, 0.4),
+            0 0 10px rgba(52, 73, 94, 0.25);
+        }
+      }
     }
   }
 

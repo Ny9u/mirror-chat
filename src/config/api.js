@@ -31,6 +31,7 @@ export const api = {
   getKnowledgeList: "/api/v1/knowledge/list",
   deleteKnowledge: "/api/v1/knowledge/delete",
   getKnowledgeDetail: "/api/v1/knowledge/detail",
+  downloadKnowledge: "/api/v1/knowledge/download",
   setModelConfig: "/api/v1/user/setModelConfig",
   getModelConfig: "/api/v1/user/getModelConfig",
 };

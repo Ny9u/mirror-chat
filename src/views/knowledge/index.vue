@@ -45,16 +45,20 @@
           <div class="item-type">{{ item.type }}</div>
         </div>
         <div class="item-actions">
-          <n-button text size="small" @click.stop="openKnowledge(item)">
+          <n-button
+            text
+            size="small"
+            @click.stop="downloadKnowledgeToLocal(item)"
+          >
             <template #icon>
-              <n-icon><Eye /></n-icon>
+              <n-icon><Download /></n-icon>
             </template>
           </n-button>
           <n-button
             text
             size="small"
             type="error"
-            @click.stop="deleteKnowledge(item)"
+            @click.stop="openDeleteKnowledgeDialog(item)"
           >
             <template #icon>
               <n-icon><Trash /></n-icon>
@@ -116,19 +120,20 @@ import {
 import {
   Trash,
   X,
-  Eye,
   Upload,
   Database,
   CloudUpload,
   AlertTriangle,
+  Download,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore.js";
 import { formatDate } from "@/utils/date.js";
 import {
   uploadKnowledge,
   getKnowledgeList,
-  deleteKnowledge as deleteKnowledgeApi,
+  deleteKnowledge,
   getKnowledgeDetail,
+  downloadKnowledge,
 } from "@/services/user.js";
 import MarkdownIt from "markdown-it";
 
@@ -207,6 +212,29 @@ const formatFileSize = (bytes) => {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
+
+const downloadKnowledgeToLocal = async (item) => {
+  try {
+    const res = await downloadKnowledge({
+      userId: configStore.userId,
+      id: item.id,
+    });
+
+    const blob = new Blob([res], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = item.fileName || "download";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    message.error("下载失败");
+  }
 };
 
 const handleUpload = async ({ file, onFinish, onError }) => {
@@ -357,7 +385,7 @@ const openKnowledge = async (item) => {
   }
 };
 
-const deleteKnowledge = async (item) => {
+const openDeleteKnowledgeDialog = async (item) => {
   dialog.warning({
     title: "确定删除文件？",
     content: `确定要删除"${item.fileName}"吗？删除后，文件将不可恢复。`,
@@ -392,7 +420,7 @@ const deleteKnowledge = async (item) => {
     },
     onPositiveClick: async () => {
       try {
-        const res = await deleteKnowledgeApi({
+        const res = await deleteKnowledge({
           userId: configStore.userId,
           id: item.id,
           fileName: item.fileName,

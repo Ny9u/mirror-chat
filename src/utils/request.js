@@ -20,7 +20,7 @@ const processQueue = (error, token = null) => {
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 10000, // 请求超时时间
+  timeout: 20000, // 请求超时时间
 });
 
 // 请求拦截器

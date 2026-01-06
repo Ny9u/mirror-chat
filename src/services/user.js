@@ -116,6 +116,11 @@ export const getKnowledgeDetail = async (params) => {
   return res;
 };
 
+export const downloadKnowledge = async (params) => {
+  const res = await Request(api.downloadKnowledge, "POST", params);
+  return res;
+};
+
 export const setModelConfig = async (params) => {
   const res = await Request(api.setModelConfig, "POST", params);
   return res;

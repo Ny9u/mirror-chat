@@ -9,7 +9,7 @@
     <div class="filter-section">
       <div class="filter-buttons">
         <div
-          v-for="(filter, index) in filters"
+          v-for="(filter) in filters"
           :key="filter.key"
           class="filter-button"
           :class="{

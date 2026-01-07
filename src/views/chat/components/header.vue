@@ -650,11 +650,11 @@ onMounted(async () => {
 
 /* 模型选择面板过渡动画 */
 .select-fade-enter-active {
-  animation: selectSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: selectSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .select-fade-leave-active {
-  animation: selectSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: selectSlideOut 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes selectSlideIn {
@@ -825,8 +825,8 @@ onMounted(async () => {
   backdrop-filter: blur(10px);
 
   .model-title {
-    height: 3.33rem;
-    padding: 0 1.33rem;
+    height: 2.33rem;
+    padding: 0.5rem 1rem;
     line-height: 3.33rem;
     font-size: 1.2rem;
     font-weight: 600;
@@ -835,7 +835,7 @@ onMounted(async () => {
     align-items: center;
     justify-content: space-between;
     user-select: none;
-    animation: itemFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: itemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
     .model-question {
       width: 1.33rem;
@@ -883,8 +883,8 @@ onMounted(async () => {
     position: relative;
     overflow: hidden;
     opacity: 0;
-    animation: modelItemFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    animation-delay: calc(0.08s + var(--model-index) * 0.03s);
+    animation: modelItemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: calc(0.15s + var(--model-index) * 0.08s);
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     .model-name {

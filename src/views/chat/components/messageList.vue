@@ -1200,12 +1200,12 @@ onBeforeUnmount(() => {
       margin: 2rem 0;
       padding: 0.5rem 0;
       color: var(--text-color);
-      animation: messageSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       transition: all 0.3s ease;
     }
     .avatar {
-      width: 2.13rem;
-      height: 2.13rem;
+      width: 2rem;
+      height: 2rem;
       margin: 0 0.67rem;
     }
     .message {
@@ -1239,14 +1239,14 @@ onBeforeUnmount(() => {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
-        animation: contentFadeIn 0.5s ease 0.15s forwards;
+        animation: contentFadeIn 0.4s ease 0.15s forwards;
         opacity: 0;
       }
       &.message-user {
         .content {
           align-items: flex-end;
         }
-        animation: messageSlideInRight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+        animation: messageSlideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)
           forwards;
       }
       .text-container {
@@ -1258,31 +1258,6 @@ onBeforeUnmount(() => {
         overflow: hidden;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-
-        &::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            transparent 100%
-          );
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-
-          &::before {
-            opacity: 1;
-          }
-        }
 
         .text {
           width: 100%;
@@ -1454,10 +1429,10 @@ onBeforeUnmount(() => {
         :deep(.n-button) {
           border-radius: 8px;
           padding: 0.4rem;
-          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
           &:hover {
-            background-color: rgba(24, 160, 88, 0.1) !important;
+            background-color: rgba(24, 160, 88, 0.1);
             transform: scale(1.1);
           }
 

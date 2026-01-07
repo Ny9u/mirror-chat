@@ -8,10 +8,10 @@
         <h1 ref="titleElement">
           {{
             activeTab === "login"
-              ? "登录到Mirror🤗"
+              ? "登录到Mirror 💚"
               : activeTab === "reset"
-              ? "重置密码🔑"
-              : "注册Mirror👋"
+              ? "重置密码 🔑"
+              : "注册Mirror 👏"
           }}
         </h1>
       </div>
@@ -442,85 +442,50 @@ const createTextFloatAnimation = () => {
       const isMovingRight = mouseDirection === "right";
       const color = isMovingRight ? "#18a058" : "#000000";
 
-      // 鼠标悬浮时的动画效果
-      window.anime({
-        targets: this,
-        translateY: -5,
-        scale: 1.1,
-        opacity: 1,
-        color: color,
-        duration: 300,
-        easing: "easeOutQuad",
-      });
+      // 定义影响范围（中心字符 + 左右各2个字符 = 5个字符）
+      const affectRange = 2;
 
-      // 添加波纹效果到相邻字符，也应用相同的颜色
-      const prevIndex = index - 1;
-      const nextIndex = index + 1;
+      // 为影响范围内的所有字符应用效果（相同颜色，不同强度）
+      for (let i = -affectRange; i <= affectRange; i++) {
+        const targetIndex = index + i;
+        if (targetIndex >= 0 && targetIndex < chars.length) {
+          const distance = Math.abs(i);
+          // 根据距离计算效果强度（中心最强，边缘最弱）
+          const intensity = 1 - distance * 0.25;
 
-      if (prevIndex >= 0) {
-        window.anime({
-          targets: chars[prevIndex],
-          translateY: -3,
-          scale: 1.05,
-          color: color,
-          opacity: 0.9,
-          duration: 300,
-          easing: "easeOutQuad",
-        });
-      }
-
-      if (nextIndex < chars.length) {
-        window.anime({
-          targets: chars[nextIndex],
-          translateY: -3,
-          scale: 1.05,
-          color: color,
-          opacity: 0.9,
-          duration: 300,
-          easing: "easeOutQuad",
-        });
+          window.anime({
+            targets: chars[targetIndex],
+            translateY: -5 * intensity,
+            scale: 1 + 0.1 * intensity,
+            opacity: 0.9 + 0.1 * intensity,
+            color: color,
+            duration: 300 + distance * 50,
+            easing: "easeOutQuad",
+          });
+        }
       }
     });
 
     charElement.addEventListener("mouseleave", function () {
-      // 恢复原始状态
-      window.anime({
-        targets: this,
-        translateY: 0,
-        scale: 1,
-        opacity: 0.9,
-        color: "",
-        textShadow: "",
-        duration: 400,
-        easing: "easeOutExpo",
-      });
+      // 定义影响范围
+      const affectRange = 2;
 
-      // 恢复相邻字符
-      const prevIndex = index - 1;
-      const nextIndex = index + 1;
+      for (let i = -affectRange; i <= affectRange; i++) {
+        const targetIndex = index + i;
+        if (targetIndex >= 0 && targetIndex < chars.length) {
+          const distance = Math.abs(i);
 
-      if (prevIndex >= 0) {
-        window.anime({
-          targets: chars[prevIndex],
-          translateY: 0,
-          scale: 1,
-          color: "",
-          opacity: 0.9,
-          duration: 400,
-          easing: "easeOutExpo",
-        });
-      }
-
-      if (nextIndex < chars.length) {
-        window.anime({
-          targets: chars[nextIndex],
-          translateY: 0,
-          scale: 1,
-          color: "",
-          opacity: 0.9,
-          duration: 400,
-          easing: "easeOutExpo",
-        });
+          window.anime({
+            targets: chars[targetIndex],
+            translateY: 0,
+            scale: 1,
+            opacity: 0.9,
+            color: "",
+            textShadow: "",
+            duration: 400 + distance * 50,
+            easing: "easeOutExpo",
+          });
+        }
       }
     });
   });

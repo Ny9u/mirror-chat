@@ -5,7 +5,12 @@
       <div class="header-content">
         <h1>设置</h1>
         <div class="user-info">
-          <n-avatar round :src="configStore.avatar" class="user-avatar">
+          <n-avatar
+            round
+            :src="configStore.avatar"
+            class="user-avatar"
+            @click="editProfile"
+          >
             <span
               v-if="!configStore.avatar"
               style="user-select: none; -webkit-user-select: none"
@@ -244,6 +249,7 @@
           type="primary"
           @click="updateLLMConfig"
           :loading="updatingLLM"
+          :disabled="loadingLLMConfig"
           style="border-radius: 8px; padding: 1.3rem 1.5rem"
         >
           保存配置
@@ -791,12 +797,24 @@ const previewVoice = async (voice) => {
   box-sizing: border-box;
   position: relative;
 
+  // 页面入场动画
+  animation: pageEnter 0.5s ease-out;
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .close-icon {
     position: absolute;
     top: 1rem;
     right: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
     width: 2.5rem;
     height: 2.5rem;
@@ -808,11 +826,24 @@ const previewVoice = async (voice) => {
 
     &:hover {
       background-color: rgba(0, 0, 0, 0.1);
+      transform: rotate(90deg);
     }
   }
 
   .setting-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    animation: slideDown 0.5s ease-out;
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
     .header-content {
       max-width: 800px;
@@ -823,30 +854,52 @@ const previewVoice = async (voice) => {
       h1 {
         color: var(--text-color);
         font-size: 2rem;
-        margin-bottom: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.02em;
       }
 
       .user-info {
         display: flex;
         align-items: center;
+        padding: 1.25rem;
+        background: var(--message-color);
+        border-radius: 16px;
+        cursor: pointer;
+        border: 1px solid transparent;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+          .user-avatar {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px
+              rgba(var(--primary-color-rgb, 99, 102, 241), 0.3);
+          }
+        }
 
         .user-avatar {
-          width: 3.75rem;
-          height: 3.75rem;
+          width: 4rem;
+          height: 4rem;
           margin-right: 1.25rem;
+          cursor: pointer;
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 2px solid var(--primary-color);
         }
 
         .user-details {
           .user-name {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--text-color);
-            margin-bottom: 5px;
+            margin-bottom: 0.35rem;
           }
 
           .user-id {
-            font-size: 0.9375rem;
+            font-size: 0.875rem;
             color: var(--text-color);
+            opacity: 0.6;
           }
         }
       }
@@ -861,15 +914,45 @@ const previewVoice = async (voice) => {
     margin: 0 auto;
 
     .setting-section {
-      background: var(--select-color);
-      border-radius: 0.625rem;
-      padding: 1.25rem;
+      background: var(--message-color);
+      border-radius: 16px;
+      padding: 1.5rem;
       margin-bottom: 1.25rem;
+      border: 1px solid rgba(128, 128, 128, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+
+      // 分组入场动画
+      animation: sectionEnter 0.5s ease-out backwards;
+
+      &:nth-child(1) {
+        animation-delay: 0.3s;
+      }
+      &:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      &:nth-child(3) {
+        animation-delay: 0.1s;
+      }
+
+      @keyframes sectionEnter {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
       h2 {
-        padding-left: 1rem;
+        padding-left: 0.5rem;
         color: var(--text-color);
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        opacity: 0.5;
+        margin: 0 0;
+        margin-bottom: 1rem;
         cursor: default;
       }
 
@@ -877,15 +960,42 @@ const previewVoice = async (voice) => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.9375rem 0;
-        transition: background-color 0.3s ease;
-        border-radius: 0.3125rem;
-        padding: 0.9375rem;
-        margin: 0.3125rem 0;
+        padding: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 12px;
+        margin: 0.25rem 0;
+        cursor: pointer;
+        position: relative;
+
+        &::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 3px;
+          height: 0;
+          background: var(--primary-color);
+          border-radius: 2px;
+          transition: height 0.3s ease;
+        }
 
         &:hover {
-          cursor: default;
-          background-color: rgba(0, 0, 0, 0.05);
+          background-color: var(--background-color);
+          padding-left: 1.25rem;
+
+          &::before {
+            height: 60%;
+          }
+
+          .setting-action .n-icon {
+            transform: translateX(4px);
+            color: var(--primary-color);
+          }
+        }
+
+        &:active {
+          transform: scale(0.99);
         }
 
         &:last-child {
@@ -896,10 +1006,13 @@ const previewVoice = async (voice) => {
           display: flex;
           align-items: center;
           color: var(--text-color);
-          font-size: 1.125rem;
+          font-size: 1rem;
+          font-weight: 500;
 
           .n-icon {
-            margin-right: 0.625rem;
+            margin-right: 0.875rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
           }
         }
 
@@ -907,22 +1020,35 @@ const previewVoice = async (voice) => {
           display: flex;
           align-items: center;
           color: var(--text-color);
-          opacity: 0.7;
+          opacity: 0.5;
+
+          .n-icon {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
 
           .current-voice {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             color: var(--text-color);
             opacity: 0.7;
             margin-right: 0.5rem;
           }
 
           &.voice-selector {
-            border: 1px solid #00000014;
-            border-radius: 12px;
+            border: 1px solid rgba(128, 128, 128, 0.15);
+            border-radius: 10px;
             padding: 0.5rem 0.75rem;
-            background-color: transparent;
+            background-color: var(--background-color);
             cursor: pointer;
             opacity: 1;
+            transition: all 0.3s ease;
+
+            &:hover {
+              border-color: var(--primary-color);
+              background-color: rgba(
+                var(--primary-color-rgb, 99, 102, 241),
+                0.05
+              );
+            }
           }
         }
       }

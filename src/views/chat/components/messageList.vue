@@ -1093,9 +1093,9 @@ const initTyped = () => {
     strings: [
       `${
         configStore.name
-          ? `${time}好, ${configStore.name}`
-          : `${time}好 , Master`
-      }🥰🥰`,
+          ? `${time}好, ${configStore.name} 🥰🥰`
+          : `${time}好, Master 👋👋`
+      }`,
     ],
     typeSpeed: 50,
     backSpeed: 0,
@@ -1147,11 +1147,45 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="less" scoped>
+/* 消息项入场动画 */
+@keyframes messageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes messageSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes contentFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .message-container {
   width: 70vw;
   height: 35vh;
   background: var(--background-color) no-repeat center;
-  transition: height 0.3s ease-in-out;
+  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &.chat {
     height: 70vh;
@@ -1163,8 +1197,11 @@ onBeforeUnmount(() => {
     .item {
       display: flex;
       align-items: flex-start;
-      margin: 2.67rem 0;
+      margin: 2rem 0;
+      padding: 0.5rem 0;
       color: var(--text-color);
+      animation: messageSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      transition: all 0.3s ease;
     }
     .avatar {
       width: 2.13rem;
@@ -1173,42 +1210,85 @@ onBeforeUnmount(() => {
     }
     .message {
       flex-direction: column;
+      max-width: calc(100% - 4rem);
+
       &:hover .time {
-        opacity: 0.7 !important ;
+        opacity: 0.7 !important;
       }
       .title {
-        font-size: 1.2rem;
-        font-weight: bold;
+        font-size: 1.1rem;
+        font-weight: 600;
         color: var(--text-color);
         display: flex;
         align-items: baseline;
-        gap: 0.5rem;
+        gap: 0.6rem;
+        margin-bottom: 0.4rem;
+        animation: contentFadeIn 0.4s ease 0.1s forwards;
+        opacity: 0;
+
         .time {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: normal;
           color: var(--text-color);
           opacity: 0;
-          transition: opacity 0.2s ease-in-out;
+          transition: opacity 0.3s ease;
         }
       }
       .content {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.25rem;
+        gap: 0.5rem;
+        animation: contentFadeIn 0.5s ease 0.15s forwards;
+        opacity: 0;
       }
-      &.message-user .content {
-        align-items: flex-end;
+      &.message-user {
+        .content {
+          align-items: flex-end;
+        }
+        animation: messageSlideInRight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+          forwards;
       }
       .text-container {
         max-width: 37.33rem;
         display: flex;
         background: var(--message-color) no-repeat center;
-        border-radius: 0.53rem;
+        border-radius: 1rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+        &::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            transparent 100%
+          );
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+
+          &::before {
+            opacity: 1;
+          }
+        }
+
         .text {
           width: 100%;
-          padding: 0.6rem 1.33rem;
-          font-size: 1.07rem;
+          padding: 0.8rem 1.2rem;
+          font-size: 1rem;
+          line-height: 1.7;
           caret-color: transparent;
         }
       }
@@ -1357,14 +1437,33 @@ onBeforeUnmount(() => {
       .tool {
         width: 100%;
         display: flex;
-        padding-top: 0.5rem;
-        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        padding-top: 0.6rem;
+        gap: 0.25rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
         &.tool-hidden {
           visibility: hidden;
           opacity: 0;
+          transform: translateY(-5px);
         }
+
         &.tool-user {
           justify-content: flex-end;
+        }
+
+        :deep(.n-button) {
+          border-radius: 8px;
+          padding: 0.4rem;
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+          &:hover {
+            background-color: rgba(24, 160, 88, 0.1) !important;
+            transform: scale(1.1);
+          }
+
+          &:active {
+            transform: scale(0.95);
+          }
         }
       }
     }
@@ -1373,8 +1472,12 @@ onBeforeUnmount(() => {
   ::v-deep(.n-button--text-type) {
     background-color: transparent !important;
     color: var(--text-color) !important;
-    opacity: 0.7;
-    transition: opacity 0.2s ease-in-out;
+    opacity: 0.6;
+    transition: all 0.25s ease;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 
   ::v-deep(.n-scrollbar-rail) {
@@ -1382,6 +1485,8 @@ onBeforeUnmount(() => {
   }
   ::v-deep(.n-avatar) {
     background-color: transparent;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
   }
   ::v-deep(.n-spin-body) {
     flex-direction: row;
@@ -1392,16 +1497,33 @@ onBeforeUnmount(() => {
     margin-top: 0rem;
   }
 }
+
+/* 欢迎页面动画 */
+@keyframes welcomeFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .welcome {
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: end;
+  padding-bottom: 2rem;
+  animation: welcomeFadeIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+
   .welcome-text {
     font-size: 2.5rem;
     color: var(--text-color);
     cursor: default;
+    letter-spacing: 0.02em;
   }
 }
 </style>

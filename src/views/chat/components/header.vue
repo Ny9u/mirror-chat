@@ -64,82 +64,89 @@
       </n-avatar>
     </div>
   </div>
-  <div
-    v-show="showSettings"
-    class="settings"
-    :class="{ 'settings-visible': showSettings }"
-    @click.stop
-  >
-    <div class="user-info">
-      <n-avatar round :src="configStore.avatar" class="user-avatar">
-        <span
-          v-if="!configStore.avatar"
-          style="user-select: none; -webkit-user-select: none"
-          >{{ Global.getInitials(configStore.name) }}</span
+  <Transition name="settings-fade">
+    <div v-show="showSettings" class="settings" @click.stop>
+      <div class="user-info">
+        <n-avatar round :src="configStore.avatar" class="user-avatar">
+          <span
+            v-if="!configStore.avatar"
+            style="user-select: none; -webkit-user-select: none"
+            >{{ Global.getInitials(configStore.name) }}</span
+          >
+        </n-avatar>
+        <div class="user-details">
+          <div class="user-name">{{ configStore.name || "用户" }}</div>
+        </div>
+      </div>
+      <div class="settings-options">
+        <div class="setting-item" :style="{ '--item-index': 0 }">
+          <div class="setting-label" @click="openSettingPage">
+            <n-icon
+              :component="Settings"
+              size="1.1em"
+              class="setting-icon"
+              :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
+            />
+            <span class="setting-text">设置</span>
+          </div>
+        </div>
+        <div class="setting-item" :style="{ '--item-index': 1 }">
+          <div class="setting-label logout-label" @click="logout">
+            <n-icon
+              :component="Logout"
+              size="1.1em"
+              class="setting-icon"
+              :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
+            />
+            <span class="setting-text">退出登录</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Transition>
+  <Transition name="select-fade">
+    <div v-show="showSelect" class="select" @click.stop>
+      <div class="model-title">
+        <div class="title-text">模型</div>
+        <n-tooltip placement="top" trigger="hover">
+          <template #trigger>
+            <div
+              :class="{
+                'model-question': configStore.theme === 'dark',
+                'model-question-light': configStore.theme === 'light',
+              }"
+            ></div>
+          </template>
+          <span>模型描述</span>
+        </n-tooltip>
+      </div>
+      <n-infinite-scroll style="height: 255px" :distance="10">
+        <n-tooltip
+          v-for="(model, index) in Models"
+          :key="model.key"
+          placement="right"
+          trigger="hover"
+          :delay="300"
+          :style="{ maxWidth: '280px' }"
         >
-      </n-avatar>
-      <div class="user-details">
-        <div class="user-name">{{ configStore.name || "用户" }}</div>
-      </div>
+          <template #trigger>
+            <div
+              class="item"
+              :class="{ selected: model.key === configStore.model }"
+              :style="{ '--model-index': index }"
+              @click="selectModel(model.key)"
+            >
+              <div class="model-name">{{ model.name }}</div>
+              <div class="model-desc">{{ model.desc }}</div>
+            </div>
+          </template>
+          <div class="model-tooltip">
+            <div class="tooltip-desc">{{ model.desc }}</div>
+          </div>
+        </n-tooltip>
+      </n-infinite-scroll>
     </div>
-    <div class="settings-options">
-      <div class="setting-item">
-        <div class="setting-label" @click="openSettingPage">
-          <n-icon
-            :component="Settings"
-            size="1.1em"
-            :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
-            style="margin-right: 0.3em"
-          />
-          设置
-        </div>
-      </div>
-      <div class="setting-item">
-        <div class="setting-label" @click="logout">
-          <n-icon
-            :component="Logout"
-            size="1.1em"
-            :color="configStore.theme === 'dark' ? '#ffffff' : '#000000'"
-            style="margin-right: 0.3em"
-          />
-          退出登录
-        </div>
-      </div>
-    </div>
-  </div>
-  <div
-    v-show="showSelect"
-    class="select"
-    :class="{ 'select-visible': showSelect }"
-    @click.stop
-  >
-    <div class="model-title">
-      <div>模型</div>
-      <n-tooltip placement="top" trigger="hover">
-        <template #trigger>
-          <div
-            :class="{
-              'model-question': configStore.theme === 'dark',
-              'model-question-light': configStore.theme === 'light',
-            }"
-          ></div>
-        </template>
-        <span>模型描述</span>
-      </n-tooltip>
-    </div>
-    <n-infinite-scroll style="height: 255px" :distance="10">
-      <div
-        v-for="model in Models"
-        :key="model.key"
-        class="item"
-        :class="{ selected: model.key === configStore.model }"
-        @click="selectModel(model.key)"
-      >
-        <div class="model-name">{{ model.name }}</div>
-        <div class="model-desc">{{ model.desc }}</div>
-      </div>
-    </n-infinite-scroll>
-  </div>
+  </Transition>
   <div v-show="showSelect" class="overlay" @click="closeModelSelect"></div>
   <div v-show="showSettings" class="overlay" @click="closeSettings"></div>
 </template>
@@ -418,12 +425,12 @@ onMounted(async () => {
   position: fixed;
   top: 0;
   background: var(--background-color) no-repeat center;
-  cursor: pointer;
   caret-color: transparent;
   .info {
     height: 3.6rem;
     display: flex;
     align-items: center;
+    cursor: pointer;
     .name {
       display: flex;
       align-items: center;
@@ -510,7 +517,7 @@ onMounted(async () => {
     .down-light {
       width: 1.33rem;
       height: 1.33rem;
-      margin: 0 1.07rem;
+      margin: 0 0.6rem;
       background: url("@/assets/down_dark.svg") no-repeat center;
       background-size: 100% 100%;
       transition: transform 0.4s ease;
@@ -523,6 +530,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
 
     .setting {
       width: 1.07rem;
@@ -586,6 +594,103 @@ onMounted(async () => {
     }
   }
 }
+/* Settings面板过渡动画 */
+.settings-fade-enter-active {
+  animation: settingsSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.settings-fade-leave-active {
+  animation: settingsSlideOut 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes settingsSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes settingsSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+/* 菜单项交错动画 */
+@keyframes itemFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 图标hover微动效 */
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* 模型选择面板过渡动画 */
+.select-fade-enter-active {
+  animation: selectSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.select-fade-leave-active {
+  animation: selectSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes selectSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes selectSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+/* 模型项交错淡入动画 */
+@keyframes modelItemFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .settings {
   width: 25rem;
   height: auto;
@@ -596,27 +701,29 @@ onMounted(async () => {
   right: 1.07rem;
   z-index: 999;
   caret-color: transparent;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
   padding: 1.33rem;
   box-sizing: border-box;
-
-  &.settings-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
 
   .user-info {
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 1.33rem;
+    padding-bottom: 1rem;
+    animation: itemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
     .user-avatar {
       width: 4rem;
       height: 4rem;
       margin-right: 1.07rem;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.3s ease;
+
+      &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(24, 160, 88, 0.2);
+      }
 
       :deep(.n-avatar__text) {
         position: absolute;
@@ -633,6 +740,9 @@ onMounted(async () => {
         font-size: 1.3rem;
         font-weight: 600;
         color: var(--text-color);
+        animation: itemFadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s
+          forwards;
+        opacity: 0;
       }
     }
   }
@@ -642,17 +752,14 @@ onMounted(async () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.8rem 0;
-      border-bottom: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      transition: all 0.3s ease;
+      padding: 0.4rem 0;
+      border-radius: 8px;
+      opacity: 0;
+      animation: itemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      animation-delay: calc(0.15s + var(--item-index) * 0.08s);
 
       &:last-child {
         border-bottom: none;
-      }
-
-      &:hover {
-        background-color: rgba(0, 0, 0, 0.05);
       }
 
       .setting-label {
@@ -661,24 +768,33 @@ onMounted(async () => {
         display: flex;
         align-items: center;
         cursor: pointer;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: all 0.3s ease;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         width: 100%;
-      }
+        position: relative;
+        overflow: hidden;
 
-      .setting-label:hover {
-        background-color: var(--hover-color);
-      }
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          .setting-icon {
+            animation: iconPulse 0.4s ease;
+          }
+        }
 
-      .dark-mode .setting-label:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #ff6b6b;
-      }
+        &:active {
+          transform: translateX(4px) scale(0.98);
+        }
 
-      .light-mode .setting-label:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-        color: #d32f2f;
+        .setting-icon {
+          margin-right: 0.3em;
+          transition: transform 0.25s ease;
+        }
+
+        .setting-text {
+          position: relative;
+          z-index: 1;
+        }
       }
 
       .setting-value {
@@ -694,28 +810,23 @@ onMounted(async () => {
 }
 
 .select {
-  width: 33.33rem;
-  height: 20.66rem;
+  width: 28rem;
+  height: auto;
+  max-height: 26rem;
   background: var(--select-color) no-repeat center;
-  border-radius: 1.07rem;
+  border-radius: 14px;
   position: absolute;
   top: 3.6rem;
   left: 12rem;
   z-index: 999;
   caret-color: transparent;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-
-  &.select-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
 
   .model-title {
     height: 3.33rem;
     padding: 0 1.33rem;
-    margin-bottom: 0.33rem;
     line-height: 3.33rem;
     font-size: 1.2rem;
     font-weight: 600;
@@ -724,109 +835,103 @@ onMounted(async () => {
     align-items: center;
     justify-content: space-between;
     user-select: none;
+    animation: itemFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+
     .model-question {
       width: 1.33rem;
       height: 1.33rem;
       background: url("@/assets/question.svg") no-repeat center;
       background-size: 100% 100%;
+      opacity: 0.5;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
     }
     .model-question-light {
       width: 1.33rem;
       height: 1.33rem;
       background: url("@/assets/question-dark.svg") no-repeat center;
       background-size: 100% 100%;
+      opacity: 0.5;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
     }
   }
+
   .item {
     width: 100%;
-    height: 5.67rem;
     font-size: 1.07rem;
     color: var(--text-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
     cursor: pointer;
-    border-radius: 1.33rem;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    transform: scale(1);
-    padding: 0 1.33rem;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
     box-sizing: border-box;
     user-select: none;
+    margin-bottom: 4px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: modelItemFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: calc(0.08s + var(--model-index) * 0.03s);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
     .model-name {
       width: 100%;
       font-weight: 600;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
     .model-desc {
       width: 100%;
-      color: #8c8e9c;
-      font-size: 0.93rem;
+      color: var(--text-color-3);
+      font-size: 13px;
       white-space: normal;
       overflow: hidden;
       text-overflow: ellipsis;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      line-height: 1.2;
+      line-height: 1.5;
       margin-top: 0.2rem;
+      transition: color 0.2s ease;
+    }
+
+    &:hover {
+      background: linear-gradient(
+        90deg,
+        rgba(150, 150, 150, 0.2),
+        rgba(150, 150, 150, 0.15)
+      );
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    &:active {
+      transform: translateX(4px) scale(0.98);
     }
   }
+
   .item.selected {
-    background-color: rgba(0, 255, 119, 0.1);
-    box-shadow: 0 4px 12px rgba(24, 160, 88, 0.15);
-    transform: scale(1.02);
-    border: 1px solid rgba(24, 160, 88, 0.2);
+    background-color: rgba(0, 200, 136, 0.12);
+    border-left: 3px solid var(--primary-color);
+
+    .model-name {
+      color: var(--primary-color);
+    }
   }
-  .item:hover {
-    background: linear-gradient(
-      90deg,
-      rgba(150, 150, 150, 0.15),
-      rgba(150, 150, 150, 0.05)
-    );
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transform: scale(1.01);
-  }
+
   .item.selected:hover {
-    background-color: rgba(0, 255, 119, 0.15);
-    box-shadow: 0 6px 16px rgba(24, 160, 88, 0.2);
-    transform: scale(1.03);
-    border: 1px solid rgba(24, 160, 88, 0.25);
-  }
-
-  .item.selected:hover .model-desc {
-    font-weight: normal;
-  }
-
-  .light-mode .item.selected {
-    background: linear-gradient(
-      90deg,
-      rgba(24, 160, 88, 0.1),
-      rgba(24, 160, 88, 0.06)
-    );
-    box-shadow: 0 4px 12px rgba(24, 160, 88, 0.1);
-    border: 1px solid rgba(24, 160, 88, 0.15);
-  }
-
-  .light-mode .item:hover {
-    background: linear-gradient(
-      90deg,
-      rgba(150, 150, 150, 0.1),
-      rgba(150, 150, 150, 0.03)
-    );
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .light-mode .item.selected:hover {
-    background: linear-gradient(
-      90deg,
-      rgba(24, 160, 88, 0.15),
-      rgba(24, 160, 88, 0.1)
-    );
-    box-shadow: 0 6px 16px rgba(24, 160, 88, 0.15);
-    border: 1px solid rgba(24, 160, 88, 0.2);
-  }
-
-  .light-mode .item.selected:hover .model-desc {
-    font-weight: normal;
+    background-color: rgba(0, 200, 136, 0.18);
   }
 }
 .overlay {

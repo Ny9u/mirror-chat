@@ -1,48 +1,42 @@
 <template>
   <div class="knowledge-container">
     <n-icon class="close-icon" :component="X" @click="goBack" size="1.5rem" />
-    <n-popover
-      v-if="knowledgeList.length"
-      placement="bottom"
-      trigger="hover"
-      :show-arrow="false"
-      class="upload-popover"
-    >
-      <template #trigger>
-        <n-icon
-          class="upload-icon"
-          :component="CloudUpload"
-          @click="showUploadDialog"
-          size="1.5rem"
-        />
-      </template>
-      <span>继续上传</span>
-    </n-popover>
     <div class="knowledge-header">
       <h2>知识库</h2>
       <div class="knowledge-stats">共 {{ totalPage }} 个文件</div>
     </div>
 
     <div class="filter-section">
+      <div class="filter-buttons">
+        <div
+          v-for="(filter, index) in filters"
+          :key="filter.key"
+          class="filter-button"
+          :class="{
+            active: activeFilters.includes(filter.key),
+            [`filter-${filter.key}`]: true,
+          }"
+          @click="setActiveFilter(filter.key)"
+        >
+          {{ filter.label }}
+        </div>
+      </div>
       <div
-        v-for="(filter, index) in filters"
-        :key="filter.key"
-        class="filter-button"
-        :class="{
-          active: activeFilters.includes(filter.key),
-          [`filter-${index + 1}`]: true,
-        }"
-        @click="setActiveFilter(filter.key)"
+        v-if="knowledgeList.length"
+        class="upload-button"
+        @click="showUploadDialog"
       >
-        {{ filter.label }}
+        <n-icon :component="CloudUpload" size="1rem" />
+        <span>继续上传</span>
       </div>
     </div>
 
     <div class="knowledge-grid" v-if="knowledgeList.length">
       <div
-        v-for="item in knowledgeList"
+        v-for="(item, index) in knowledgeList"
         :key="item.id"
         class="knowledge-item"
+        :style="{ animationDelay: `${index * 0.05}s` }"
         @click="openKnowledge(item)"
       >
         <div class="item-header">
@@ -531,26 +525,6 @@ onMounted(async () => {
     display: none;
   }
 
-  .upload-icon {
-    position: absolute;
-    top: 1rem;
-    right: 4rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 10;
-    width: 2.5rem;
-    height: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.625rem;
-    color: var(--primary-color);
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.1);
-    }
-  }
-
   .close-icon {
     position: absolute;
     top: 1rem;
@@ -590,9 +564,40 @@ onMounted(async () => {
 
   .filter-section {
     display: flex;
-    gap: 0.75rem;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1.5rem;
-    flex-wrap: wrap;
+
+    .filter-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .upload-button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: var(--primary-color);
+      color: #fff;
+      user-select: none;
+      flex-shrink: 0;
+
+      &:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
 
     .filter-button {
       padding: 0.5rem 1.25rem;
@@ -601,7 +606,6 @@ onMounted(async () => {
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      border: 1px solid var(--select-color);
       background-color: var(--message-color);
       color: var(--text-color);
       user-select: none;
@@ -614,108 +618,77 @@ onMounted(async () => {
         background-size: 300% 300%;
         animation: gradientFlow 8s ease-in-out infinite;
         color: #333;
-        border: 1px solid transparent;
       }
 
       // All - 主题绿色
-      &.filter-1 {
+      &.filter-all {
         &:hover {
-          background-color: rgba(0, 255, 136, 0.15);
+          background-color: rgba(0, 200, 136, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            rgba(0, 255, 136, 0.25) 0%,
-            rgba(0, 255, 115, 0.35) 50%,
-            rgba(50, 255, 149, 0.4) 100%
-          );
-          box-shadow: 0 2px 8px rgba(0, 255, 136, 0.4),
-            0 0 10px rgba(0, 200, 255, 0.25);
+          background-color: rgba(0, 200, 136, 0.18);
+          border: 1px solid rgba(0, 200, 136, 0.4);
+          color: #00c888;
         }
       }
 
-      // PDF - 暗红色
-      &.filter-2 {
+      // PDF - 红色
+      &.filter-pdf {
         &:hover {
-          background-color: rgba(192, 57, 43, 0.15);
+          background-color: rgba(220, 80, 70, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            #c0392b 0%,
-            #e74c3c 50%,
-            #c0392b 100%
-          );
-          box-shadow: 0 2px 8px rgba(192, 57, 43, 0.4),
-            0 0 10px rgba(231, 76, 60, 0.25);
+          background-color: rgba(220, 80, 70, 0.18);
+          border: 1px solid rgba(220, 80, 70, 0.4);
+          color: #dc5046;
         }
       }
 
       // DOC - 蓝色
-      &.filter-3 {
+      &.filter-doc {
         &:hover {
-          background-color: rgba(41, 128, 185, 0.15);
+          background-color: rgba(66, 140, 220, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            #2980b9 0%,
-            #3498db 50%,
-            #2980b9 100%
-          );
-          box-shadow: 0 2px 8px rgba(41, 128, 185, 0.4),
-            0 0 10px rgba(52, 152, 219, 0.25);
+          background-color: rgba(66, 140, 220, 0.18);
+          border: 1px solid rgba(66, 140, 220, 0.4);
+          color: #428cdc;
         }
       }
 
       // XLS - 绿色
-      &.filter-4 {
+      &.filter-xls {
         &:hover {
-          background-color: rgba(39, 174, 96, 0.15);
+          background-color: rgba(50, 180, 100, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            #27ae60 0%,
-            #2ecc71 50%,
-            #27ae60 100%
-          );
-          box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4),
-            0 0 10px rgba(46, 204, 113, 0.25);
+          background-color: rgba(50, 180, 100, 0.18);
+          border: 1px solid rgba(50, 180, 100, 0.4);
+          color: #32b464;
         }
       }
 
       // TXT - 灰色
-      &.filter-5 {
+      &.filter-txt {
         &:hover {
-          background-color: rgba(127, 140, 141, 0.15);
+          background-color: rgba(130, 145, 150, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            #7f8c8d 0%,
-            #95a5a6 50%,
-            #7f8c8d 100%
-          );
-          box-shadow: 0 2px 8px rgba(127, 140, 141, 0.4),
-            0 0 10px rgba(149, 165, 166, 0.25);
+          background-color: rgba(130, 145, 150, 0.18);
+          border: 1px solid rgba(130, 145, 150, 0.4);
+          color: #829196;
         }
       }
 
       // MD - 深灰色
-      &.filter-6 {
+      &.filter-md {
         &:hover {
-          background-color: rgba(44, 62, 80, 0.15);
+          background-color: rgba(70, 90, 110, 0.1);
         }
         &.active {
-          background: linear-gradient(
-            135deg,
-            #2c3e50 0%,
-            #34495e 50%,
-            #2c3e50 100%
-          );
-          box-shadow: 0 2px 8px rgba(44, 62, 80, 0.4),
-            0 0 10px rgba(52, 73, 94, 0.25);
+          background-color: rgba(70, 90, 110, 0.18);
+          border: 1px solid rgba(70, 90, 110, 0.4);
+          color: #465a6e;
         }
       }
     }
@@ -723,25 +696,55 @@ onMounted(async () => {
 
   .knowledge-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
     flex: 1;
 
     .knowledge-item {
       background-color: var(--message-color);
-      border-radius: 12px;
+      border-radius: 20px;
       padding: 1.1rem;
       cursor: pointer;
-      transition: all 0.2s ease;
-      border: 1px solid var(--select-color);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(128, 128, 128, 0.1);
       display: flex;
       flex-direction: column;
-      min-height: 11rem;
-      max-height: 23rem;
+      min-height: 10rem;
+      max-height: 20rem;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+
+      // 入场动画
+      animation: fadeInUp 0.5s ease forwards;
+      opacity: 0;
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
       &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
+        transform: translateY(-6px) scale(1.02);
+        border-color: var(--primary-color);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12),
+          0 4px 12px rgba(var(--primary-color-rgb, 99, 102, 241), 0.15);
+
+        .item-actions {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      &:active {
+        transform: translateY(-2px) scale(1.01);
+        transition: all 0.1s ease;
       }
 
       .item-header {
@@ -751,7 +754,8 @@ onMounted(async () => {
         margin-bottom: 0.75rem;
 
         .item-icon {
-          color: var(--primary-color);
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -778,25 +782,24 @@ onMounted(async () => {
 
           .item-date {
             font-size: 12px;
-            opacity: 0.6;
+            color: var(--text-color-3);
           }
         }
       }
 
       .item-description {
         flex: 1;
-        background-color: #ffffff85;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow: hidden;
+        color: var(--text-color);
+        user-select: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 5;
+        -webkit-box-orient: vertical;
+        background-color: var(--background-color);
         border-radius: 10px;
         padding: 0.75rem;
-        font-size: 14px;
-        overflow: auto;
-        opacity: 0.8;
-        user-select: none;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        &::-webkit-scrollbar {
-          display: none;
-        }
 
         h1,
         h2,
@@ -804,9 +807,9 @@ onMounted(async () => {
         h4,
         h5,
         h6 {
-          margin: 0.5rem 0 0.25rem 0;
+          margin: 0.25rem 0;
           font-weight: 600;
-          font-size: 1.1em;
+          font-size: 1em;
         }
 
         p {
@@ -816,17 +819,17 @@ onMounted(async () => {
         ul,
         ol {
           margin: 0.25rem 0;
-          padding-left: 1.5rem;
+          padding-left: 1.25rem;
         }
 
         li {
-          margin: 0.1rem 0;
+          margin: 0;
         }
 
         code {
           background-color: rgba(0, 0, 0, 0.05);
-          padding: 2px 6px;
-          border-radius: 4px;
+          padding: 1px 4px;
+          border-radius: 3px;
           font-size: 0.9em;
         }
 
@@ -835,7 +838,7 @@ onMounted(async () => {
           padding: 0.5rem;
           border-radius: 6px;
           overflow-x: auto;
-          margin: 0.5rem 0;
+          margin: 0.25rem 0;
         }
 
         pre code {
@@ -844,9 +847,9 @@ onMounted(async () => {
         }
 
         blockquote {
-          border-left: 3px solid var(--primary-color);
-          padding-left: 0.75rem;
-          margin: 0.5rem 0;
+          border-left: 2px solid var(--primary-color);
+          padding-left: 0.5rem;
+          margin: 0.25rem 0;
           opacity: 0.8;
         }
 
@@ -861,9 +864,11 @@ onMounted(async () => {
 
       .item-meta {
         display: flex;
-        margin: 0.75rem 0px;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--select-color);
         font-size: 12px;
-        opacity: 0.6;
+        color: var(--text-color-3);
         flex-wrap: nowrap;
         justify-content: space-between;
         align-items: center;
@@ -871,22 +876,43 @@ onMounted(async () => {
         .item-size {
           flex-shrink: 0;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: flex;
-          align-items: center;
         }
 
         .item-type {
-          display: flex;
-          align-items: center;
+          padding: 0.15rem 0.5rem;
+          background-color: var(--background-color);
+          border-radius: 4px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       }
 
       .item-actions {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
         display: flex;
-        justify-content: flex-end;
-        gap: 0.5rem;
+        gap: 0.35rem;
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--action-bg);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 0.35rem 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        z-index: 10;
+
+        :deep(.n-button) {
+          transition: all 0.2s ease;
+          border-radius: 6px;
+
+          &:hover {
+            transform: scale(1.15);
+            background-color: var(--action-hover-bg, rgba(0, 0, 0, 0.05));
+          }
+        }
       }
     }
   }

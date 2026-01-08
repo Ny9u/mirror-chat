@@ -11,6 +11,7 @@ export const useConfigStore = defineStore("config", {
     voiceType: 101001,
     voiceName: "智瑜",
     chatId: "",
+    sidebarCollapsed: false,
   }),
   actions: {
     setTheme(theme) {
@@ -36,6 +37,9 @@ export const useConfigStore = defineStore("config", {
     },
     setChatId(chatId) {
       this.chatId = chatId;
+    },
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
     },
   },
 });

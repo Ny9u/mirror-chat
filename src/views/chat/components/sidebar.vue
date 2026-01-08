@@ -1,87 +1,137 @@
 <template>
-  <div class="sidebar-container">
-    <div class="trigger-zone" @mouseenter="handleMouseEnter"></div>
+  <div
+    class="sidebar-container"
+    :class="{ collapsed: configStore.sidebarCollapsed }"
+  >
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div
+          class="toggle-btn"
+          :class="{ expanded: !configStore.sidebarCollapsed }"
+          @click="toggleSidebar"
+        >
+          <n-icon
+            v-if="configStore.sidebarCollapsed"
+            class="toggle-icon"
+            size="20"
+          >
+            <LayoutSidebarLeftExpand />
+          </n-icon>
+          <div
+            v-else
+            :class="{
+              logo: configStore.theme === 'dark',
+              'logo-light': configStore.theme === 'light',
+            }"
+          ></div>
+        </div>
+        <div
+          class="sidebar-title"
+          :class="{ 'sidebar-title-hidden': configStore.sidebarCollapsed }"
+        >
+          Mirror Chat
+        </div>
+      </div>
 
-    <transition name="slide">
-      <div
-        v-show="isVisible"
-        class="sidebar"
-        @mouseenter="handleSidebarMouseEnter"
-        @mouseleave="handleSidebarMouseLeave"
-      >
-        <div class="sidebar-header">
-          <div class="sidebar-title">功能</div>
+      <div class="divider"></div>
+
+      <div class="sidebar-content">
+        <div class="menu-section">
+          <div class="menu-item" @click="createNewChat">
+            <n-icon class="menu-icon" size="20">
+              <MessageCircle />
+            </n-icon>
+            <div
+              class="menu-text"
+              :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
+            >
+              新建对话
+            </div>
+          </div>
+          <div class="menu-item" @click="navigateToCollection">
+            <n-icon class="menu-icon" size="20">
+              <Bookmark />
+            </n-icon>
+            <div
+              class="menu-text"
+              :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
+            >
+              收藏夹
+            </div>
+          </div>
+          <div class="menu-item" @click="navigateToKnowledge">
+            <n-icon class="menu-icon" size="20">
+              <Book />
+            </n-icon>
+            <div
+              class="menu-text"
+              :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
+            >
+              知识库
+            </div>
+          </div>
         </div>
 
         <div class="divider"></div>
 
-        <div class="sidebar-content">
-          <div class="menu-section">
-            <div class="menu-item" @click="createNewChat">
-              <n-icon class="menu-icon" size="20">
-                <MessageCircle />
-              </n-icon>
-              <div class="menu-text">新建对话</div>
-            </div>
-            <div class="menu-item" @click="navigateToCollection">
-              <n-icon class="menu-icon" size="20">
-                <Bookmark />
-              </n-icon>
-              <div class="menu-text">收藏夹</div>
-            </div>
-            <div class="menu-item" @click="navigateToKnowledge">
-              <n-icon class="menu-icon" size="20">
-                <Book />
-              </n-icon>
-              <div class="menu-text">知识库</div>
-            </div>
+        <div
+          class="history-section"
+          :class="{ 'history-section-hidden': configStore.sidebarCollapsed }"
+        >
+          <div class="history-header">
+            <div class="history-title">历史对话</div>
+            <n-icon class="history-icon" size="16" @click="navigateToHistory">
+              <Clock />
+            </n-icon>
           </div>
-
-          <div class="divider"></div>
-
-          <div class="history-section">
-            <div class="history-header">
-              <div class="history-title">历史对话</div>
-              <n-icon class="history-icon" size="16" @click="navigateToHistory">
-                <Clock />
-              </n-icon>
-            </div>
-            <div class="history-list">
-              <div
-                v-for="item in historyList"
-                :key="item.id"
-                class="history-item"
-                :class="{ active: item.id === configStore.chatId }"
-                @click="selectHistory(item.id)"
-              >
-                <div class="history-item-content">
-                  <div class="history-item-title">{{ item.title }}</div>
-                  <div class="history-item-time">
-                    {{ formatTime(item.updateTime) }}
-                  </div>
+          <div class="history-list">
+            <div
+              v-for="item in historyList"
+              :key="item.id"
+              class="history-item"
+              :class="{ active: item.id === configStore.chatId }"
+              @click="selectHistory(item.id)"
+            >
+              <div class="history-item-content">
+                <div class="history-item-title">{{ item.title }}</div>
+                <div class="history-item-time">
+                  {{ formatTime(item.updateTime) }}
                 </div>
-                <div class="history-item-actions">
-                  <n-icon
-                    class="history-action-icon edit-icon"
-                    size="16"
-                    @click.stop="handleEditTitle(item.id, item.title)"
-                  >
-                    <Edit />
-                  </n-icon>
-                  <n-icon
-                    class="history-action-icon delete-icon"
-                    size="16"
-                    @click.stop="handleDeleteConversation(item.id)"
-                  >
-                    <Trash />
-                  </n-icon>
-                </div>
+              </div>
+              <div class="history-item-actions">
+                <n-icon
+                  class="history-action-icon edit-icon"
+                  size="16"
+                  @click.stop="handleEditTitle(item.id, item.title)"
+                >
+                  <Edit />
+                </n-icon>
+                <n-icon
+                  class="history-action-icon delete-icon"
+                  size="16"
+                  @click.stop="handleDeleteConversation(item.id)"
+                >
+                  <Trash />
+                </n-icon>
               </div>
             </div>
           </div>
         </div>
+
+        <div
+          class="collapsed-history-icon"
+          :class="{
+            'collapsed-history-icon-hidden': !configStore.sidebarCollapsed,
+          }"
+          @click="navigateToHistory"
+          title="历史对话"
+        >
+          <n-icon class="menu-icon" size="20">
+            <Clock />
+          </n-icon>
+        </div>
       </div>
-    </transition>
+    </div>
   </div>
 </template>
 
@@ -97,6 +147,7 @@ import {
   Edit,
   Trash,
   AlertTriangle,
+  LayoutSidebarLeftExpand,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -115,16 +166,18 @@ const configStore = useConfigStore();
 const historyStore = useHistoryStore();
 const dialog = useDialog();
 const message = useMessage();
-const isVisible = ref(false);
-let hideTimeout = null;
 const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
 
-const historyList = computed(() => historyStore.historyList); 
+const historyList = computed(() => historyStore.historyList);
 
 const formatTime = (date) => {
   return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+};
+
+const toggleSidebar = () => {
+  configStore.toggleSidebar();
 };
 
 const fetchHistoryList = async (forceRefresh = false) => {
@@ -161,7 +214,6 @@ const selectHistory = async (id) => {
   loadConversation(id);
 };
 
-// 加载历史对话的独立函数
 const loadConversation = async (id) => {
   try {
     const res = await getConversationDetail({
@@ -223,33 +275,6 @@ const createNewChat = () => {
   configStore.chatId = null;
   fetchHistoryList(true);
   window.dispatchEvent(new CustomEvent("clearChatHistory"));
-};
-
-const handleMouseEnter = () => {
-  if (!configStore.userId) {
-    return;
-  }
-  if (hideTimeout) {
-    clearTimeout(hideTimeout);
-    hideTimeout = null;
-  }
-  isVisible.value = true;
-};
-
-const handleSidebarMouseEnter = () => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout);
-    hideTimeout = null;
-  }
-};
-
-const handleSidebarMouseLeave = () => {
-  if (!configStore.userId) {
-    return;
-  }
-  hideTimeout = setTimeout(() => {
-    isVisible.value = false;
-  }, 300);
 };
 
 const handleEditTitle = (id, title) => {
@@ -404,19 +429,17 @@ onMounted(() => {
     configStore.chatId = conversationId;
     loadConversation(conversationId);
   }
-  
+
   if (configStore.userId) {
     fetchHistoryList();
   }
-  
+
   watch(
     () => configStore.userId,
     (newUserId, oldUserId) => {
       if (newUserId && !oldUserId) {
-        // 首次登录时加载历史列表
         fetchHistoryList();
       } else if (!newUserId && oldUserId) {
-        // 退出登录时清空状态
         historyStore.setHistoryList([]);
         historyStore.setHistoryListLoaded(false);
         configStore.chatId = null;
@@ -435,48 +458,124 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="less">
+// 动画曲线定义
+@ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+@ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+@ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+@transition-duration: 0.35s;
+
 .sidebar-container {
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
   z-index: 1000;
-  pointer-events: none;
-
-  .trigger-zone {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 0;
-    width: 9.375rem;
-    height: 90vh;
-    pointer-events: auto;
-  }
+  transition: width @transition-duration @ease-out-expo;
 
   .sidebar {
     position: absolute;
-    top: 3.5rem;
-    left: 1.25rem;
+    top: 0;
+    left: 0;
     width: 16.75rem;
-    height: 90vh;
+    height: 100vh;
     background-color: var(--sidebar-color);
-    border-radius: 12px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    pointer-events: auto;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+    transition: width @transition-duration @ease-out-expo;
+    will-change: width;
 
     .sidebar-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 1.1rem 1.4rem;
+      padding: 0.8rem 0;
+      padding-left: 1.2rem;
       user-select: none;
+      height: 3.6rem;
+      box-sizing: border-box;
+      transition: padding @transition-duration @ease-smooth;
+
+      .toggle-btn {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5rem;
+        box-sizing: border-box;
+        border-radius: 8px;
+        transition: all 0.4s @ease-smooth;
+        flex-shrink: 0;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          transform: scale(1.05);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        &.expanded {
+          cursor: default;
+
+          &:hover {
+            background-color: transparent;
+            transform: none;
+          }
+
+          &:active {
+            transform: none;
+          }
+        }
+
+        .toggle-icon {
+          color: var(--text-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.4s @ease-bounce;
+        }
+
+        &:hover .toggle-icon {
+          transform: translateX(2px);
+        }
+
+        .logo,
+        .logo-light {
+          width: 2rem;
+          height: 2rem;
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          transition: transform 0.4s @ease-smooth;
+        }
+
+        .logo {
+          background-image: url("@/assets/logo.svg");
+        }
+
+        .logo-light {
+          background-image: url("@/assets/logo_dark.svg");
+        }
+      }
 
       .sidebar-title {
         font-size: 1.25rem;
         font-weight: 600;
         color: var(--text-color);
+        margin-left: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 10rem;
+        transition: opacity @transition-duration @ease-smooth,
+          max-width @transition-duration @ease-smooth,
+          margin @transition-duration @ease-smooth;
+
+        &.sidebar-title-hidden {
+          opacity: 0;
+          max-width: 0;
+          margin-left: 0;
+        }
       }
     }
 
@@ -484,6 +583,7 @@ onBeforeUnmount(() => {
       height: 1px;
       margin: 0 1rem;
       background-color: rgba(128, 128, 128, 0.2);
+      transition: margin @transition-duration @ease-smooth;
     }
 
     .sidebar-content {
@@ -501,16 +601,48 @@ onBeforeUnmount(() => {
         .menu-item {
           display: flex;
           align-items: center;
-          padding: 0.625rem 0.5rem;
+          height: 2.5rem;
+          padding: 0 0.75rem;
           margin: 0 0.8rem;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.4s @ease-smooth;
           border-radius: 8px;
           color: var(--text-color);
           user-select: none;
+          box-sizing: border-box;
+          position: relative;
+          overflow: hidden;
+
+          // 波纹效果背景
+          &::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.08);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s @ease-smooth, height 0.4s @ease-smooth;
+          }
 
           &:hover {
             background-color: rgba(0, 0, 0, 0.05);
+            transform: translateX(4px);
+
+            .menu-icon {
+              transform: scale(1.1);
+            }
+          }
+
+          &:active {
+            transform: translateX(4px) scale(0.98);
+
+            &::before {
+              width: 200%;
+              height: 200%;
+            }
           }
 
           &:first-child {
@@ -524,6 +656,12 @@ onBeforeUnmount(() => {
           .menu-icon {
             margin-right: 0.75rem;
             color: var(--text-color);
+            flex-shrink: 0;
+            width: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.4s @ease-bounce, margin 0.4s @ease-smooth;
           }
 
           &:first-child .menu-icon {
@@ -533,6 +671,16 @@ onBeforeUnmount(() => {
           .menu-text {
             font-size: 14px;
             color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 10rem;
+            transition: opacity @transition-duration @ease-smooth,
+              max-width @transition-duration @ease-smooth;
+
+            &.menu-text-hidden {
+              opacity: 0;
+              max-width: 0;
+            }
           }
 
           &:first-child .menu-text {
@@ -543,12 +691,26 @@ onBeforeUnmount(() => {
 
       .history-section {
         padding: 0 0.625rem;
+        overflow: hidden;
+        transition: opacity @transition-duration @ease-smooth,
+          max-height @transition-duration @ease-smooth,
+          padding @transition-duration @ease-smooth;
+        max-height: 100vh;
+
+        &.history-section-hidden {
+          opacity: 0;
+          max-height: 0;
+          padding: 0;
+          pointer-events: none;
+        }
 
         .history-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1rem 0.8rem;
+          padding: 0rem 0.8rem;
+          padding-top: 0.8rem;
+          padding-bottom: 0.4rem;
           user-select: none;
           position: sticky;
           top: 0;
@@ -560,6 +722,7 @@ onBeforeUnmount(() => {
             font-weight: 600;
             color: var(--text-color);
             opacity: 0.3;
+            transition: opacity 0.4s @ease-smooth;
           }
 
           .history-icon {
@@ -572,7 +735,12 @@ onBeforeUnmount(() => {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.2s ease;
+            transition: all 0.4s @ease-smooth;
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.1);
+              transform: scale(1.1);
+            }
           }
         }
 
@@ -581,7 +749,7 @@ onBeforeUnmount(() => {
         }
 
         .history-header:hover .history-icon:hover {
-          background-color: rgba(0, 0, 0, 0.5);
+          opacity: 0.6;
         }
 
         .history-list {
@@ -589,18 +757,25 @@ onBeforeUnmount(() => {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.625rem;
-            margin: 0.125rem 0;
-            border-radius: 8px;
+            margin: 0.5rem 0;
+            padding: 0.5rem 0.8rem;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.4s @ease-smooth;
+            position: relative;
 
             &:hover {
               background-color: rgba(0, 0, 0, 0.05);
+              transform: translateX(4px);
 
               .history-item-actions {
                 display: flex;
+                opacity: 1;
               }
+            }
+
+            &:active {
+              transform: translateX(4px) scale(0.98);
             }
 
             &.active {
@@ -617,18 +792,22 @@ onBeforeUnmount(() => {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                margin-bottom: 0.25rem;
+                transition: color 0.4s @ease-smooth;
               }
 
               .history-item-time {
                 font-size: 12px;
                 color: rgba(128, 128, 128, 0.8);
+                transition: color 0.4s @ease-smooth;
               }
             }
 
             .history-item-actions {
-              display: none;
-              gap: 0.5rem;
+              margin-left: 0.5rem;
+              display: flex;
+              gap: 0.25rem;
+              opacity: 0;
+              transition: opacity 0.4s @ease-smooth;
 
               .history-action-icon {
                 cursor: pointer;
@@ -636,38 +815,120 @@ onBeforeUnmount(() => {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: color 0.2s ease;
+                transition: all 0.4s @ease-bounce;
+                padding: 0.25rem;
+                border-radius: 4px;
+
+                &:hover {
+                  transform: scale(1.2);
+                }
 
                 &.edit-icon:hover {
                   color: var(--primary-color);
+                  background-color: rgba(0, 255, 119, 0.1);
                 }
 
                 &.delete-icon:hover {
                   color: #d03050;
+                  background-color: rgba(208, 48, 80, 0.1);
                 }
               }
             }
           }
         }
       }
+
+      .collapsed-history-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5rem;
+        padding: 0 0.75rem;
+        margin: 0 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.4s @ease-smooth,
+          transform 0.4s @ease-smooth;
+        border-radius: 8px;
+        color: var(--text-color);
+        box-sizing: border-box;
+        opacity: 1;
+
+        &.collapsed-history-icon-hidden {
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.1s @ease-smooth;
+        }
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          transform: scale(1.05);
+
+          .menu-icon {
+            transform: scale(1.1);
+          }
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        .menu-icon {
+          margin-right: 0;
+          color: var(--text-color);
+          transition: transform 0.4s @ease-bounce;
+        }
+      }
     }
   }
-}
-.slide-enter-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
 
-.slide-leave-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
+  &.collapsed .sidebar {
+    width: 4.5rem;
 
-.slide-enter-from {
-  transform: translateX(-100%);
-  opacity: 0;
-}
+    .sidebar-header {
+      display: flex;
+      justify-content: center;
+      padding: 0.8rem 0;
 
-.slide-leave-to {
-  transform: translateX(-100%);
-  opacity: 0;
+      .toggle-btn {
+        padding: 0 0.8rem;
+      }
+    }
+
+    .divider {
+      margin: 0 0.8rem;
+    }
+
+    .menu-section {
+      .menu-item {
+        justify-content: center;
+        margin: 0 0.8rem;
+        padding: 0;
+        height: 2.5rem;
+
+        &:hover {
+          transform: scale(1.05);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        .menu-icon {
+          margin-right: 0;
+        }
+      }
+    }
+
+    .collapsed-history-icon {
+      justify-content: center;
+      margin: 1rem 0.8rem;
+      padding: 0rem;
+      height: 2.5rem;
+
+      .menu-icon {
+        margin-right: 0;
+      }
+    }
+  }
 }
 </style>

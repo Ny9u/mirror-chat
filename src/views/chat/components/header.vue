@@ -1,14 +1,9 @@
 <template>
-  <div class="header">
+  <div
+    class="header"
+    :class="{ 'sidebar-expanded': !configStore.sidebarCollapsed }"
+  >
     <div class="info">
-      <div class="name" @click="goToMyGithub">
-        <div
-          :class="{
-            logo: configStore.theme === 'dark',
-            'logo-light': configStore.theme === 'light',
-          }"
-        ></div>
-      </div>
       <div class="chat-button" @click="createNewChat">
         <n-icon class="chat-button-icon" size="20">
           <MessagePlus />
@@ -162,7 +157,7 @@ import {
   useDialog,
 } from "naive-ui";
 import { Logout, Settings, MessagePlus, AlertTriangle } from "@vicons/tabler";
-import { ref, h, nextTick, onMounted, getCurrentInstance } from "vue";
+import { ref, h, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { validate } from "@/services/user";
@@ -172,7 +167,6 @@ const message = useMessage();
 const dialog = useDialog();
 const configStore = useConfigStore();
 const router = useRouter();
-const { proxy } = getCurrentInstance();
 import Models from "@/config/models.js";
 
 let showSelect = ref(false);
@@ -204,10 +198,6 @@ const selectModel = (model) => {
 
   configStore.setModel(model);
   showSelect.value = false;
-};
-
-const goToMyGithub = () => {
-  window.open("https://github.com/Ny9u");
 };
 
 const goToLogin = async () => {
@@ -417,36 +407,34 @@ onMounted(async () => {
 }
 
 .header {
-  width: 100vw;
+  width: 100%;
   height: 3.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: fixed;
   top: 0;
+  right: 0;
   background: var(--background-color) no-repeat center;
   caret-color: transparent;
+  padding-left: 1rem;
+  box-sizing: border-box;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 999;
+
+  &.sidebar-expanded {
+    width: calc(100% - 16.75rem);
+  }
+
+  &:not(.sidebar-expanded) {
+    width: calc(100% - 4.5rem);
+  }
+
   .info {
     height: 3.6rem;
     display: flex;
     align-items: center;
     cursor: pointer;
-    .name {
-      display: flex;
-      align-items: center;
-      .logo {
-        width: 3.2rem;
-        height: 3.2rem;
-        margin: 0 1.07rem;
-        background: url("@/assets/logo.svg") no-repeat center;
-      }
-      .logo-light {
-        width: 3.2rem;
-        height: 3.2rem;
-        margin: 0 1.07rem;
-        background: url("@/assets/logo_dark.svg") no-repeat center;
-      }
-    }
     .chat-button {
       display: flex;
       align-items: center;

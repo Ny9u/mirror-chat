@@ -267,7 +267,7 @@ const stopRecording = () => {
 
 <style lang="less" scoped>
 .chat-container {
-  width: 100vw;
+  width: 100%;
   height: 100%;
   margin-top: 3.6rem;
   display: flex;

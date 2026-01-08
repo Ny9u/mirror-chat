@@ -9,14 +9,21 @@
           class="toggle-btn"
           :class="{ expanded: !configStore.sidebarCollapsed }"
           @click="toggleSidebar"
+          @mouseenter="toggleBtnHover = true"
+          @mouseleave="toggleBtnHover = false"
         >
-          <n-icon
-            v-if="configStore.sidebarCollapsed"
-            class="toggle-icon"
-            size="20"
-          >
-            <LayoutSidebarLeftExpand />
-          </n-icon>
+          <template v-if="configStore.sidebarCollapsed">
+            <n-icon v-show="toggleBtnHover" class="toggle-icon" size="20">
+              <LayoutSidebarLeftExpand />
+            </n-icon>
+            <div
+              v-show="!toggleBtnHover"
+              :class="{
+                logo: configStore.theme === 'dark',
+                'logo-light': configStore.theme === 'light',
+              }"
+            ></div>
+          </template>
           <div
             v-else
             :class="{
@@ -38,9 +45,30 @@
       <div class="sidebar-content">
         <div class="menu-section">
           <div class="menu-item" @click="createNewChat">
-            <n-icon class="menu-icon" size="20">
-              <MessageCircle />
-            </n-icon>
+            <n-popover
+              placement="right"
+              trigger="hover"
+              raw
+              :show-arrow="false"
+              :disabled="!configStore.sidebarCollapsed"
+            >
+              <template #trigger>
+                <n-icon class="menu-icon" size="20">
+                  <MessageCircle />
+                </n-icon>
+              </template>
+              <span
+                :style="{
+                  backgroundColor: '#000000',
+                  color: '#f1f2f8',
+                  borderRadius: '8px',
+                  marginLeft: '10px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                }"
+                >新建对话</span
+              >
+            </n-popover>
             <div
               class="menu-text"
               :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
@@ -49,9 +77,29 @@
             </div>
           </div>
           <div class="menu-item" @click="navigateToCollection">
-            <n-icon class="menu-icon" size="20">
-              <Bookmark />
-            </n-icon>
+            <n-popover
+              placement="right"
+              trigger="hover"
+              raw
+              :show-arrow="false"
+            >
+              <template #trigger>
+                <n-icon class="menu-icon" size="20">
+                  <Bookmark />
+                </n-icon>
+              </template>
+              <span
+                :style="{
+                  backgroundColor: '#000000',
+                  color: '#f1f2f8',
+                  borderRadius: '8px',
+                  marginLeft: '10px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                }"
+                >收藏夹</span
+              >
+            </n-popover>
             <div
               class="menu-text"
               :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
@@ -60,9 +108,30 @@
             </div>
           </div>
           <div class="menu-item" @click="navigateToKnowledge">
-            <n-icon class="menu-icon" size="20">
-              <Book />
-            </n-icon>
+            <n-popover
+              placement="right"
+              trigger="hover"
+              raw
+              :show-arrow="false"
+              :disabled="!configStore.sidebarCollapsed"
+            >
+              <template #trigger>
+                <n-icon class="menu-icon" size="20">
+                  <Book />
+                </n-icon>
+              </template>
+              <span
+                :style="{
+                  backgroundColor: '#000000',
+                  color: '#f1f2f8',
+                  borderRadius: '8px',
+                  marginLeft: '10px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                }"
+                >知识库</span
+              >
+            </n-popover>
             <div
               class="menu-text"
               :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
@@ -74,10 +143,7 @@
 
         <div class="divider"></div>
 
-        <div
-          class="history-section"
-          :class="{ 'history-section-hidden': configStore.sidebarCollapsed }"
-        >
+        <div class="history-section" v-show="!configStore.sidebarCollapsed">
           <div class="history-header">
             <div class="history-title">历史对话</div>
             <n-icon class="history-icon" size="16" @click="navigateToHistory">
@@ -120,15 +186,27 @@
 
         <div
           class="collapsed-history-icon"
-          :class="{
-            'collapsed-history-icon-hidden': !configStore.sidebarCollapsed,
-          }"
+          v-show="configStore.sidebarCollapsed"
           @click="navigateToHistory"
-          title="历史对话"
         >
-          <n-icon class="menu-icon" size="20">
-            <Clock />
-          </n-icon>
+          <n-popover placement="right" trigger="hover" raw :show-arrow="false">
+            <template #trigger>
+              <n-icon class="menu-icon" size="20">
+                <Clock />
+              </n-icon>
+            </template>
+            <span
+              :style="{
+                backgroundColor: '#000000',
+                color: '#f1f2f8',
+                borderRadius: '8px',
+                marginLeft: '10px',
+                padding: '6px 12px',
+                fontSize: '14px',
+              }"
+              >查看全部历史对话</span
+            >
+          </n-popover>
         </div>
       </div>
     </div>
@@ -138,7 +216,7 @@
 <script setup>
 import { ref, computed, onMounted, h, onBeforeUnmount, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { NIcon, NInput, useDialog, useMessage } from "naive-ui";
+import { NIcon, NInput, NPopover, useDialog, useMessage } from "naive-ui";
 import {
   MessageCircle,
   Bookmark,
@@ -169,6 +247,7 @@ const message = useMessage();
 const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
+const toggleBtnHover = ref(false);
 
 const historyList = computed(() => historyStore.historyList);
 
@@ -478,8 +557,8 @@ onBeforeUnmount(() => {
     left: 0;
     width: 16.75rem;
     height: 100vh;
-    background-color: var(--sidebar-color);
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.1);
+    background-color: var(--background-color);
+    box-shadow: 1px 0 1px rgba(128, 128, 128, 0.15);
     display: flex;
     flex-direction: column;
     transition: width @transition-duration @ease-out-expo;
@@ -528,6 +607,13 @@ onBeforeUnmount(() => {
           }
         }
 
+        &:not(.expanded) {
+          .logo,
+          .logo-light {
+            display: flex;
+          }
+        }
+
         .toggle-icon {
           color: var(--text-color);
           display: flex;
@@ -536,14 +622,10 @@ onBeforeUnmount(() => {
           transition: transform 0.4s @ease-bounce;
         }
 
-        &:hover .toggle-icon {
-          transform: translateX(2px);
-        }
-
         .logo,
         .logo-light {
-          width: 2rem;
-          height: 2rem;
+          width: 1.8rem;
+          height: 1.8rem;
           background-size: contain;
           background-repeat: no-repeat;
           background-position: center;
@@ -584,6 +666,9 @@ onBeforeUnmount(() => {
       margin: 0 1rem;
       background-color: rgba(128, 128, 128, 0.2);
       transition: margin @transition-duration @ease-smooth;
+      outline: none;
+      user-select: none;
+      pointer-events: none;
     }
 
     .sidebar-content {
@@ -629,15 +714,14 @@ onBeforeUnmount(() => {
 
           &:hover {
             background-color: rgba(0, 0, 0, 0.05);
-            transform: translateX(4px);
 
             .menu-icon {
-              transform: scale(1.1);
+              transform: scale(1.05);
             }
           }
 
           &:active {
-            transform: translateX(4px) scale(0.98);
+            transform: scale(0.98);
 
             &::before {
               width: 200%;
@@ -692,17 +776,7 @@ onBeforeUnmount(() => {
       .history-section {
         padding: 0 0.625rem;
         overflow: hidden;
-        transition: opacity @transition-duration @ease-smooth,
-          max-height @transition-duration @ease-smooth,
-          padding @transition-duration @ease-smooth;
         max-height: 100vh;
-
-        &.history-section-hidden {
-          opacity: 0;
-          max-height: 0;
-          padding: 0;
-          pointer-events: none;
-        }
 
         .history-header {
           display: flex;
@@ -766,7 +840,6 @@ onBeforeUnmount(() => {
 
             &:hover {
               background-color: rgba(0, 0, 0, 0.05);
-              transform: translateX(4px);
 
               .history-item-actions {
                 display: flex;
@@ -775,7 +848,7 @@ onBeforeUnmount(() => {
             }
 
             &:active {
-              transform: translateX(4px) scale(0.98);
+              transform: scale(0.98);
             }
 
             &.active {
@@ -820,7 +893,7 @@ onBeforeUnmount(() => {
                 border-radius: 4px;
 
                 &:hover {
-                  transform: scale(1.2);
+                  transform: scale(1.05);
                 }
 
                 &.edit-icon:hover {
@@ -852,12 +925,6 @@ onBeforeUnmount(() => {
         color: var(--text-color);
         box-sizing: border-box;
         opacity: 1;
-
-        &.collapsed-history-icon-hidden {
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.1s @ease-smooth;
-        }
 
         &:hover {
           background-color: rgba(0, 0, 0, 0.05);

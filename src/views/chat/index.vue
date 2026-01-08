@@ -26,6 +26,7 @@ const configStore = useConfigStore();
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--background-color);
 }
 
 .main-content {

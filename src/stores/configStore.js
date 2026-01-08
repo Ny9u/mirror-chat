@@ -11,7 +11,7 @@ export const useConfigStore = defineStore("config", {
     voiceType: 101001,
     voiceName: "智瑜",
     chatId: "",
-    sidebarCollapsed: false,
+    sidebarCollapsed: true,
   }),
   actions: {
     setTheme(theme) {

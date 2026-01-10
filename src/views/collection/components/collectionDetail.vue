@@ -406,7 +406,7 @@ const sharePicture = async () => {
     if (shareIcon) shareIcon.style.display = "";
     if (closeIcon) closeIcon.style.display = "";
   } catch (error) {
-    message.error("截图失败，请重试");
+    message.error("截图失败，请稍后再试 📸");
     showImageModal.value = false;
   } finally {
     isCapturing.value = false;
@@ -427,9 +427,9 @@ const copyImage = async () => {
         [blob.type]: blob,
       }),
     ]);
-    message.success("图片已复制");
+    message.success("图片已复制！📋");
   } catch (error) {
-    message.error("系统错误,请稍后再试");
+    message.error("系统错误，请稍后再试 ⚠️");
   }
 };
 
@@ -448,9 +448,9 @@ const downloadImage = () => {
     link.click();
     document.body.removeChild(link);
 
-    message.success("图片下载成功");
+    message.success("图片下载成功！📥");
   } catch (error) {
-    message.error("系统错误,请稍后再试");
+    message.error("系统错误，请稍后再试 ⚠️");
   }
 };
 const copyUrl = () => {
@@ -468,9 +468,9 @@ const copyToClipboard = (text) => {
 
   try {
     document.execCommand("copy");
-    message.success("对话链接已复制");
+    message.success("链接已复制！🔗");
   } catch (err) {
-    message.error("复制失败:" + err);
+    message.error("复制失败：" + err);
   } finally {
     document.body.removeChild(textarea);
   }

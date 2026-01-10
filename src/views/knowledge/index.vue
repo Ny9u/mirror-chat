@@ -257,10 +257,10 @@ const loadKnowledgeList = async (page = 1) => {
       knowledgeList.value = res.data?.list || [];
       totalPage.value = res.data?.pagination?.total || 0;
     } else {
-      message.error(res.message || "获取知识库数据失败");
+      message.error(res.message || "获取知识库数据失败，请稍后再试 📚");
     }
   } catch (error) {
-    message.error("获取知识库数据失败:", error);
+    message.error("获取知识库数据失败：" + error);
     knowledgeList.value = [];
   } finally {
     loading.value = false;
@@ -292,7 +292,7 @@ const downloadKnowledgeToLocal = async (item) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   } catch (error) {
-    message.error("下载失败");
+    message.error("下载失败，请稍后再试 ⬇️");
   }
 };
 

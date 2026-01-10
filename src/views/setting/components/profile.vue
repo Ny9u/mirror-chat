@@ -96,12 +96,12 @@ const handleUploadFinish = ({ file, event }) => {
     const res = JSON.parse(event.target.response);
     if (res.code === 201) {
       configStore.setAvatar(res.data.avatarUrl);
-      message.success("上传成功");
+      message.success("上传成功！");
     } else {
-      message.error(res.message || "上传失败");
+      message.error(res.message || "上传失败，请稍后再试 ⬆️");
     }
   } catch (error) {
-    message.error("上传失败");
+    message.error("上传失败，请稍后再试 ⬆️");
   }
   return file;
 };
@@ -116,10 +116,10 @@ const saveProfile = async () => {
       configStore.setName(profileData.name);
       router.push("/setting");
     } else {
-      message.error(res.message || "更新失败");
+      message.error(res.message || "更新失败，请稍后再试");
     }
   } catch (error) {
-    message.error("更新失败");
+    message.error("更新失败，请稍后再试");
   } finally {
     saving.value = false;
   }

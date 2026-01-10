@@ -471,7 +471,7 @@ const showLLMModal = async () => {
       };
     }
   } catch (error) {
-    message.error("获取LLM配置失败");
+    message.error("获取LLM配置失败，请重试 ⚙️");
     llmForm.value = {
       baseURL: "",
       apiKey: "",
@@ -497,13 +497,13 @@ const updateLLMConfig = async () => {
     const res = await setModelConfig(formData);
 
     if (res.code === 200) {
-      message.success("LLM配置保存成功");
+      message.success("LLM配置已保存！✨");
       closeLLMModal();
     } else {
-      message.error(res.message || "LLM配置保存失败");
+      message.error(res.message || "LLM配置保存失败，请稍后再试 ⚙️");
     }
   } catch (error) {
-    message.error(error.message || "LLM配置保存失败");
+    message.error(error.message || "LLM配置保存失败，请稍后再试 ⚙️");
   } finally {
     updatingLLM.value = false;
   }
@@ -608,7 +608,7 @@ const openDeleteAccountDialog = () => {
 const handleDeleteAccount = async () => {
   const res = await deleteAccount();
   if (res.code === 200) {
-    message.success("账号删除成功");
+    message.success("账号删除成功！");
     localStorage.removeItem("jwtToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("isLoggedIn");
@@ -617,7 +617,7 @@ const handleDeleteAccount = async () => {
     configStore.setAvatar("");
     router.push("/");
   } else {
-    message.error(res.message || "账号删除失败");
+    message.error(res.message || "账号删除失败，请稍后再试");
   }
 };
 
@@ -711,13 +711,13 @@ const updateUserPassword = async () => {
     const res = await updatePassword(encryptedData);
 
     if (res.code === 200) {
-      message.success("密码修改成功");
+      message.success("密码修改成功！🔐");
       closePasswordModal();
     } else {
-      message.error(res.message || "密码修改失败");
+      message.error(res.message || "密码修改失败，请稍后再试 🔐");
     }
   } catch (error) {
-    message.error(error.message || "密码修改失败");
+    message.error(error.message || "密码修改失败，请稍后再试 🔐");
   } finally {
     updatingPassword.value = false;
   }
@@ -749,7 +749,7 @@ const showVoiceSelection = async () => {
       const currentVoice = voices.find((v) => v.id === configStore.voiceType);
       currentVoiceName.value = currentVoice ? currentVoice.name : "智瑜";
     } catch (error) {
-      message.error("获取音色列表失败: " + (error.message || "未知错误"));
+      message.error("获取音色列表失败：" + (error.message || "未知错误"));
     }
   } else {
     const currentVoice = voiceList.value.find(
@@ -774,7 +774,7 @@ const confirmVoiceSelection = () => {
     currentVoiceName.value = selectedVoice.value.name;
     closeVoiceModal();
   } else {
-    message.warning("请选择一个音色");
+    message.warning("请选择一个喜欢的音色 🎵");
   }
 };
 
@@ -784,7 +784,7 @@ const previewVoice = async (voice) => {
     const audioData = await TTSService.synthesizeSpeech(previewText, voice.id);
     await TTSService.playAudio(audioData);
   } catch (error) {
-    message.error("播放失败: " + (error.message || "未知错误"));
+    message.error("播放失败：" + (error.message || "未知错误"));
   }
 };
 </script>

@@ -124,11 +124,11 @@ const handleSendClick = () => {
 
 const sendMessage = async () => {
   if (!inputValue.value.trim()) {
-    message.warning("请输入内容");
+    message.warning("请先输入内容 📝");
     return;
   }
   if (!listRef.value) {
-    message.error("模型初始化失败");
+    message.error("模型初始化失败，请稍后再试 ⚠️");
     return;
   }
   if (netSearch.value) {
@@ -150,7 +150,7 @@ const sendMessage = async () => {
         },
         (err) => {
           if (err.name !== "AbortError") {
-            message.error("服务请求失败");
+            message.error("服务请求失败，请检查网络连接 🌐");
           }
           reject(err);
         }
@@ -206,7 +206,7 @@ const startRecording = async () => {
       };
 
       recognition.onerror = (event) => {
-        message.error("语音识别失败，请重试");
+        message.error("语音识别失败，请稍后再试 🎤");
         recording.value = false;
       };
 
@@ -238,14 +238,14 @@ const startRecording = async () => {
           const res = await asrRecognize(formData);
           inputValue.value = res.data.ResultDetail[0].FinalSentence;
         } catch (error) {
-          message.error("语音识别失败:", error);
+          message.error("语音识别失败：" + error);
         }
       };
 
       mediaRecorder.start();
     }
   } catch (error) {
-    message.error("录音失败:", error);
+    message.error("录音失败：" + error);
   }
 };
 

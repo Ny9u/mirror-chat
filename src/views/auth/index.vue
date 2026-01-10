@@ -614,7 +614,7 @@ const handleLogin = async (e) => {
 
         loginLoading.value = false;
         if (res.code === 201) {
-          message.success("登录成功");
+          message.success("登录成功！🎉");
           configStore.setUserId(res.data.user.id);
           configStore.setName(res.data.user.username);
           configStore.setAvatar(res.data.user.avatar);
@@ -626,21 +626,21 @@ const handleLogin = async (e) => {
           }
           router.push("/");
         } else {
-          message.error(res.message || "登录失败");
+          message.error(res.message || "登录失败，请检查账号密码是否正确");
         }
       } catch (err) {
         loginLoading.value = false;
         if (err.response && err.response.data && err.response.data.message) {
           message.error(err.response.data.message);
         } else {
-          message.error(err.message || "登录失败");
+          message.error(err.message || "登录失败，请检查账号密码是否正确");
         }
       }
     } else {
       if (errors.length > 0) {
         message.error(errors[0][0].message);
       } else {
-        message.error("请检查密码填写是否正确");
+        message.error("账号密码填写有误，请检查 🔍");
       }
     }
   });
@@ -670,23 +670,23 @@ const handleRegister = async (e) => {
           registerForm.password = "";
           registerForm.verificationCode = "";
           activeTab.value = "login";
-          message.success("注册成功，请登录");
+          message.success("注册成功！欢迎加入 Mirror 👏");
         } else {
-          message.error(res.message || "注册失败");
+          message.error(res.message || "注册失败，请稍后再试 😅");
         }
       } catch (err) {
         registerLoading.value = false;
         if (err.response && err.response.data && err.response.data.message) {
           message.error(err.response.data.message);
         } else {
-          message.error(err.message || "注册失败");
+          message.error(err.message || "注册失败，请稍后再试 😅");
         }
       }
     } else {
       if (errors.length > 0) {
         message.error(errors[0][0].message);
       } else {
-        message.error("请检查表单填写是否正确");
+        message.error("请检查表单填写是否正确 📝");
       }
     }
   });
@@ -696,7 +696,7 @@ let countdownTimer = null;
 const getVerifyCode = async (e) => {
   e.preventDefault();
   if (!registerForm.email) {
-    message.error("请输入电子邮箱");
+    message.error("请填写电子邮箱 📧");
     return;
   }
   try {
@@ -706,7 +706,7 @@ const getVerifyCode = async (e) => {
     });
 
     if (res.code === 200) {
-      message.success("验证码发送成功");
+      message.success("验证码发送成功！请查收 ✉️");
       countdown.value = 60;
       if (countdownTimer) {
         clearInterval(countdownTimer);
@@ -719,13 +719,13 @@ const getVerifyCode = async (e) => {
         }
       }, 1000);
     } else {
-      message.error(res.message || "验证码发送失败");
+      message.error(res.message || "验证码发送失败，请稍后重试 🔄");
     }
   } catch (err) {
     if (err.response && err.response.data && err.response.data.message) {
       message.error(err.response.data.message);
     } else {
-      message.error(err.message || "验证码发送失败");
+      message.error(err.message || "验证码发送失败，请稍后重试 🔄");
     }
   }
 };
@@ -733,7 +733,7 @@ const getVerifyCode = async (e) => {
 const getResetVerifyCode = async (e) => {
   e.preventDefault();
   if (!emailVerificationForm.email) {
-    message.error("请输入电子邮箱");
+    message.error("请填写电子邮箱 📧");
     return;
   }
   try {
@@ -743,7 +743,7 @@ const getResetVerifyCode = async (e) => {
     });
 
     if (res.code === 200) {
-      message.success("验证码发送成功");
+      message.success("验证码发送成功！请查收 ✉️");
       countdown.value = 60;
       if (countdownTimer) {
         clearInterval(countdownTimer);
@@ -756,13 +756,13 @@ const getResetVerifyCode = async (e) => {
         }
       }, 1000);
     } else {
-      message.error(res.message || "验证码发送失败");
+      message.error(res.message || "验证码发送失败，请重试 🔄");
     }
   } catch (err) {
     if (err.response && err.response.data && err.response.data.message) {
       message.error(err.response.data.message);
     } else {
-      message.error(err.message || "验证码发送失败");
+      message.error(err.message || "验证码发送失败，请重试 🔄");
     }
   }
 };
@@ -797,7 +797,7 @@ const handleVerifyEmail = async (e) => {
       if (errors.length > 0) {
         message.error(errors[0][0].message);
       } else {
-        message.error("请检查表单填写是否正确");
+        message.error("请检查表单填写是否正确 📝");
       }
     }
   });
@@ -818,7 +818,7 @@ const handleResetPassword = async (e) => {
 
         resetLoading.value = false;
         if (res.code === 200) {
-          message.success("密码重置成功，请登录");
+          message.success("密码重置成功！请登录 🔐");
           emailVerificationForm.email = "";
           emailVerificationForm.verificationCode = "";
           passwordResetForm.newPassword = "";
@@ -826,21 +826,21 @@ const handleResetPassword = async (e) => {
           resetStep.value = 1;
           activeTab.value = "login";
         } else {
-          message.error(res.message || "密码重置失败");
+          message.error(res.message || "密码重置失败，请稍后再试 ⚠️");
         }
       } catch (err) {
         resetLoading.value = false;
         if (err.response && err.response.data && err.response.data.message) {
           message.error(err.response.data.message);
         } else {
-          message.error(err.message || "密码重置失败");
+          message.error(err.message || "密码重置失败，请稍后再试 ⚠️");
         }
       }
     } else {
       if (errors.length > 0) {
         message.error(errors[0][0].message);
       } else {
-        message.error("请检查表单填写是否正确");
+        message.error("请检查表单填写是否正确 📝");
       }
     }
   });

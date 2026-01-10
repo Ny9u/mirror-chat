@@ -636,13 +636,13 @@ const sendMessage = (userInput) => {
 
   if (netSearch.value) {
     if (!currentModel || !currentModel.netSearch) {
-      message.error("当前模型不支持联网搜索");
+      message.error("当前模型暂不支持联网搜索 🔍");
       return false;
     }
   }
   if (deepThinking.value) {
     if (!currentModel || !currentModel.thinkingMode) {
-      message.error("当前模型不支持深度思考");
+      message.error("当前模型暂不支持深度思考 🧠");
       return false;
     }
   }
@@ -761,7 +761,7 @@ const fetchAI = async (signal) => {
               chatHistory.value.length - 1
             ].isFinishThinking = true;
           } else {
-            message.error(error.message || "请求服务失败");
+            message.error(error.message || "请求服务失败，请检查网络连接 🌐");
             chatHistory.value[
               chatHistory.value.length - 1
             ].isFinishThinking = true;
@@ -774,7 +774,7 @@ const fetchAI = async (signal) => {
       if (signal.aborted) {
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
       } else {
-        message.error(error.message || "请求服务失败");
+        message.error(error.message || "请求服务失败，请检查网络连接 🌐");
         chatHistory.value[chatHistory.value.length - 1].isFinishThinking = true;
       }
     }
@@ -853,7 +853,7 @@ const fetchAI = async (signal) => {
           if (signal.aborted) {
             shouldAbort = true;
           } else {
-            message.error(error.message || "请求服务失败");
+            message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
         }
       );
@@ -863,7 +863,7 @@ const fetchAI = async (signal) => {
       if (signal.aborted) {
         chatHistory.value.pop();
       } else {
-        message.error(error.message || "请求服务失败");
+        message.error(error.message || "请求服务失败，请检查网络连接 🌐");
         chatHistory.value.pop();
       }
     }
@@ -895,10 +895,10 @@ const copyMessage = (item) => {
         navigator.clipboard
           .writeText(copyText)
           .then(() => {
-            message.success("成功复制到剪贴板！");
+            message.success("已复制到剪贴板！✨");
           })
           .catch(() => {
-            message.error("复制失败");
+            message.error("复制失败，请重试 📋");
           });
       }
     }
@@ -963,7 +963,7 @@ const toggleThinking = (key) => {
 
 const saveEdit = (item) => {
   if (!editContent.value.trim()) {
-    message.warning("请输入内容");
+    message.warning("请先输入内容 📝");
     return;
   }
 
@@ -1001,7 +1001,7 @@ const playVoice = async (item) => {
     }
 
     if (!textToSpeak) {
-      message.warning("暂不支持播放");
+      message.warning("该消息暂不支持语音播放 🔊");
       return;
     }
 
@@ -1018,10 +1018,10 @@ const playVoice = async (item) => {
       );
       await TTSService.playAudio(audioData);
     } catch (error) {
-      message.error("语音播放失败: " + (error.message || "未知错误"));
+      message.error("语音播放失败：" + (error.message || "未知错误"));
     }
   } catch (error) {
-    message.error("语音播放失败: " + (error.message || "未知错误"));
+    message.error("语音播放失败：" + (error.message || "未知错误"));
   }
 };
 
@@ -1079,10 +1079,10 @@ const favoriteMessage = async (msg) => {
       key: msg.key,
     });
     if (res.code === 201) {
-      message.success("收藏成功");
+      message.success("收藏成功！⭐");
     }
   } catch (error) {
-    message.warning("收藏失败: " + (error.message || "未知错误"));
+    message.warning("收藏失败：" + (error.message || "未知错误"));
   }
 };
 
@@ -1499,6 +1499,8 @@ onBeforeUnmount(() => {
     color: var(--text-color);
     cursor: default;
     letter-spacing: 0.02em;
+    outline: none;
+    user-select: none;
   }
 }
 </style>

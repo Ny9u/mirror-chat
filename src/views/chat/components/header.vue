@@ -10,7 +10,7 @@
         </n-icon>
         <div class="chat-button-text">新对话</div>
       </div>
-      <div class="model" @click="openModelSelect">
+      <div class="model" @click="toggleModelSelect">
         <div>{{ Models.find((m) => m.key === configStore.model).name }}</div>
         <div
           :class="{
@@ -171,8 +171,8 @@ import Models from "@/config/models.js";
 
 let showSelect = ref(false);
 let showSettings = ref(false);
-const openModelSelect = () => {
-  showSelect.value = true;
+const toggleModelSelect = () => {
+  showSelect.value = !showSelect.value;
 };
 const closeModelSelect = () => {
   showSelect.value = false;
@@ -191,7 +191,7 @@ const selectModel = (model) => {
     const currentDate = new Date();
 
     if (currentDate >= expiredDate) {
-      message.warning("暂不可用,请选择其他模型");
+      message.warning("该模型暂不可用，请选择其他模型 ⚠️");
       return;
     }
   }
@@ -211,7 +211,7 @@ const goToLogin = async () => {
         configStore.setUserId(res.data.id);
         configStore.setName(res.data.username);
         configStore.setAvatar(res.data.avatar);
-        message.success("登录成功");
+        message.success("登录成功！🎉");
         sessionStorage.setItem("skipValidation", "true");
       } else {
         localStorage.removeItem("jwtToken");
@@ -318,7 +318,7 @@ const logout = () => {
       sessionStorage.removeItem("skipJwtValidation");
       clearPersonalData();
       window.dispatchEvent(new CustomEvent("clearHistoryList"));
-      message.success("已退出登录");
+      message.success("已退出登录 👋");
     },
   });
 };
@@ -492,26 +492,26 @@ onMounted(async () => {
       user-select: none;
     }
     .down {
-      width: 1.33rem;
-      height: 1.33rem;
-      margin: 0 1.07rem;
+      width: 1.2rem;
+      height: 1.2rem;
+      margin: 0 0.6rem;
       background: url("@/assets/down.svg") no-repeat center;
       background-size: 100% 100%;
       transition: transform 0.4s ease;
     }
     .down.rotate {
-      transform: rotate(180deg);
+      transform: rotate(-90deg);
     }
     .down-light {
-      width: 1.33rem;
-      height: 1.33rem;
+      width: 1.2rem;
+      height: 1.2rem;
       margin: 0 0.6rem;
       background: url("@/assets/down_dark.svg") no-repeat center;
       background-size: 100% 100%;
       transition: transform 0.4s ease;
     }
     .down-light.rotate {
-      transform: rotate(180deg);
+      transform: rotate(-90deg);
     }
   }
   .tool {

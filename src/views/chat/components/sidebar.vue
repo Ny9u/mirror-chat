@@ -181,6 +181,9 @@
                 </n-icon>
               </div>
             </div>
+            <div v-if="historyList.length === 0" class="history-empty">
+              暂无对话记录
+            </div>
           </div>
         </div>
 
@@ -332,7 +335,7 @@ const loadConversation = async (id) => {
 
 const navigateToCollection = () => {
   if (!configStore.userId) {
-    message.warning("请先登录后再使用收藏夹");
+    message.warning("请先登录 🔒");
     return;
   }
   router.push("/collection");
@@ -340,13 +343,17 @@ const navigateToCollection = () => {
 
 const navigateToKnowledge = () => {
   if (!configStore.userId) {
-    message.warning("请先登录后再使用知识库");
+    message.warning("请先登录 🔒");
     return;
   }
   router.push("/knowledge");
 };
 
 const navigateToHistory = () => {
+  if (!configStore.userId) {
+    message.warning("请先登录 🔒");
+    return;
+  }
   router.push("/chat/history");
 };
 
@@ -433,7 +440,7 @@ const saveTitleEdit = async () => {
 
     return true;
   } catch (error) {
-    message.error("编辑失败:", error.message);
+    message.error("编辑失败：" + error.message);
     return false;
   }
 };
@@ -490,7 +497,7 @@ const handleDeleteConversation = (id) => {
 
         fetchHistoryList(true);
       } catch (error) {
-        message.error("删除对话失败:", error.message);
+        message.error("删除对话失败：" + error.message);
       }
     },
   });
@@ -643,7 +650,7 @@ onBeforeUnmount(() => {
 
       .sidebar-title {
         font-size: 1.25rem;
-        font-weight: 600;
+        font-weight: 800;
         color: var(--text-color);
         margin-left: 0.8rem;
         white-space: nowrap;
@@ -788,7 +795,6 @@ onBeforeUnmount(() => {
           user-select: none;
           position: sticky;
           top: 0;
-          background-color: var(--sidebar-color);
           z-index: 10;
 
           .history-title {
@@ -907,6 +913,15 @@ onBeforeUnmount(() => {
                 }
               }
             }
+          }
+
+          .history-empty {
+            text-align: center;
+            padding: 15rem 0;
+            color: var(--text-color);
+            opacity: 0.3;
+            font-size: 14px;
+            user-select: none;
           }
         }
       }

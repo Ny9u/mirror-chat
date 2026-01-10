@@ -169,7 +169,7 @@ const loadCollections = async (page = 1) => {
       collections.value = [];
     }
   } catch (error) {
-    message.error("获取收藏数据失败:", error);
+    message.error("获取收藏数据失败：" + error);
     collections.value = [];
   } finally {
     loading.value = false;
@@ -204,12 +204,12 @@ const removeFromCollection = async (id) => {
 
     if (res.code === 200) {
       collections.value = collections.value.filter((item) => item.id !== id);
-      message.success("删除成功");
+      message.success("删除成功！");
     } else {
-      message.error(res.message || "删除收藏失败");
+      message.error(res.message || "删除收藏失败，请稍后再试 🗑️");
     }
   } catch (error) {
-    message.error("删除收藏失败:", error);
+    message.error("删除收藏失败：" + error);
   }
 };
 

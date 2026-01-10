@@ -309,7 +309,7 @@ const saveTitleEdit = async () => {
 
     return true;
   } catch (error) {
-    message.error("编辑失败:", error.message);
+    message.error("编辑失败：" + error.message);
     return false;
   }
 };

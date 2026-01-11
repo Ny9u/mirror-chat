@@ -331,27 +331,8 @@ const createNewChat = () => {
   window.dispatchEvent(new CustomEvent("createNewChat"));
 };
 
-// const getModelList = async () => {
-//   Request({
-//     headers: {
-//       Authorization: "Bearer" + import.meta.env.VITE_ALIYUN_API_KEY,
-//       "Content-Type": "application/json",
-//       Accept: "*/*",
-//     },
-//     url: proxy.$api.getModels,
-//     method: "GET",
-//     data: {
-//       page_no: 1,
-//       page_size: 10,
-//     },
-//   }).then((res) => {
-//     console.log(res);
-//   });
-// };
-
 onMounted(async () => {
   await autoLogin();
-  // await getModelList();
 });
 </script>
 

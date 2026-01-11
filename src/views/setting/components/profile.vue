@@ -71,6 +71,7 @@ import { useMessage, NIcon, NAvatar, NButton, NInput, NUpload } from "naive-ui";
 import { ArrowLeft, Plus } from "@vicons/tabler";
 import { uploadAvatar, updateInfo } from "@/services/user";
 import Global from "@/utils/global";
+import api from "@/config/api";
 
 const configStore = useConfigStore();
 const router = useRouter();
@@ -78,7 +79,7 @@ const message = useMessage();
 const uploadRef = ref(null);
 const saving = ref(false);
 
-const uploadUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/avatar/upload`;
+const uploadUrl = api.uploadAvatar;
 const uploadHeaders = {
   Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
 };

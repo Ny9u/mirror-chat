@@ -19,7 +19,7 @@ const processQueue = (error, token = null) => {
 };
 
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // baseURL: "",
   timeout: 20000, // 请求超时时间
 });
 
@@ -70,20 +70,8 @@ service.interceptors.request.use(
     }
 
     // 处理其他API的认证
-    const authApi = [api.getModels, api.netSearch];
+    const authApi = [];
     if (authApi.includes(config.url)) {
-      switch (config.url) {
-        case api.getModels:
-          config.headers.Authorization =
-            "Bearer " + import.meta.env.VITE_ALIYUN_API_KEY;
-          break;
-        case api.netSearch:
-          config.headers.Authorization =
-            "Bearer " + import.meta.env.VITE_BOCHAAI_API_KEY;
-          break;
-        default:
-          break;
-      }
     }
     return config;
   },

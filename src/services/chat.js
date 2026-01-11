@@ -1,17 +1,14 @@
 import { api } from "@/config/api";
 
 export const chat = async (messageData, onChunk, onComplete, onError) => {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}${api.chat}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-      },
-      body: JSON.stringify(messageData),
-    }
-  );
+  const response = await fetch(api.chat, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+    },
+    body: JSON.stringify(messageData),
+  });
 
   if (!response.ok) {
     throw new Error(`请求失败: ${response.status}`);

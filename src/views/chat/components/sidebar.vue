@@ -107,6 +107,38 @@
               收藏夹
             </div>
           </div>
+          <div class="menu-item" @click="showRolePresets">
+            <n-popover
+              placement="right"
+              trigger="hover"
+              raw
+              :show-arrow="false"
+              :disabled="!configStore.sidebarCollapsed"
+            >
+              <template #trigger>
+                <n-icon class="menu-icon" size="20">
+                  <User />
+                </n-icon>
+              </template>
+              <span
+                :style="{
+                  backgroundColor: '#000000',
+                  color: '#f1f2f8',
+                  borderRadius: '8px',
+                  marginLeft: '10px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                }"
+                >角色预设</span
+              >
+            </n-popover>
+            <div
+              class="menu-text"
+              :class="{ 'menu-text-hidden': configStore.sidebarCollapsed }"
+            >
+              角色预设
+            </div>
+          </div>
           <div class="menu-item" @click="navigateToKnowledge">
             <n-popover
               placement="right"
@@ -214,12 +246,330 @@
       </div>
     </div>
   </div>
+
+  <n-modal
+    v-model:show="showRoleDialog"
+    preset="card"
+    :style="{
+      width: '800px',
+      maxHeight: '80vh',
+      borderRadius: '12px',
+      overflow: 'hidden',
+    }"
+    :segmented="{
+      content: 'soft',
+      footer: 'soft',
+    }"
+    :show-icon="false"
+    :bordered="false"
+    size="huge"
+    class="role-dialog"
+    :closable="false"
+  >
+    <template #header>
+      <div class="modal-header">
+        <span style="font-weight: 600">角色预设</span>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="showRoleDialog = false"
+          size="1.6rem"
+        />
+      </div>
+    </template>
+    <div class="role-columns-container">
+      <div class="current-role-section">
+        <div class="section-header">
+          <div class="section-title">当前角色</div>
+        </div>
+        <div class="current-role-item">
+          <div
+            class="role-icon"
+            :style="{ backgroundColor: configStore.currentRole.color }"
+          >
+            {{ configStore.currentRole.icon }}
+          </div>
+          <div class="role-info">
+            <div class="role-name">{{ configStore.currentRole.name }}</div>
+            <div class="role-desc">{{ configStore.currentRole.desc }}</div>
+          </div>
+          <div class="role-check">
+            <n-icon size="20" color="#00ff77">
+              <Check />
+            </n-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="system-roles-section">
+        <div class="section-header">
+          <div class="section-title">系统角色</div>
+          <div class="pagination-controls">
+            <n-button
+              text
+              size="small"
+              :disabled="systemRolePage === 1"
+              @click="prevSystemRolePage"
+            >
+              <template #icon>
+                <n-icon><ChevronLeft /></n-icon>
+              </template>
+            </n-button>
+            <span class="page-indicator"
+              >{{ systemRolePage }} / {{ systemRoleTotalPages }}</span
+            >
+            <n-button
+              text
+              size="small"
+              :disabled="systemRolePage === systemRoleTotalPages"
+              @click="nextSystemRolePage"
+            >
+              <template #icon>
+                <n-icon><ChevronRight /></n-icon>
+              </template>
+            </n-button>
+          </div>
+        </div>
+        <div class="roles-grid">
+          <div
+            v-for="role in paginatedSystemRoles"
+            :key="role.id"
+            class="role-grid-item"
+            :class="{ active: configStore.currentRole.id === role.id }"
+            @click="selectRole(role)"
+          >
+            <div class="role-icon" :style="{ backgroundColor: role.color }">
+              {{ role.icon }}
+            </div>
+            <div class="role-info">
+              <div class="role-name">{{ role.name }}</div>
+              <div class="role-desc">{{ role.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-roles-section">
+        <div class="section-header">
+          <div class="section-title">自定义角色</div>
+          <div class="header-actions">
+            <n-button
+              text
+              size="small"
+              @click="openCreateRoleDialog"
+              class="create-role-btn"
+            >
+              <template #icon>
+                <n-icon><Plus /></n-icon>
+              </template>
+              新建
+            </n-button>
+            <div
+              v-if="configStore.customRoles.length > 0"
+              class="pagination-controls"
+            >
+              <n-button
+                text
+                size="small"
+                :disabled="customRolePage === 1"
+                @click="prevCustomRolePage"
+              >
+                <template #icon>
+                  <n-icon><ChevronLeft /></n-icon>
+                </template>
+              </n-button>
+              <span class="page-indicator"
+                >{{ customRolePage }} / {{ customRoleTotalPages }}</span
+              >
+              <n-button
+                text
+                size="small"
+                :disabled="customRolePage === customRoleTotalPages"
+                @click="nextCustomRolePage"
+              >
+                <template #icon>
+                  <n-icon><ChevronRight /></n-icon>
+                </template>
+              </n-button>
+            </div>
+          </div>
+        </div>
+        <div v-if="configStore.customRoles.length === 0" class="empty-roles">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">暂无自定义角色</div>
+          <n-button
+            text
+            type="primary"
+            @click="openCreateRoleDialog"
+            size="small"
+          >
+            <template #icon>
+              <n-icon><Plus /></n-icon>
+            </template>
+            创建第一个角色
+          </n-button>
+        </div>
+        <div v-else class="roles-grid">
+          <div
+            v-for="role in paginatedCustomRoles"
+            :key="role.id"
+            class="role-grid-item"
+            :class="{ active: configStore.currentRole.id === role.id }"
+            @click="selectRole(role)"
+          >
+            <div class="role-icon" :style="{ backgroundColor: role.color }">
+              {{ role.icon }}
+            </div>
+            <div class="role-info">
+              <div class="role-name">{{ role.name }}</div>
+              <div class="role-desc">{{ role.desc }}</div>
+            </div>
+            <div class="role-check">
+              <n-icon
+                v-if="configStore.currentRole.id === role.id"
+                size="20"
+                color="#00ff77"
+              >
+                <Check />
+              </n-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </n-modal>
+
+  <n-modal
+    v-model:show="showCreateRoleDialog"
+    preset="card"
+    :style="{
+      width: '580px',
+      borderRadius: '12px',
+      overflow: 'hidden',
+    }"
+    :segmented="{
+      content: 'soft',
+      footer: 'soft',
+    }"
+    :show-icon="false"
+    :bordered="false"
+    size="huge"
+    class="create-role-modal"
+    :closable="false"
+  >
+    <template #header>
+      <div class="modal-header">
+        <span style="font-weight: 600">创建自定义角色</span>
+        <n-icon
+          class="modal-close-icon"
+          :component="X"
+          @click="showCreateRoleDialog = false"
+          size="1.6rem"
+        />
+      </div>
+    </template>
+    <div class="create-role-form">
+      <div class="form-item">
+        <div class="form-label">角色名称</div>
+        <n-input
+          v-model:value="customRoleForm.name"
+          placeholder="例如：心理咨询师"
+          maxlength="20"
+          show-count
+          style="border-radius: 8px"
+        />
+      </div>
+
+      <div class="form-item">
+        <div class="form-label">角色描述</div>
+        <n-input
+          v-model:value="customRoleForm.desc"
+          placeholder="简短描述这个角色的特点"
+          maxlength="50"
+          show-count
+          style="border-radius: 8px"
+        />
+      </div>
+
+      <div class="form-item">
+        <div class="form-label">角色头像</div>
+        <div class="icon-selector">
+          <div
+            v-for="icon in iconOptions"
+            :key="icon"
+            class="icon-option"
+            :class="{ active: customRoleForm.icon === icon }"
+            @click="customRoleForm.icon = icon"
+          >
+            {{ icon }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-item">
+        <div class="form-label">头像颜色</div>
+        <div class="color-selector">
+          <div
+            v-for="color in colorOptions"
+            :key="color"
+            class="color-option"
+            :class="{ active: customRoleForm.color === color }"
+            :style="{ backgroundColor: color }"
+            @click="customRoleForm.color = color"
+          >
+            <n-icon v-if="customRoleForm.color === color" color="#fff">
+              <Check />
+            </n-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-item">
+        <div class="form-label">系统提示词</div>
+        <n-input
+          v-model:value="customRoleForm.systemPrompt"
+          placeholder="定义角色的行为和语气"
+          type="textarea"
+          :rows="4"
+          show-count
+          style="border-radius: 8px"
+        />
+      </div>
+    </div>
+    <template #footer>
+      <div style="display: flex; justify-content: flex-end; gap: 12px">
+        <n-button
+          @click="closeCreateRoleDialog"
+          size="large"
+          style="border-radius: 8px"
+        >
+          取消
+        </n-button>
+        <n-button
+          type="primary"
+          @click="saveCustomRole"
+          size="large"
+          style="border-radius: 8px"
+        >
+          创建角色
+        </n-button>
+      </div>
+    </template>
+  </n-modal>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, h, onBeforeUnmount, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { NIcon, NInput, NPopover, useDialog, useMessage } from "naive-ui";
+import {
+  NIcon,
+  NInput,
+  NPopover,
+  NModal,
+  NButton,
+  useDialog,
+  useMessage,
+} from "naive-ui";
 import {
   MessageCircle,
   Bookmark,
@@ -229,6 +579,12 @@ import {
   Trash,
   AlertTriangle,
   LayoutSidebarLeftExpand,
+  User,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  X,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -251,6 +607,173 @@ const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
 const toggleBtnHover = ref(false);
+const showRoleDialog = ref(false);
+const showCreateRoleDialog = ref(false);
+const systemRolePage = ref(1);
+const customRolePage = ref(1);
+const pageSize = 8;
+const customRoleForm = ref({
+  name: "",
+  desc: "",
+  icon: "🤖",
+  color: "#00ff77",
+  systemPrompt: "",
+});
+
+const rolePresets = [
+  {
+    id: "professional",
+    name: "专业助手",
+    desc: "专业、精准、高效，提供高质量的回答",
+    icon: "🎯",
+    systemPrompt: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
+    color: "#00ff77",
+  },
+  {
+    id: "creative",
+    name: "创意伙伴",
+    desc: "富有想象力与创造力，激发创新思维",
+    icon: "🎨",
+    systemPrompt:
+      "你是一个富有想象力和创造力的智能助手,名字叫Mirror。善于激发灵感,提供创新性的想法和解决方案。",
+    color: "#ff6b6b",
+  },
+  {
+    id: "teacher",
+    name: "导师",
+    desc: "耐心、系统、深入浅出，善于教学",
+    icon: "📚",
+    systemPrompt:
+      "你是一位耐心、专业的导师,名字叫Mirror。善于用通俗易懂的方式讲解复杂概念,循序渐进地引导学习。",
+    color: "#4ecdc4",
+  },
+  {
+    id: "friend",
+    name: "伙伴",
+    desc: "友善、幽默、陪伴，乐于倾听理解",
+    icon: "🤝",
+    systemPrompt:
+      "你是一个友善、幽默的伙伴,名字叫Mirror。乐于倾听,富有同理心,用轻松愉快的方式交流。",
+    color: "#ffe66d",
+  },
+  {
+    id: "analyst",
+    name: "分析师",
+    desc: "理性、逻辑、深度，提供客观见解",
+    icon: "🔍",
+    systemPrompt:
+      "你是一个理性、逻辑严密的分析师,名字叫Mirror。善于从多角度分析问题,提供深入且客观的见解。",
+    color: "#a55eea",
+  },
+  {
+    id: "writer",
+    name: "作家",
+    desc: "优美、文雅、创作，文字精炼优雅",
+    icon: "✍️",
+    systemPrompt:
+      "你是一位文笔优美的作家,名字叫Mirror。善于运用修辞,文字精炼优雅,能够创作各类文学作品。",
+    color: "#ff9ff3",
+  },
+  {
+    id: "architect",
+    name: "资深技术架构师",
+    desc: "精通系统设计，提供架构级技术建议",
+    icon: "🏗️",
+    systemPrompt:
+      "你是一位资深技术架构师,名字叫Mirror。精通分布式系统、微服务架构、云原生技术。能够从架构层面分析问题,提供高可用、高性能、可扩展的解决方案。",
+    color: "#0984e3",
+  },
+  {
+    id: "doctor",
+    name: "精通护理学的医生",
+    desc: "医学专业知识，提供健康咨询建议",
+    icon: "🏥",
+    systemPrompt:
+      "你是一位精通护理学的医生,名字叫Mirror。具有丰富的临床经验和医学知识,能够提供专业的健康咨询和医疗建议。注意:你的建议仅供参考,不能替代实际就医。",
+    color: "#00b894",
+  },
+  {
+    id: "lawyer",
+    name: "资深律师",
+    desc: "法律专业知识，提供法律咨询建议",
+    icon: "⚖️",
+    systemPrompt:
+      "你是一位资深律师,名字叫Mirror。精通各类法律条文和案例分析,能够提供专业的法律咨询服务。注意:你的建议仅供参考,不构成法律意见,重要法律事务请咨询专业律师。",
+    color: "#6c5ce7",
+  },
+  {
+    id: "designer",
+    name: "UI/UX设计师",
+    desc: "精通用户体验和界面设计",
+    icon: "🎨",
+    systemPrompt:
+      "你是一位专业的UI/UX设计师,名字叫Mirror。精通用户研究、交互设计、视觉设计。能够从用户角度出发,提供优秀的设计建议和方案。",
+    color: "#fd79a8",
+  },
+  {
+    id: "coach",
+    name: "生活教练",
+    desc: "提供人生规划、心理支持和成长建议",
+    icon: "🌟",
+    systemPrompt:
+      "你是一位专业的生活教练,名字叫Mirror。擅长人生规划、心理咨询、职业发展指导。用积极正向的方式帮助用户找到人生方向,实现个人成长。",
+    color: "#fdcb6e",
+  },
+  {
+    id: "translator",
+    name: "专业翻译官",
+    desc: "精通多国语言，提供准确翻译服务",
+    icon: "🌍",
+    systemPrompt:
+      "你是一位专业的翻译官,名字叫Mirror。精通多种语言,包括但不限于英语、日语、韩语、法语、德语等。能够提供准确、地道、符合文化背景的翻译服务。",
+    color: "#00cec9",
+  },
+];
+
+const paginatedSystemRoles = computed(() => {
+  const start = (systemRolePage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return rolePresets.slice(start, end);
+});
+
+const paginatedCustomRoles = computed(() => {
+  const customRoles = configStore.customRoles;
+  const start = (customRolePage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return customRoles.slice(start, end);
+});
+
+const systemRoleTotalPages = computed(() =>
+  Math.ceil(rolePresets.length / pageSize)
+);
+
+const customRoleTotalPages = computed(() =>
+  Math.ceil(configStore.customRoles.length / pageSize)
+);
+
+const prevSystemRolePage = () => {
+  if (systemRolePage.value > 1) {
+    systemRolePage.value--;
+  }
+};
+
+const nextSystemRolePage = () => {
+  if (systemRolePage.value < systemRoleTotalPages.value) {
+    systemRolePage.value++;
+  }
+};
+
+const prevCustomRolePage = () => {
+  if (customRolePage.value > 1) {
+    customRolePage.value--;
+  }
+};
+
+const nextCustomRolePage = () => {
+  if (customRolePage.value < customRoleTotalPages.value) {
+    customRolePage.value++;
+  }
+};
 
 const historyList = computed(() => historyStore.historyList);
 
@@ -356,6 +879,93 @@ const navigateToHistory = () => {
   }
   router.push("/chat/history");
 };
+
+const showRolePresets = () => {
+  showRoleDialog.value = true;
+};
+
+const selectRole = (role) => {
+  configStore.setCurrentRole(role);
+  window.dispatchEvent(
+    new CustomEvent("roleChanged", {
+      detail: { role: role },
+    })
+  );
+};
+
+const openCreateRoleDialog = () => {
+  showCreateRoleDialog.value = true;
+};
+
+const closeCreateRoleDialog = () => {
+  showCreateRoleDialog.value = false;
+  customRoleForm.value = {
+    name: "",
+    desc: "",
+    icon: "🤖",
+    color: "#00ff77",
+    systemPrompt: "",
+  };
+};
+
+const saveCustomRole = () => {
+  if (!customRoleForm.value.name.trim()) {
+    message.warning("请输入角色名称");
+    return;
+  }
+  if (!customRoleForm.value.desc.trim()) {
+    message.warning("请输入角色描述");
+    return;
+  }
+  if (!customRoleForm.value.systemPrompt.trim()) {
+    message.warning("请输入系统提示词");
+    return;
+  }
+
+  const newRole = {
+    id: `custom_${Date.now()}`,
+    ...customRoleForm.value,
+  };
+
+  configStore.addCustomRole(newRole);
+  message.success("角色创建成功");
+  closeCreateRoleDialog();
+  customRolePage.value = 1;
+};
+
+const iconOptions = [
+  "🤖",
+  "🎯",
+  "🎨",
+  "📚",
+  "🤝",
+  "🔍",
+  "✍️",
+  "🏗️",
+  "🏥",
+  "⚖️",
+  "🌟",
+  "🌍",
+  "💼",
+  "🚀",
+  "💡",
+  "🎓",
+];
+
+const colorOptions = [
+  "#00ff77",
+  "#ff6b6b",
+  "#4ecdc4",
+  "#ffe66d",
+  "#a55eea",
+  "#ff9ff3",
+  "#0984e3",
+  "#00b894",
+  "#6c5ce7",
+  "#fd79a8",
+  "#fdcb6e",
+  "#00cec9",
+];
 
 const createNewChat = () => {
   configStore.chatId = null;
@@ -549,6 +1159,39 @@ onBeforeUnmount(() => {
 @ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 @ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
 @transition-duration: 0.35s;
+
+.modal-close-icon {
+  position: absolute;
+  top: 1.2rem;
+  right: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  color: var(--text-color);
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 0 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 
 .sidebar-container {
   position: fixed;
@@ -1013,4 +1656,302 @@ onBeforeUnmount(() => {
     }
   }
 }
+
+.role-columns-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 0.375rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 3px;
+  }
+
+  .current-role-section {
+    margin-bottom: 1.5rem;
+    .section-header {
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.75rem;
+      }
+    }
+
+    .current-role-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      border-radius: 12px;
+      background-color: rgba(0, 0, 0, 0.03);
+      position: relative;
+      user-select: none;
+      pointer-events: none;
+
+      .role-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-right: 0.75rem;
+        user-select: none;
+      }
+
+      .role-info {
+        flex: 1;
+        min-width: 0;
+
+        .role-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-color);
+          margin-bottom: 0.25rem;
+        }
+
+        .role-desc {
+          font-size: 12px;
+          color: var(--text-color);
+          opacity: 0.6;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      }
+
+      .role-check {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .system-roles-section,
+  .custom-roles-section {
+    margin-bottom: 1.5rem;
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .create-role-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--primary-color);
+      }
+
+      .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .page-indicator {
+          font-size: 12px;
+          color: var(--text-color);
+          opacity: 0.6;
+          margin: 0 0.25rem;
+        }
+      }
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+
+      .role-grid-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.75rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s @ease-smooth;
+        background-color: rgba(0, 0, 0, 0.03);
+        border: 1px solid transparent;
+        min-height: 80px;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.06);
+          transform: translateY(-1px);
+        }
+
+        &.active {
+          border-color: var(--primary-color);
+          background-color: rgba(0, 255, 119, 0.05);
+        }
+
+        .role-icon {
+          width: 2rem;
+          height: 2rem;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          flex-shrink: 0;
+          margin-right: 0.5rem;
+          user-select: none;
+          pointer-events: none;
+        }
+
+        .role-info {
+          flex: 1;
+          min-width: 0;
+
+          .role-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+            user-select: none;
+          }
+
+          .role-desc {
+            font-size: 11px;
+            color: var(--text-color);
+            opacity: 0.6;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            user-select: none;
+          }
+        }
+
+        .role-check {
+          flex-shrink: 0;
+          margin-left: 0.25rem;
+        }
+      }
+    }
+
+    .empty-roles {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1rem;
+      color: var(--text-color);
+      opacity: 0.5;
+
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: 1rem;
+        user-select: none;
+      }
+
+      .empty-text {
+        font-size: 14px;
+        margin-bottom: 1rem;
+      }
+    }
+  }
+}
+
+.create-role-form {
+  .form-item {
+    margin-bottom: 1.25rem;
+
+    .form-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 0.5rem;
+      user-select: none;
+    }
+
+    .icon-selector {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0.5rem;
+
+      .icon-option {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.3s @ease-smooth;
+        background-color: rgba(0, 0, 0, 0.03);
+        border: 0.125rem solid transparent;
+        user-select: none;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.06);
+          transform: scale(1.1);
+        }
+
+        &.active {
+          border-color: var(--primary-color);
+          background-color: rgba(0, 255, 119, 0.1);
+        }
+      }
+    }
+
+    .color-selector {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 0.5rem;
+
+      .color-option {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s @ease-smooth;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+
+        &:hover {
+          transform: scale(1.15);
+        }
+
+        &.active {
+          transform: scale(1.15);
+        }
+      }
+    }
+  }
+}
+</style>
+
+<style lang="less">
+@import "../styles/roleSetting.less";
 </style>

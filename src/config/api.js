@@ -34,6 +34,15 @@ export const api = {
   downloadKnowledge: "/api/v1/knowledge/download",
   setModelConfig: "/api/v1/user/setModelConfig",
   getModelConfig: "/api/v1/user/getModelConfig",
+  getSystemRoles: "/api/v1/role/system",
+  getUserRoles: "/api/v1/role/user",
+  getSelectedRole: "/api/v1/role/selected",
+  getRole: "/api/v1/role",
+  createRole: "/api/v1/role/create",
+  updateRole: "/api/v1/role/update",
+  deleteRole: "/api/v1/role/delete",
+  selectRole: "/api/v1/role/select",
+  clearRole: "/api/v1/role/clear",
 };
 
 // 需要认证的API

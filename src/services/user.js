@@ -130,3 +130,48 @@ export const getModelConfig = async (params) => {
   const res = await Request(api.getModelConfig, "POST", params);
   return res;
 };
+
+export const getSystemRoles = async (params) => {
+  const res = await Request(api.getSystemRoles, "GET", params);
+  return res;
+};
+
+export const getUserRoles = async (params) => {
+  const res = await Request(api.getUserRoles, "GET", params);
+  return res;
+};
+
+export const getSelectedRole = async (params) => {
+  const res = await Request(api.getSelectedRole, "GET", params);
+  return res;
+};
+
+export const getRole = async (params) => {
+  const res = await Request(api.getRole, "GET", params);
+  return res;
+};
+
+export const createRole = async (params) => {
+  const res = await Request(api.createRole, "POST", params);
+  return res;
+};
+
+export const updateRole = async (params) => {
+  const res = await Request(api.updateRole, "POST", params);
+  return res;
+};
+
+export const deleteRole = async (params) => {
+  const res = await Request(api.deleteRole, "POST", params);
+  return res;
+};
+
+export const selectRole = async (params) => {
+  const res = await Request(api.selectRole, "POST", params);
+  return res;
+};
+
+export const clearRole = async (params) => {
+  const res = await Request(api.clearRole, "POST", params);
+  return res;
+};

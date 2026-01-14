@@ -282,16 +282,22 @@
         <div class="section-header">
           <div class="section-title">当前角色</div>
         </div>
-        <div class="current-role-item">
+        <div class="current-role-item" v-if="currentRole">
           <div
             class="role-icon"
-            :style="{ backgroundColor: configStore.currentRole.color }"
+            :style="{
+              backgroundColor: currentRole.avatarColor,
+            }"
           >
-            {{ configStore.currentRole.icon }}
+            {{ currentRole.avatar }}
           </div>
           <div class="role-info">
-            <div class="role-name">{{ configStore.currentRole.name }}</div>
-            <div class="role-desc">{{ configStore.currentRole.desc }}</div>
+            <div class="role-name">
+              {{ currentRole.name }}
+            </div>
+            <div class="role-desc">
+              {{ currentRole.desc }}
+            </div>
           </div>
           <div class="role-check">
             <n-icon size="20" color="#00ff77">
@@ -335,11 +341,14 @@
             v-for="role in paginatedSystemRoles"
             :key="role.id"
             class="role-grid-item"
-            :class="{ active: configStore.currentRole.id === role.id }"
-            @click="selectRole(role)"
+            :class="{ active: currentRole?.id === role.id }"
+            @click="handleSelectRole(role)"
           >
-            <div class="role-icon" :style="{ backgroundColor: role.color }">
-              {{ role.icon }}
+            <div
+              class="role-icon"
+              :style="{ backgroundColor: role.avatarColor }"
+            >
+              {{ role.avatar }}
             </div>
             <div class="role-info">
               <div class="role-name">{{ role.name }}</div>
@@ -364,10 +373,7 @@
               </template>
               新建
             </n-button>
-            <div
-              v-if="configStore.customRoles.length > 0"
-              class="pagination-controls"
-            >
+            <div v-if="customRoleTotalPages > 1" class="pagination-controls">
               <n-button
                 text
                 size="small"
@@ -394,7 +400,7 @@
             </div>
           </div>
         </div>
-        <div v-if="configStore.customRoles.length === 0" class="empty-roles">
+        <div v-if="customRoles.length === 0" class="empty-roles">
           <div class="empty-icon">📝</div>
           <div class="empty-text">暂无自定义角色</div>
           <n-button
@@ -413,25 +419,40 @@
           <div
             v-for="role in paginatedCustomRoles"
             :key="role.id"
-            class="role-grid-item"
-            :class="{ active: configStore.currentRole.id === role.id }"
-            @click="selectRole(role)"
+            class="role-grid-item custom-role-item"
+            :class="{ active: currentRole?.id === role.id }"
+            @click="handleSelectRole(role)"
           >
-            <div class="role-icon" :style="{ backgroundColor: role.color }">
-              {{ role.icon }}
+            <div
+              class="role-icon"
+              :style="{ backgroundColor: role.avatarColor }"
+            >
+              {{ role.avatar }}
             </div>
             <div class="role-info">
               <div class="role-name">{{ role.name }}</div>
               <div class="role-desc">{{ role.desc }}</div>
             </div>
-            <div class="role-check">
-              <n-icon
-                v-if="configStore.currentRole.id === role.id"
-                size="20"
-                color="#00ff77"
+            <div class="role-actions">
+              <n-button
+                text
+                size="small"
+                @click.stop="openEditRoleDialog(role)"
               >
-                <Check />
-              </n-icon>
+                <template #icon>
+                  <n-icon><Edit /></n-icon>
+                </template>
+              </n-button>
+              <n-button
+                text
+                size="small"
+                type="error"
+                @click.stop="openDeleteRoleDialog(role)"
+              >
+                <template #icon>
+                  <n-icon><Trash /></n-icon>
+                </template>
+              </n-button>
             </div>
           </div>
         </div>
@@ -459,11 +480,13 @@
   >
     <template #header>
       <div class="modal-header">
-        <span style="font-weight: 600">创建自定义角色</span>
+        <span style="font-weight: 600">{{
+          isEditMode ? "编辑角色" : "创建角色"
+        }}</span>
         <n-icon
           class="modal-close-icon"
           :component="X"
-          @click="showCreateRoleDialog = false"
+          @click="closeCreateRoleDialog"
           size="1.6rem"
         />
       </div>
@@ -527,7 +550,7 @@
       <div class="form-item">
         <div class="form-label">系统提示词</div>
         <n-input
-          v-model:value="customRoleForm.systemPrompt"
+          v-model:value="customRoleForm.prompt"
           placeholder="定义角色的行为和语气"
           type="textarea"
           :rows="4"
@@ -551,7 +574,7 @@
           size="large"
           style="border-radius: 8px"
         >
-          创建角色
+          {{ isEditMode ? "保存" : "创建" }}
         </n-button>
       </div>
     </template>
@@ -595,6 +618,14 @@ import {
   getConversations,
   getConversationDetail,
   deleteConversation,
+  getSystemRoles,
+  getUserRoles,
+  getSelectedRole,
+  createRole,
+  updateRole,
+  deleteRole,
+  selectRole as selectRoleApi,
+  clearRole,
 } from "@/services/user.js";
 
 const router = useRouter();
@@ -617,138 +648,41 @@ const customRoleForm = ref({
   desc: "",
   icon: "🤖",
   color: "#00ff77",
-  systemPrompt: "",
+  prompt: "",
 });
+const isEditMode = ref(false);
+const editingRoleId = ref(null);
 
-const rolePresets = [
-  {
-    id: "professional",
-    name: "专业助手",
-    desc: "专业、精准、高效，提供高质量的回答",
-    icon: "🎯",
-    systemPrompt: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
-    color: "#00ff77",
-  },
-  {
-    id: "creative",
-    name: "创意伙伴",
-    desc: "富有想象力与创造力，激发创新思维",
-    icon: "🎨",
-    systemPrompt:
-      "你是一个富有想象力和创造力的智能助手,名字叫Mirror。善于激发灵感,提供创新性的想法和解决方案。",
-    color: "#ff6b6b",
-  },
-  {
-    id: "teacher",
-    name: "导师",
-    desc: "耐心、系统、深入浅出，善于教学",
-    icon: "📚",
-    systemPrompt:
-      "你是一位耐心、专业的导师,名字叫Mirror。善于用通俗易懂的方式讲解复杂概念,循序渐进地引导学习。",
-    color: "#4ecdc4",
-  },
-  {
-    id: "friend",
-    name: "伙伴",
-    desc: "友善、幽默、陪伴，乐于倾听理解",
-    icon: "🤝",
-    systemPrompt:
-      "你是一个友善、幽默的伙伴,名字叫Mirror。乐于倾听,富有同理心,用轻松愉快的方式交流。",
-    color: "#ffe66d",
-  },
-  {
-    id: "analyst",
-    name: "分析师",
-    desc: "理性、逻辑、深度，提供客观见解",
-    icon: "🔍",
-    systemPrompt:
-      "你是一个理性、逻辑严密的分析师,名字叫Mirror。善于从多角度分析问题,提供深入且客观的见解。",
-    color: "#a55eea",
-  },
-  {
-    id: "writer",
-    name: "作家",
-    desc: "优美、文雅、创作，文字精炼优雅",
-    icon: "✍️",
-    systemPrompt:
-      "你是一位文笔优美的作家,名字叫Mirror。善于运用修辞,文字精炼优雅,能够创作各类文学作品。",
-    color: "#ff9ff3",
-  },
-  {
-    id: "architect",
-    name: "资深技术架构师",
-    desc: "精通系统设计，提供架构级技术建议",
-    icon: "🏗️",
-    systemPrompt:
-      "你是一位资深技术架构师,名字叫Mirror。精通分布式系统、微服务架构、云原生技术。能够从架构层面分析问题,提供高可用、高性能、可扩展的解决方案。",
-    color: "#0984e3",
-  },
-  {
-    id: "doctor",
-    name: "精通护理学的医生",
-    desc: "医学专业知识，提供健康咨询建议",
-    icon: "🏥",
-    systemPrompt:
-      "你是一位精通护理学的医生,名字叫Mirror。具有丰富的临床经验和医学知识,能够提供专业的健康咨询和医疗建议。注意:你的建议仅供参考,不能替代实际就医。",
-    color: "#00b894",
-  },
-  {
-    id: "lawyer",
-    name: "资深律师",
-    desc: "法律专业知识，提供法律咨询建议",
-    icon: "⚖️",
-    systemPrompt:
-      "你是一位资深律师,名字叫Mirror。精通各类法律条文和案例分析,能够提供专业的法律咨询服务。注意:你的建议仅供参考,不构成法律意见,重要法律事务请咨询专业律师。",
-    color: "#6c5ce7",
-  },
-  {
-    id: "designer",
-    name: "UI/UX设计师",
-    desc: "精通用户体验和界面设计",
-    icon: "🎨",
-    systemPrompt:
-      "你是一位专业的UI/UX设计师,名字叫Mirror。精通用户研究、交互设计、视觉设计。能够从用户角度出发,提供优秀的设计建议和方案。",
-    color: "#fd79a8",
-  },
-  {
-    id: "coach",
-    name: "生活教练",
-    desc: "提供人生规划、心理支持和成长建议",
-    icon: "🌟",
-    systemPrompt:
-      "你是一位专业的生活教练,名字叫Mirror。擅长人生规划、心理咨询、职业发展指导。用积极正向的方式帮助用户找到人生方向,实现个人成长。",
-    color: "#fdcb6e",
-  },
-  {
-    id: "translator",
-    name: "专业翻译官",
-    desc: "精通多国语言，提供准确翻译服务",
-    icon: "🌍",
-    systemPrompt:
-      "你是一位专业的翻译官,名字叫Mirror。精通多种语言,包括但不限于英语、日语、韩语、法语、德语等。能够提供准确、地道、符合文化背景的翻译服务。",
-    color: "#00cec9",
-  },
-];
+// 角色列表数据
+const systemRoles = ref([]); // 系统角色
+const customRoles = ref([]); // 用户自定义角色
+const currentRole = ref(null); // 当前选中的角色
+const rolesLoading = ref(false);
 
+// 角色切换同步优化
+let roleSelectDebounceTimer = null;
+let pendingSyncRole = null;
+
+// 系统角色（分页）
 const paginatedSystemRoles = computed(() => {
   const start = (systemRolePage.value - 1) * pageSize;
   const end = start + pageSize;
-  return rolePresets.slice(start, end);
+  return systemRoles.value.slice(start, end);
 });
 
+// 自定义角色（分页）
 const paginatedCustomRoles = computed(() => {
-  const customRoles = configStore.customRoles;
   const start = (customRolePage.value - 1) * pageSize;
   const end = start + pageSize;
-  return customRoles.slice(start, end);
+  return customRoles.value.slice(start, end);
 });
 
 const systemRoleTotalPages = computed(() =>
-  Math.ceil(rolePresets.length / pageSize)
+  Math.max(1, Math.ceil(systemRoles.value.length / pageSize))
 );
 
 const customRoleTotalPages = computed(() =>
-  Math.ceil(configStore.customRoles.length / pageSize)
+  Math.max(1, Math.ceil(customRoles.value.length / pageSize))
 );
 
 const prevSystemRolePage = () => {
@@ -776,6 +710,104 @@ const nextCustomRolePage = () => {
 };
 
 const historyList = computed(() => historyStore.historyList);
+
+// 获取系统角色列表
+const fetchSystemRoles = async () => {
+  try {
+    const res = await getSystemRoles();
+    if (res.code === 200 && res.data) {
+      systemRoles.value = res.data.map((role) => ({
+        id: role.id,
+        name: role.name,
+        desc: role.description,
+        avatar: role.avatar || "🤖",
+        avatarColor: role.avatarColor || "#00ff77",
+        prompt: role.prompt,
+      }));
+    }
+  } catch (error) {
+    console.error("获取系统角色失败:", error);
+  }
+};
+
+// 获取用户自定义角色列表
+const fetchUserRoles = async () => {
+  if (!configStore.userId) return;
+  try {
+    const res = await getUserRoles({ userId: configStore.userId });
+    if (res.code === 200 && res.data) {
+      customRoles.value = res.data.map((role) => ({
+        id: role.id,
+        name: role.name,
+        desc: role.description,
+        avatar: role.avatar || "🤖",
+        avatarColor: role.avatarColor || "#00ff77",
+        prompt: role.prompt,
+      }));
+    }
+  } catch (error) {
+    console.error("获取自定义角色失败:", error);
+  }
+};
+
+// 获取当前选中的角色
+const fetchSelectedRole = async () => {
+  if (!configStore.userId) {
+    // 未登录时使用系统角色的第一个
+    const fallbackRole = systemRoles.value[0] || null;
+    if (fallbackRole) {
+      currentRole.value = fallbackRole;
+      configStore.setCurrentRole(fallbackRole);
+    }
+    return;
+  }
+  try {
+    const res = await getSelectedRole({ userId: configStore.userId });
+    if (res.code === 200 && res.data) {
+      // 从已加载的角色列表中查找对应的角色
+      const roleId = res.data.id;
+      const allRoles = [...systemRoles.value, ...customRoles.value];
+      const role = allRoles.find((r) => r.id === roleId);
+
+      if (role) {
+        currentRole.value = role;
+        configStore.setCurrentRole(role);
+      } else {
+        // 如果在列表中找不到该角色，使用系统角色的第一个
+        const fallbackRole = systemRoles.value[0] || null;
+        if (fallbackRole) {
+          currentRole.value = fallbackRole;
+          configStore.setCurrentRole(fallbackRole);
+        }
+      }
+    } else {
+      // 没有选中角色时使用系统角色的第一个
+      const fallbackRole = systemRoles.value[0] || null;
+      if (fallbackRole) {
+        currentRole.value = fallbackRole;
+        configStore.setCurrentRole(fallbackRole);
+      }
+    }
+  } catch (error) {
+    console.error("获取当前角色失败:", error);
+    const fallbackRole = systemRoles.value[0] || null;
+    if (fallbackRole) {
+      currentRole.value = fallbackRole;
+      configStore.setCurrentRole(fallbackRole);
+    }
+  }
+};
+
+// 初始化角色数据
+const initRoles = async () => {
+  rolesLoading.value = true;
+  try {
+    await fetchSystemRoles();
+    await Promise.all([fetchUserRoles(), fetchSelectedRole()]);
+  } finally {
+    rolesLoading.value = false;
+  }
+};
 
 const formatTime = (date) => {
   return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
@@ -881,16 +913,62 @@ const navigateToHistory = () => {
 };
 
 const showRolePresets = () => {
+  if (!configStore.userId) {
+    message.warning("请先登录 🔒");
+    return;
+  }
   showRoleDialog.value = true;
 };
 
-const selectRole = (role) => {
+// 同步角色选择到服务器
+const syncRoleToServer = async (role) => {
+  if (!configStore.userId || !role) return;
+
+  try {
+    await selectRoleApi({
+      userId: configStore.userId,
+      roleId: role.id,
+    });
+    lastSyncedRole = role;
+    pendingSyncRole = null;
+  } catch (error) {
+    message.error("角色切换同步失败:", error);
+    pendingSyncRole = role;
+  }
+};
+
+const debouncedSyncRole = (role) => {
+  if (!configStore.userId) return;
+
+  pendingSyncRole = role;
+
+  if (roleSelectDebounceTimer) {
+    clearTimeout(roleSelectDebounceTimer);
+  }
+
+  // 设置新的定时器，500ms 后同步
+  roleSelectDebounceTimer = setTimeout(() => {
+    syncRoleToServer(role);
+  }, 500);
+};
+
+// 处理角色选择
+const handleSelectRole = async (role) => {
+  currentRole.value = role;
   configStore.setCurrentRole(role);
-  window.dispatchEvent(
-    new CustomEvent("roleChanged", {
-      detail: { role: role },
-    })
-  );
+  debouncedSyncRole(role);
+};
+
+// 强制同步当前角色
+const forceSyncCurrentRole = async () => {
+  if (pendingSyncRole && configStore.userId) {
+    if (roleSelectDebounceTimer) {
+      clearTimeout(roleSelectDebounceTimer);
+      roleSelectDebounceTimer = null;
+    }
+    // 立即同步
+    await syncRoleToServer(pendingSyncRole);
+  }
 };
 
 const openCreateRoleDialog = () => {
@@ -899,16 +977,90 @@ const openCreateRoleDialog = () => {
 
 const closeCreateRoleDialog = () => {
   showCreateRoleDialog.value = false;
+  isEditMode.value = false;
+  editingRoleId.value = null;
   customRoleForm.value = {
     name: "",
     desc: "",
     icon: "🤖",
     color: "#00ff77",
-    systemPrompt: "",
+    prompt: "",
   };
 };
 
-const saveCustomRole = () => {
+const openEditRoleDialog = (role) => {
+  isEditMode.value = true;
+  editingRoleId.value = role.id;
+  customRoleForm.value = {
+    name: role.name,
+    desc: role.desc,
+    icon: role.avatar,
+    color: role.avatarColor,
+    prompt: role.prompt,
+  };
+  showCreateRoleDialog.value = true;
+};
+
+const openDeleteRoleDialog = (role) => {
+  dialog.warning({
+    title: "确定删除角色？",
+    content: `确定要删除"${role.name}"吗？删除后将不可恢复。`,
+    positiveText: "删除",
+    negativeText: "取消",
+    icon: () =>
+      h(
+        "div",
+        {
+          style: `
+            width: 28px;
+            height: 28px;
+            color: #f53d3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          `,
+        },
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+      ),
+    style: "height: 140px; border-radius: 10px; overflow: hidden;",
+    titleStyle: "font-weight: 600;",
+    contentStyle: "font-size: 1rem; margin-bottom: 0px;",
+    positiveButtonProps: {
+      type: "error",
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    negativeButtonProps: {
+      style:
+        "height: 34px; border-radius: 8px; margin-top: 10px;padding: 1.3rem 1.5rem;",
+    },
+    onPositiveClick: async () => {
+      try {
+        const deletedRoleId = role.id;
+        await deleteRole({
+          userId: configStore.userId,
+          id: deletedRoleId,
+        });
+        // 重新拉取角色列表
+        await fetchUserRoles();
+        // 如果删除的是当前选中的角色，切换回系统角色的第一个
+        if (currentRole.value?.id === deletedRoleId) {
+          const fallbackRole = systemRoles.value[0] || null;
+          if (fallbackRole) {
+            currentRole.value = fallbackRole;
+            configStore.setCurrentRole(fallbackRole);
+            // 清除选择
+            await clearRole({ userId: configStore.userId });
+          }
+        }
+      } catch (error) {
+        message.error("删除角色失败：" + error.message);
+      }
+    },
+  });
+};
+
+const saveCustomRole = async () => {
   if (!customRoleForm.value.name.trim()) {
     message.warning("请输入角色名称");
     return;
@@ -917,20 +1069,67 @@ const saveCustomRole = () => {
     message.warning("请输入角色描述");
     return;
   }
-  if (!customRoleForm.value.systemPrompt.trim()) {
-    message.warning("请输入系统提示词");
+  if (!customRoleForm.value.prompt.trim()) {
+    message.warning("请输入提示词");
     return;
   }
 
-  const newRole = {
-    id: `custom_${Date.now()}`,
-    ...customRoleForm.value,
-  };
+  if (!configStore.userId) {
+    message.warning("请先登录");
+    return;
+  }
 
-  configStore.addCustomRole(newRole);
-  message.success("角色创建成功");
-  closeCreateRoleDialog();
-  customRolePage.value = 1;
+  try {
+    if (isEditMode.value) {
+      // 更新角色
+      const res = await updateRole({
+        userId: configStore.userId,
+        id: editingRoleId.value,
+        name: customRoleForm.value.name,
+        description: customRoleForm.value.desc,
+        avatar: customRoleForm.value.icon,
+        avatarColor: customRoleForm.value.color,
+        prompt: customRoleForm.value.prompt,
+      });
+      if (res.code === 200) {
+        message.success("角色更新成功 🎉");
+        await fetchUserRoles();
+        // 如果编辑的是当前选中的角色，需要更新当前角色信息
+        if (currentRole.value?.id === editingRoleId.value) {
+          const updatedRole = customRoles.value.find(
+            (r) => r.id === editingRoleId.value
+          );
+          if (updatedRole) {
+            currentRole.value = updatedRole;
+            configStore.setCurrentRole(updatedRole);
+          }
+        }
+      } else {
+        throw new Error(res.message || "更新失败");
+      }
+    } else {
+      // 创建角色
+      const res = await createRole({
+        userId: configStore.userId,
+        name: customRoleForm.value.name,
+        description: customRoleForm.value.desc,
+        avatar: customRoleForm.value.icon,
+        avatarColor: customRoleForm.value.color,
+        prompt: customRoleForm.value.prompt,
+      });
+      if (res.code === 200 && res.data) {
+        // 重新拉取角色列表
+        await fetchUserRoles();
+        // 跳转到第一页以便看到新创建的角色
+        customRolePage.value = 1;
+      } else {
+        throw new Error(res.message || "创建失败");
+      }
+    }
+    closeCreateRoleDialog();
+  } catch (error) {
+    message.error(isEditMode.value ? "更新角色失败" : "创建角色失败");
+  }
 };
 
 const iconOptions = [
@@ -1126,30 +1325,58 @@ onMounted(() => {
     loadConversation(conversationId);
   }
 
+  initRoles();
+
   if (configStore.userId) {
     fetchHistoryList();
   }
 
+  // 监听用户登录/登出状态变化
   watch(
     () => configStore.userId,
     (newUserId, oldUserId) => {
       if (newUserId && !oldUserId) {
         fetchHistoryList();
+        fetchUserRoles();
+        fetchSelectedRole();
       } else if (!newUserId && oldUserId) {
         historyStore.setHistoryList([]);
         historyStore.setHistoryListLoaded(false);
         configStore.chatId = null;
+        customRoles.value = [];
+        const fallbackRole = systemRoles.value[0] || null;
+        if (fallbackRole) {
+          currentRole.value = fallbackRole;
+          configStore.setCurrentRole(fallbackRole);
+        }
       }
     }
   );
+
+  // 监听角色对话框关闭，强制同步待处理的角色
+  watch(showRoleDialog, (newVal, oldVal) => {
+    if (oldVal === true && newVal === false) {
+      forceSyncCurrentRole();
+    }
+  });
 
   window.addEventListener("createNewChat", createNewChat);
   window.addEventListener("clearHistoryList", handleClearHistoryList);
 });
 
 onBeforeUnmount(() => {
+  // 清理事件监听器
   window.removeEventListener("createNewChat", createNewChat);
   window.removeEventListener("clearHistoryList", handleClearHistoryList);
+
+  // 清理防抖定时器
+  if (roleSelectDebounceTimer) {
+    clearTimeout(roleSelectDebounceTimer);
+    roleSelectDebounceTimer = null;
+  }
+
+  // 组件卸载前，强制同步待处理的角色
+  forceSyncCurrentRole();
 });
 </script>
 
@@ -1682,63 +1909,100 @@ onBeforeUnmount(() => {
     margin-bottom: 1.5rem;
     .section-header {
       .section-title {
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 600;
         color: var(--text-color);
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
     }
 
     .current-role-item {
       display: flex;
       align-items: center;
-      padding: 0.75rem;
-      border-radius: 12px;
-      background-color: rgba(0, 0, 0, 0.03);
+      padding: 1rem;
+      border-radius: 16px;
+      background: linear-gradient(
+        135deg,
+        rgba(0, 255, 119, 0.2) 0%,
+        rgba(0, 255, 119, 0.02) 100%
+      );
       position: relative;
       user-select: none;
       pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 255, 119, 0.08);
+      transition: all 0.3s @ease-smooth;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 16px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 100%
+        );
+        pointer-events: none;
+      }
 
       .role-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 10px;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 24px;
         flex-shrink: 0;
-        margin-right: 0.75rem;
+        margin-right: 1rem;
         user-select: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 1;
+        transition: transform 0.3s @ease-smooth;
       }
 
       .role-info {
         flex: 1;
         min-width: 0;
+        position: relative;
+        z-index: 1;
 
         .role-name {
-          font-size: 14px;
-          font-weight: 600;
+          font-size: 15px;
+          font-weight: 700;
           color: var(--text-color);
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.3rem;
+          letter-spacing: 0.3px;
         }
 
         .role-desc {
           font-size: 12px;
           color: var(--text-color);
-          opacity: 0.6;
-          line-height: 1.4;
+          opacity: 0.7;
+          line-height: 1.5;
           display: -webkit-box;
-          -webkit-line-clamp: 2;
+          -webkit-line-clamp: 1;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
       }
 
       .role-check {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     }
   }
@@ -1775,7 +2039,7 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         gap: 4px;
-
+        padding-left: 0.5rem;
         .page-indicator {
           font-size: 12px;
           color: var(--text-color);
@@ -1853,6 +2117,43 @@ onBeforeUnmount(() => {
         .role-check {
           flex-shrink: 0;
           margin-left: 0.25rem;
+        }
+
+        .role-actions {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          display: flex;
+          gap: 0.25rem;
+          opacity: 0;
+          transform: translateY(-8px) scale(0.95);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: var(--action-bg, rgba(255, 255, 255, 0.9));
+          backdrop-filter: blur(10px);
+          border-radius: 8px;
+          padding: 0.25rem 0.4rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
+            0 1px 3px rgba(0, 0, 0, 0.08);
+          z-index: 10;
+
+          :deep(.n-button) {
+            transition: all 0.2s ease;
+
+            &:hover {
+              background-color: var(--action-hover-bg, rgba(0, 0, 0, 0.05));
+            }
+          }
+        }
+
+        &.custom-role-item {
+          position: relative;
+
+          &:hover {
+            .role-actions {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
         }
       }
     }

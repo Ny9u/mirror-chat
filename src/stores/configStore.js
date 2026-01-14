@@ -12,15 +12,8 @@ export const useConfigStore = defineStore("config", {
     voiceName: "智瑜",
     chatId: "",
     sidebarCollapsed: true,
-    currentRole: {
-      id: 'professional',
-      name: '专业助手',
-      desc: '专业、精准、高效',
-      icon: '🎯',
-      systemPrompt: '你是一个专业、精准、高效的智能问答助手,名字叫Mirror。',
-      color: '#00ff77'
-    },
-    customRoles: [],
+    currentRoleId: null,
+    currentRole: null,
   }),
   actions: {
     setTheme(theme) {
@@ -50,20 +43,12 @@ export const useConfigStore = defineStore("config", {
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
     },
+    setCurrentRoleId(roleId) {
+      this.currentRoleId = roleId;
+    },
     setCurrentRole(role) {
       this.currentRole = role;
-    },
-    addCustomRole(role) {
-      this.customRoles.push(role);
-    },
-    updateCustomRole(id, role) {
-      const index = this.customRoles.findIndex(r => r.id === id);
-      if (index !== -1) {
-        this.customRoles[index] = role;
-      }
-    },
-    deleteCustomRole(id) {
-      this.customRoles = this.customRoles.filter(r => r.id !== id);
+      this.currentRoleId = role?.id || null;
     },
   },
 });

@@ -6,12 +6,12 @@ import { refresh } from "../services/user.js";
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
-      prom.resolve(token);
+      prom.resolve();
     }
   });
 
@@ -21,6 +21,7 @@ const processQueue = (error, token = null) => {
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 20000, // 请求超时时间
+  withCredentials: true, // 允许携带 Cookie
 });
 
 // 请求拦截器
@@ -62,16 +63,12 @@ service.interceptors.request.use(
       };
     }
 
-    if (authRequiredApis.includes(config.url)) {
-      const token = localStorage.getItem("jwtToken");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
+    // 注意：不需要手动设置 Authorization Header
+    // Token 会通过 HttpOnly Cookie 自动发送
 
-    // 处理其他API的认证
-    const authApi = [api.getModels, api.netSearch];
-    if (authApi.includes(config.url)) {
+    // 处理第三方API的认证（这些仍需要手动设置 Authorization Header）
+    const thirdPartyAuthApis = [api.getModels, api.netSearch];
+    if (thirdPartyAuthApis.includes(config.url)) {
       switch (config.url) {
         case api.getModels:
           config.headers.Authorization =
@@ -107,8 +104,6 @@ service.interceptors.response.use(
     ) {
       // 如果是刷新token的请求失败，直接登出
       if (originalRequest.url === api.refresh) {
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("isLoggedIn");
         window.location.href = "/auth";
         return Promise.reject(error);
@@ -119,8 +114,8 @@ service.interceptors.response.use(
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers["Authorization"] = "Bearer " + token;
+          .then(() => {
+            // Token 通过 Cookie 自动发送，不需要手动设置 Header
             return service(originalRequest);
           })
           .catch((err) => {
@@ -131,41 +126,31 @@ service.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
+      try {
+        // 刷新 Token，不需要传递 refreshToken（会从 Cookie 自动读取）
+        const res = await refresh();
+        if (res.code === 200) {
+          // Token 已通过 Cookie 自动设置，不需要手动存储
 
-      if (refreshToken) {
-        try {
-          const res = await refresh({ refreshToken });
-          if (res.code === 200 && res.data) {
-            localStorage.setItem("jwtToken", res.data.token);
-            localStorage.setItem("refreshToken", res.data.refreshToken);
+          // 通知队列中的请求可以继续
+          processQueue(null);
 
-            // 更新队列中请求的token
-            processQueue(null, res.data.token);
-
-            originalRequest.headers["Authorization"] =
-              "Bearer " + res.data.token;
-            return service(originalRequest);
-          } else {
-            // 刷新失败，清空token并跳转到登录页
-            window.location.href = "/auth";
-            throw new Error("Token refresh failed");
-          }
-        } catch (err) {
-          processQueue(err, null);
-          localStorage.removeItem("jwtToken");
-          localStorage.removeItem("refreshToken");
+          // 重试原始请求（Cookie 会自动携带新 Token）
+          return service(originalRequest);
+        } else {
+          // 刷新失败，清空登录状态并跳转到登录页
+          processQueue(new Error("Token refresh failed"), null);
           localStorage.removeItem("isLoggedIn");
           window.location.href = "/auth";
-          return Promise.reject(err);
-        } finally {
-          isRefreshing = false;
+          throw new Error("Token refresh failed");
         }
-      } else {
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("refreshToken");
+      } catch (err) {
+        processQueue(err, null);
         localStorage.removeItem("isLoggedIn");
         window.location.href = "/auth";
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
       }
     }
 
@@ -249,14 +234,6 @@ export const FormDataRequest = (url, formData, options = {}) => {
         // 不要设置Content-Type，让浏览器自动设置
       },
     };
-
-    // 添加认证信息
-    if (authRequiredApis.includes(url)) {
-      const token = localStorage.getItem("jwtToken");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
 
     service(config)
       .then((response) => {

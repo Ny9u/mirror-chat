@@ -70,29 +70,29 @@ router.beforeEach(async (to, from, next) => {
     const configStore = useConfigStore();
 
     if (!configStore.userId) {
-      const token = localStorage.getItem("jwtToken");
-      const refreshToken = localStorage.getItem("refreshToken");
+      try {
+        // 调用验证接口，Token 会通过 Cookie 自动发送
+        const res = await validate();
 
-      if (token && refreshToken) {
-        try {
-          const res = await validate();
+        if (res.code === 200 && res.data) {
+          // 保存用户信息到 store
+          configStore.setUserId(res.data.id);
+          configStore.setName(res.data.username);
+          configStore.setAvatar(res.data.avatar);
 
-          if (res.code === 200 && res.data) {
-            configStore.setUserId(res.data.id);
-            configStore.setName(res.data.username);
-            configStore.setAvatar(res.data.avatar);
-
-            if (res.data.token) {
-              localStorage.setItem("jwtToken", res.data.token);
-            }
-            next();
-          } else {
-            next("/auth");
-          }
-        } catch (error) {
+          // 设置登录状态标记（用于前端判断）
+          localStorage.setItem("isLoggedIn", "true");
+          next();
+        } else {
+          // 验证失败，跳转到登录页
+          localStorage.removeItem("isLoggedIn");
           next("/auth");
         }
-      } else {
+      } catch (error) {
+        // 验证接口调用失败（可能是未登录或 Token 过期）
+        localStorage.removeItem("isLoggedIn");
+
+        // Chat 和 Home 页面允许未登录访问
         if (to.name !== "Chat" && to.name !== "Home") {
           next("/auth");
         } else {

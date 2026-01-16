@@ -7,9 +7,10 @@ export const chat = async (messageData, onChunk, onComplete, onError) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+        // 不需要手动设置 Authorization Header，Token 会通过 HttpOnly Cookie 自动发送
       },
       body: JSON.stringify(messageData),
+      credentials: "include", // 关键：允许携带 Cookie
     }
   );
 

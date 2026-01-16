@@ -15,8 +15,8 @@
         <n-upload
           ref="uploadRef"
           :action="uploadUrl"
-          :headers="uploadHeaders"
           :show-file-list="false"
+          :with-credentials="true"
           @finish="handleUploadFinish"
         >
           <div class="avatar-wrapper">
@@ -69,7 +69,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { useMessage, NIcon, NAvatar, NButton, NInput, NUpload } from "naive-ui";
 import { ArrowLeft, Plus } from "@vicons/tabler";
-import { uploadAvatar, updateInfo } from "@/services/user";
+import { updateInfo } from "@/services/user";
 import Global from "@/utils/global";
 
 const configStore = useConfigStore();
@@ -79,9 +79,6 @@ const uploadRef = ref(null);
 const saving = ref(false);
 
 const uploadUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/avatar/upload`;
-const uploadHeaders = {
-  Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-};
 
 const profileData = reactive({
   name: configStore.name || "",

@@ -932,7 +932,6 @@ const syncRoleToServer = async (role) => {
     lastSyncedRole = role;
     pendingSyncRole = null;
   } catch (error) {
-    message.error("角色切换同步失败:", error);
     pendingSyncRole = role;
   }
 };

@@ -16,8 +16,13 @@ export const validate = async (params) => {
   return res;
 };
 
-export const refresh = async (params) => {
-  const res = await Request(api.refresh, "POST", params);
+export const refresh = async () => {
+  const res = await Request(api.refresh, "POST");
+  return res;
+};
+
+export const logout = async () => {
+  const res = await Request(api.logout, "POST");
   return res;
 };
 

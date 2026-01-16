@@ -160,7 +160,7 @@ import { Logout, Settings, MessagePlus, AlertTriangle } from "@vicons/tabler";
 import { ref, h, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
-import { validate } from "@/services/user";
+import { validate, logout as logoutApi } from "@/services/user";
 import Global from "@/utils/global.js";
 
 const message = useMessage();
@@ -201,10 +201,10 @@ const selectModel = (model) => {
 };
 
 const goToLogin = async () => {
-  const token = localStorage.getItem("jwtToken");
   const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-  if (token && isLoggedIn === "true") {
+  // 检查是否已登录（通过 isLoggedIn 标记判断）
+  if (isLoggedIn === "true") {
     try {
       const res = await validate();
       if (res.code === 200) {
@@ -212,16 +212,11 @@ const goToLogin = async () => {
         configStore.setName(res.data.username);
         configStore.setAvatar(res.data.avatar);
         message.success("登录成功！🎉");
-        sessionStorage.setItem("skipValidation", "true");
       } else {
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("isLoggedIn");
         router.push("/auth?tab=login");
       }
     } catch (error) {
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("refreshToken");
       localStorage.removeItem("isLoggedIn");
       router.push("/auth?tab=login");
     }
@@ -238,16 +233,10 @@ const autoLogin = async () => {
     return;
   }
 
-  const shouldSkipValidation = sessionStorage.getItem("skipValidation");
-  if (shouldSkipValidation === "true") {
-    sessionStorage.removeItem("skipValidation");
-    return;
-  }
-
-  const token = localStorage.getItem("jwtToken");
   const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-  if (!configStore.userId && token && isLoggedIn === "true") {
+  // 检查登录状态并自动登录
+  if (!configStore.userId && isLoggedIn === "true") {
     try {
       const res = await validate();
       if (res.code === 200) {
@@ -255,14 +244,10 @@ const autoLogin = async () => {
         configStore.setName(res.data.username);
         configStore.setAvatar(res.data.avatar);
       } else {
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("isLoggedIn");
         clearPersonalData();
       }
     } catch (error) {
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("refreshToken");
       localStorage.removeItem("isLoggedIn");
       clearPersonalData();
     }
@@ -312,13 +297,20 @@ const logout = () => {
       style:
         "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
-    onPositiveClick: () => {
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("isLoggedIn");
-      sessionStorage.removeItem("skipJwtValidation");
-      clearPersonalData();
-      window.dispatchEvent(new CustomEvent("clearHistoryList"));
-      message.success("已退出登录 👋");
+    onPositiveClick: async () => {
+      try {
+        // 调用后端登出接口，清除服务端 Cookie
+        await logoutApi();
+      } catch (error) {
+        console.error("登出失败:", error);
+      } finally {
+        // 清除前端登录状态
+        localStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("skipJwtValidation");
+        clearPersonalData();
+        window.dispatchEvent(new CustomEvent("clearHistoryList"));
+        message.success("已退出登录 👋");
+      }
     },
   });
 };

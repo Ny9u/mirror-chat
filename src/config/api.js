@@ -6,6 +6,7 @@ export const api = {
   register: "/api/v1/user/register",
   validate: "/api/v1/auth/validate",
   refresh: "/api/v1/auth/refresh",
+  logout: "/api/v1/auth/logout",
   uploadAvatar: "/api/v1/avatar/upload",
   updateInfo: "/api/v1/user/updateInfo",
   updatePassword: "/api/v1/user/updatePassword",

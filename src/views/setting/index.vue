@@ -395,6 +395,7 @@ import {
   deleteAccount,
   setModelConfig,
   getModelConfig,
+  logout as logoutApi,
 } from "@/services/user";
 import {
   useMessage,
@@ -609,8 +610,6 @@ const handleDeleteAccount = async () => {
   const res = await deleteAccount();
   if (res.code === 200) {
     message.success("账号删除成功！");
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("isLoggedIn");
     configStore.setUserId(null);
     configStore.setName("");
@@ -671,13 +670,20 @@ const logout = () => {
       style:
         "height: 34px; border-radius: 8px; margin-top: 20px;padding: 1.3rem 1.5rem;",
     },
-    onPositiveClick: () => {
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("isLoggedIn");
-      configStore.setUserId(null);
-      configStore.setName("");
-      configStore.setAvatar("");
-      router.push("/");
+    onPositiveClick: async () => {
+      try {
+        // 调用后端登出接口，清除服务端 Cookie
+        await logoutApi();
+      } catch (error) {
+        console.error("登出失败:", error);
+      } finally {
+        // 清除前端登录状态
+        localStorage.removeItem("isLoggedIn");
+        configStore.setUserId(null);
+        configStore.setName("");
+        configStore.setAvatar("");
+        router.push("/");
+      }
     },
   });
 };

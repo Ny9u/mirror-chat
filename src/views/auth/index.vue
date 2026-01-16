@@ -618,12 +618,8 @@ const handleLogin = async (e) => {
           configStore.setUserId(res.data.user.id);
           configStore.setName(res.data.user.username);
           configStore.setAvatar(res.data.user.avatar);
-          if (res.data && res.data.token) {
-            localStorage.setItem("jwtToken", res.data.token);
-            localStorage.setItem("refreshToken", res.data.refreshToken);
-            localStorage.setItem("isLoggedIn", "true");
-            sessionStorage.setItem("skipValidation", "true");
-          }
+          localStorage.setItem("isLoggedIn", "true");
+
           router.push("/");
         } else {
           message.error(res.message || "登录失败，请检查账号密码是否正确");

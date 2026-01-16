@@ -11,6 +11,42 @@
         ></messageList>
       </div>
       <div class="input">
+        <!-- 文件预览区域 -->
+        <div v-if="uploadedFiles.length > 0" class="file-preview-container">
+          <div
+            v-for="(file, index) in uploadedFiles"
+            :key="index"
+            class="file-preview-item"
+          >
+            <!-- 图片预览 -->
+            <div v-if="file.type.startsWith('image/')" class="image-preview">
+              <img :src="file.url" :alt="file.name" />
+              <div class="file-overlay">
+                <n-button text class="remove-btn" @click="removeFile(index)">
+                  <n-icon size="12">
+                    <X />
+                  </n-icon>
+                </n-button>
+              </div>
+            </div>
+            <!-- 文件信息 -->
+            <div v-else class="file-info">
+              <n-icon size="24" class="file-icon">
+                <FileText />
+              </n-icon>
+              <div class="file-details">
+                <div class="file-name">{{ file.name }}</div>
+                <div class="file-size">{{ formatFileSize(file.size) }}</div>
+              </div>
+              <n-button text class="remove-btn" @click="removeFile(index)">
+                <n-icon size="14">
+                  <X />
+                </n-icon>
+              </n-button>
+            </div>
+          </div>
+        </div>
+
         <n-input
           placeholder="有什么我能帮您的吗?"
           type="textarea"
@@ -59,6 +95,29 @@
             </div>
           </div>
           <div class="buttons">
+            <!-- 上传文件按钮 -->
+            <n-button text @click="triggerFileUpload" :disabled="loading">
+              <div
+                class="file-upload-icon"
+                :class="{ active: uploadedFiles.length > 0 }"
+              >
+                <n-icon size="24">
+                  <Paperclip />
+                </n-icon>
+                <span v-if="uploadedFiles.length > 0" class="file-count">
+                  {{ uploadedFiles.length }}
+                </span>
+              </div>
+            </n-button>
+            <input
+              ref="fileInputRef"
+              type="file"
+              multiple
+              accept="image/*,application/pdf,.doc,.docx,.txt"
+              style="display: none"
+              @change="handleFileSelect"
+            />
+            <!-- 录音按钮 -->
             <n-button text @click="handleRecordClick" :disabled="loading">
               <div v-show="!recording" class="record-icon">
                 <n-icon size="24">
@@ -71,7 +130,7 @@
                 <span class="dot"></span>
               </div>
             </n-button>
-            <div class="divider"></div>
+            <!-- 发送按钮 -->
             <n-button text @click="handleSendClick">
               <div v-show="!loading" class="upload"></div>
               <div v-show="loading" class="loading"></div>
@@ -87,7 +146,15 @@
 import { ref } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World, Atom, Microphone, Book } from "@vicons/tabler";
+import {
+  World,
+  Atom,
+  Microphone,
+  Book,
+  Paperclip,
+  X,
+  FileText,
+} from "@vicons/tabler";
 import { asrRecognize } from "@/services/asrService.js";
 
 const message = useMessage();
@@ -99,6 +166,8 @@ const knowledgeBase = ref(false);
 const loading = ref(false);
 const recording = ref(false);
 const abortController = ref(null);
+const fileInputRef = ref(null);
+const uploadedFiles = ref([]);
 
 const handleInput = (value) => {
   inputValue.value = value;
@@ -123,8 +192,8 @@ const handleSendClick = () => {
 };
 
 const sendMessage = async () => {
-  if (!inputValue.value.trim()) {
-    message.warning("请先输入内容 📝");
+  if (!inputValue.value.trim() && uploadedFiles.value.length === 0) {
+    message.warning("请先输入内容或上传文件 📝");
     return;
   }
   if (!listRef.value) {
@@ -134,11 +203,17 @@ const sendMessage = async () => {
   if (netSearch.value) {
     // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
   }
+
+  // TODO: 这里需要将 uploadedFiles 传递给 messageList 组件
+  // 目前先保留文件列表，实际发送时需要根据 API 接口进行处理
+
   const isVaild = listRef.value.sendMessage(inputValue.value.trim());
   if (!isVaild) {
     return;
   }
   inputValue.value = "";
+  // 清空已上传的文件
+  uploadedFiles.value = [];
   loading.value = true;
   abortController.value = new AbortController();
   return new Promise((resolve, reject) => {
@@ -263,6 +338,72 @@ const stopRecording = () => {
 
   recording.value = false;
 };
+
+// 文件上传相关方法
+const triggerFileUpload = () => {
+  fileInputRef.value?.click();
+};
+
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files || []);
+  if (files.length === 0) return;
+
+  // 检查文件大小（限制单个文件最大 10MB）
+  const maxSize = 10 * 1024 * 1024;
+  const invalidFiles = files.filter((file) => file.size > maxSize);
+
+  if (invalidFiles.length > 0) {
+    message.warning(`文件 ${invalidFiles[0].name} 超过 10MB 限制`);
+    event.target.value = "";
+    return;
+  }
+
+  // 检查文件总数（限制最多 5 个文件）
+  if (uploadedFiles.value.length + files.length > 5) {
+    message.warning("最多只能上传 5 个文件");
+    event.target.value = "";
+    return;
+  }
+
+  // 处理文件并生成预览
+  files.forEach((file) => {
+    const fileData = {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file: file,
+      url: "",
+    };
+
+    // 如果是图片，生成预览 URL
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        fileData.url = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    uploadedFiles.value.push(fileData);
+  });
+
+  message.success(`成功添加 ${files.length} 个文件`);
+  event.target.value = "";
+};
+
+const removeFile = (index) => {
+  const fileName = uploadedFiles.value[index].name;
+  uploadedFiles.value.splice(index, 1);
+  message.info(`已移除文件: ${fileName}`);
+};
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
 </script>
 
 <style lang="less" scoped>
@@ -284,6 +425,159 @@ const stopRecording = () => {
     .input {
       display: flex;
       flex-direction: column;
+
+      .file-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.6rem;
+        padding: 0;
+
+        .file-preview-item {
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+
+          .image-preview {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--message-color);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+
+            .file-overlay {
+              position: absolute;
+              top: 0;
+              right: 0;
+              padding: 0.3rem;
+              display: flex;
+              align-items: flex-start;
+              justify-content: flex-end;
+              opacity: 0;
+              transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+              .file-name {
+                display: none;
+              }
+
+              .remove-btn {
+                width: 20px;
+                height: 20px;
+                background: rgba(50, 50, 55, 0.85);
+                backdrop-filter: blur(10px) saturate(180%);
+                -webkit-backdrop-filter: blur(10px) saturate(180%);
+                border-radius: 50%;
+                border: 0.5px solid rgba(255, 255, 255, 0.15);
+                color: #fff;
+                padding: 0;
+                min-width: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              }
+
+              .remove-btn:hover {
+                color: #ff3b30;
+              }
+            }
+
+            &:hover .file-overlay {
+              opacity: 1;
+            }
+          }
+
+          .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.8rem;
+            background: var(--message-color);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 10px;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            min-width: 200px;
+            height: 52px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+
+            &:hover {
+              border-color: var(--primary-color);
+            }
+
+            .file-icon {
+              color: var(--primary-color);
+              flex-shrink: 0;
+            }
+
+            .file-details {
+              flex: 1;
+              min-width: 0;
+
+              .file-name {
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--text-color);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                margin-bottom: 0.15rem;
+                line-height: 1.3;
+              }
+
+              .file-size {
+                font-size: 11px;
+                color: var(--text-color);
+                opacity: 0.5;
+                line-height: 1.2;
+              }
+            }
+
+            .remove-btn {
+              width: 22px;
+              height: 22px;
+              background: rgba(120, 120, 128, 0.2);
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+              border-radius: 50%;
+              border: 0.5px solid rgba(255, 255, 255, 0.1);
+              color: var(--text-color);
+              padding: 0;
+              min-width: auto;
+              opacity: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+              &:hover {
+                background: rgba(255, 59, 48, 0.2);
+                color: #ff3b30;
+              }
+            }
+
+            &:hover .remove-btn {
+              opacity: 1;
+            }
+          }
+        }
+      }
+
       .textarea {
         padding: 0.3rem 0;
         font-size: 1.13rem;
@@ -394,6 +688,43 @@ const stopRecording = () => {
           display: flex;
           align-items: center;
 
+          .file-upload-icon {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            position: relative;
+
+            &:hover {
+              color: var(--primary-color);
+            }
+
+            &.active {
+              color: var(--primary-color);
+            }
+
+            .file-count {
+              position: absolute;
+              top: -4px;
+              right: -8px;
+              min-width: 16px;
+              height: 16px;
+              padding: 0 4px;
+              background-color: var(--primary-color);
+              color: #fff;
+              font-size: 10px;
+              font-weight: bold;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+          }
+
           .record-icon {
             width: 2rem;
             height: 2rem;
@@ -432,13 +763,6 @@ const stopRecording = () => {
                 animation-delay: -0.16s;
               }
             }
-          }
-
-          .divider {
-            width: 1px;
-            height: 1.25rem;
-            background-color: var(--text-color);
-            opacity: 0.2;
           }
         }
 

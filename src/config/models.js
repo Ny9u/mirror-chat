@@ -31,6 +31,14 @@ const Models = [
     thinkingMode: true,
     netSearch: false,
   },
+  {
+    name: "qwen3-vl-plus",
+    key: "qwen3-vl-plus",
+    desc: "Qwen3系列视觉理解模型，实现思考模式和非思考模式的有效融合，视觉智能体能力在OS World等公开测试集上达到世界顶尖水平。",
+    expiredTime: "2026-03-28",
+    thinkingMode: true,
+    netSearch: false,
+  },
 ];
 
 export default Models;

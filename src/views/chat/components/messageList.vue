@@ -496,7 +496,7 @@ import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
 import Global from "@/utils/global.js";
 import MarkdownIt from "markdown-it";
-import Typed from "typed.js";
+import TypingEffects from "@/utils/typingEffects.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getChineseGreeting } from "@/utils/date.js";
 import Models from "@/config/models.js";
@@ -1087,24 +1087,66 @@ const favoriteMessage = async (msg) => {
 };
 
 defineExpose({ sendMessage, fetchAI });
+
+// 存储当前的打字效果实例
+let typingInstance = null;
+// 标记打字效果是否已经初始化，防止初始加载时重复触发
+let hasTypingInitialized = false;
+// 标记是否正在等待用户信息加载
+let isWaitingForUserInfo = false;
+
 const initTyped = () => {
+  // 如果正在等待用户信息，取消等待
+  isWaitingForUserInfo = false;
+
+  // 销毁旧实例
+  if (typingInstance) {
+    typingInstance.destroy();
+    typingInstance = null;
+  }
+
+  const element = document.getElementById("typed");
+  if (!element) return;
+
   const time = getChineseGreeting(new Date());
-  new Typed("#typed", {
-    strings: [
-      `${
-        configStore.name
-          ? `${time}好, ${configStore.name} 🥰🥰`
-          : `${time}好, Master 👋👋`
-      }`,
-    ],
-    typeSpeed: 50,
-    backSpeed: 0,
-    loop: false,
-    showCursor: false,
+  const text = configStore.name
+    ? `${time}好, ${configStore.name} 🥰 🥰`
+    : `${time}好, Master 👋 👋`;
+
+  // 随机使用不同的打字效果
+  typingInstance = TypingEffects.random(element, text, {
+    duration: 2000,
+    onComplete: () => {},
   });
+
+  hasTypingInitialized = true;
 };
 
-watch(() => configStore.name, initTyped);
+watch(
+  () => configStore.userId,
+  (newUserId, oldUserId) => {
+    // 当 userId 从 null 变为有值时
+    if (
+      !hasTypingInitialized &&
+      isWaitingForUserInfo &&
+      newUserId &&
+      !oldUserId
+    ) {
+      initTyped();
+    }
+  }
+);
+
+// 监听 name 变化，用于用户主动修改昵称
+watch(
+  () => configStore.name,
+  (newName, oldName) => {
+    // 只在已初始化后，且用户主动修改昵称时重新初始化
+    if (hasTypingInitialized && newName && oldName && newName !== oldName) {
+      initTyped();
+    }
+  }
+);
 
 const handleClearChatHistory = () => {
   chatHistory.value = [
@@ -1131,7 +1173,22 @@ const handleLoadChatHistory = (event) => {
 };
 
 onMounted(() => {
-  initTyped();
+  if (configStore.userId) {
+    // 用户已登录且信息已加载，直接初始化
+    initTyped();
+  } else {
+    // 用户信息未加载，可能是：
+    // 1. 路由守卫正在执行（已登录但信息还在加载中）
+    // 2. 用户未登录
+    isWaitingForUserInfo = true;
+    setTimeout(() => {
+      if (isWaitingForUserInfo && !hasTypingInitialized) {
+        // 超时后仍未加载用户信息，执行初始化
+        initTyped();
+      }
+    }, 500);
+  }
+
   if (virtualListRef.value && chatHistory.value.length > 2) {
     scrollToBottom();
   }
@@ -1141,6 +1198,12 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  // 清理打字效果实例
+  if (typingInstance) {
+    typingInstance.destroy();
+    typingInstance = null;
+  }
+
   window.removeEventListener("clearChatHistory", handleClearChatHistory);
   window.removeEventListener("loadChatHistory", handleLoadChatHistory);
 });
@@ -1491,16 +1554,45 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   align-items: end;
-  padding-bottom: 2rem;
-  animation: welcomeFadeIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  padding-bottom: 3rem;
+  animation: welcomeFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 
   .welcome-text {
     font-size: 2.5rem;
+    font-weight: 600;
     color: var(--text-color);
     cursor: default;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.015em; // Apple 风格的紧密字间距
+    line-height: 1.2;
     outline: none;
     user-select: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    // Apple 风格的字体渲染优化
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern" 1;
+
+    // 确保文本居中对齐
+    text-align: center;
+    padding: 0 1rem;
+    max-width: 90%;
+
+    // 为不同效果预留空间
+    position: relative;
+    will-change: opacity, transform;
+  }
+}
+
+// 优化欢迎动画
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 </style>

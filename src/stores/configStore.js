@@ -15,6 +15,13 @@ export const useConfigStore = defineStore("config", {
     currentRoleId: null,
     currentRole: null,
   }),
+
+  persist: {
+    key: "mirror-chat-config",
+    storage: localStorage,
+    pick: ["theme", "model", "voiceType", "voiceName", "sidebarCollapsed"],
+  },
+
   actions: {
     setTheme(theme) {
       this.theme = theme;

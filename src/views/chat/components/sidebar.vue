@@ -1519,7 +1519,7 @@ onBeforeUnmount(() => {
 
       .sidebar-title {
         font-size: 1.25rem;
-        font-weight: 800;
+        font-weight: 700;
         color: var(--text-color);
         margin-left: 0.8rem;
         white-space: nowrap;

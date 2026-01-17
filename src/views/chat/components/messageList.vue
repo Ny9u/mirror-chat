@@ -78,6 +78,10 @@
                       ></div>
                     </div>
                   </div>
+                  <!-- 图片内容渲染 -->
+                  <div class="image-container" v-if="i.type === 'image'">
+                    <img :src="i.data" class="message-image" />
+                  </div>
                   <div
                     class="text-container"
                     :style="{
@@ -567,7 +571,7 @@ const chatHistory = ref([
   {
     role: "system",
     content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
-    key: "",
+    key: Global.getRandomKey(),
     time: "",
   },
 ]);
@@ -631,7 +635,7 @@ const processContent = (content) => {
 };
 
 // 发送消息
-const sendMessage = (userInput) => {
+const sendMessage = (content, images = []) => {
   const currentModel = Models.find((m) => m.key === configStore.model);
 
   if (netSearch.value) {
@@ -646,15 +650,29 @@ const sendMessage = (userInput) => {
       return false;
     }
   }
+
+  // 构建消息内容
+  const messageContent = [];
+
+  if (images && images.length > 0) {
+    images.forEach((imageUrl) => {
+      messageContent.push({
+        type: "image",
+        data: imageUrl,
+      });
+    });
+  }
+
+  // 添加文字内容
+  messageContent.push({
+    type: "content",
+    data: content,
+  });
+
   chatHistory.value.push({
     role: "user",
-    content: [
-      {
-        type: "content",
-        data: userInput,
-      },
-    ],
-    key: "",
+    content: messageContent,
+    key: Global.getRandomKey(),
     time: "",
   });
   if (chatHistory.value.length > 2) {
@@ -665,8 +683,27 @@ const sendMessage = (userInput) => {
   return true;
 };
 
-const fetchAI = async (signal) => {
+const fetchAI = async (
+  signal,
+  images = [],
+  content = null,
+  isRegenerate = false
+) => {
   const chatId = configStore.chatId || undefined;
+
+  // 如果没有传入 content则使用最后一条用户消息
+  let userTextContent = content;
+  if (!userTextContent) {
+    for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+      if (chatHistory.value[i].role === "user") {
+        const textContent = chatHistory.value[i].content.find(
+          (c) => c.type === "content"
+        );
+        userTextContent = textContent ? textContent.data : "";
+        break;
+      }
+    }
+  }
 
   if (deepThinking.value) {
     let reasoningContent = "";
@@ -683,7 +720,7 @@ const fetchAI = async (signal) => {
           data: reasoningContent,
         },
       ],
-      key: "",
+      key: Global.getRandomKey(),
       time: "",
     });
 
@@ -693,12 +730,14 @@ const fetchAI = async (signal) => {
     try {
       await chat(
         {
-          content: userInput.value,
+          content: userTextContent,
+          images: images,
           chatId,
           model: configStore.model,
           enableThinking: true,
           enableSearch: netSearch.value,
           enableKnowledge: knowledgeBase.value,
+          isRegenerate: isRegenerate,
         },
         (chunk) => {
           // 处理思考过程
@@ -738,6 +777,10 @@ const fetchAI = async (signal) => {
 
             chatHistory.value[chatHistory.value.length - 1].content[1].data =
               md.render(answerContent);
+
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].thinkingCollapsed = true;
 
             const now = Date.now();
             if (now - lastScrollTime > scrollTime) {
@@ -791,12 +834,14 @@ const fetchAI = async (signal) => {
     try {
       await chat(
         {
-          content: userInput.value,
+          content: userTextContent,
+          images: images,
           chatId,
           model: configStore.model,
           enableThinking: false,
           enableSearch: netSearch.value,
           enableKnowledge: knowledgeBase.value,
+          isRegenerate: isRegenerate,
         },
         (chunk) => {
           if (!assistantMessageAdded) {
@@ -808,7 +853,7 @@ const fetchAI = async (signal) => {
                   data: "",
                 },
               ],
-              key: "",
+              key: Global.getRandomKey(),
               time: "",
             });
             assistantMessageAdded = true;
@@ -913,19 +958,28 @@ const regenerateResponse = (item) => {
 
   let lastMessage = null;
   let lastMessageIndex = null;
+  let lastImages = [];
   for (let i = chatHistory.value.length - 1; i >= 0; i--) {
     if (chatHistory.value[i].role === "user") {
       lastMessage = chatHistory.value[i];
       lastMessageIndex = i;
+
+      // 提取用户消息中的图片
+      lastImages = lastMessage.content
+        .filter((c) => c.type === "image")
+        .map((c) => c.data);
+
       break;
     }
   }
 
   if (lastMessage && lastMessageIndex !== null) {
     chatHistory.value = chatHistory.value.slice(0, lastMessageIndex);
-    const userInput = lastMessage.content[0].data;
-    sendMessage(userInput);
-    fetchAI(new AbortController().signal);
+    // 正确提取文本内容（找到 type === 'content' 的元素）
+    const textContent = lastMessage.content.find((c) => c.type === "content");
+    const userText = textContent ? textContent.data : "";
+    sendMessage(userText, lastImages);
+    fetchAI(new AbortController().signal, lastImages, userText, true);
   }
 };
 
@@ -940,7 +994,8 @@ const showEditIcon = (item) => {
 
 const editMessage = (item) => {
   editingMessageKey.value = item.key;
-  editContent.value = item.content[0].data;
+  const textContent = item.content.find((c) => c.type === "content");
+  editContent.value = textContent ? textContent.data : "";
 
   nextTick(() => {
     if (editInputRef.value) {
@@ -971,8 +1026,14 @@ const saveEdit = (item) => {
   if (index === -1) return;
   chatHistory.value = chatHistory.value.slice(0, index);
 
-  sendMessage(editContent.value);
-  fetchAI(new AbortController().signal);
+  // 提取原消息中的图片
+  const existingImages = item.content
+    .filter((c) => c.type === "image")
+    .map((c) => c.data);
+
+  const editedText = editContent.value;
+  sendMessage(editedText, existingImages);
+  fetchAI(new AbortController().signal, existingImages, editedText, true);
 
   editingMessageKey.value = null;
   editContent.value = "";
@@ -1110,8 +1171,8 @@ const initTyped = () => {
 
   const time = getChineseGreeting(new Date());
   const text = configStore.name
-    ? `${time}好, ${configStore.name} 🥰 🥰`
-    : `${time}好, Master 👋 👋`;
+    ? `${time}好, ${configStore.name} 🥰🥰`
+    : `${time}好, Master 👋👋`;
 
   // 随机使用不同的打字效果
   typingInstance = TypingEffects.random(element, text, {
@@ -1329,6 +1390,24 @@ onBeforeUnmount(() => {
           line-height: 1.7;
           caret-color: transparent;
         }
+      }
+      .image-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+        animation: contentFadeIn 0.4s ease 0.2s forwards;
+        opacity: 0;
+
+        .message-image {
+          max-width: 100%;
+          max-height: 200px;
+          border-radius: 10px;
+          object-fit: contain;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+      }
+      &.message-user .image-container {
+        justify-content: flex-end;
       }
       .edit-container-full {
         width: 100%;

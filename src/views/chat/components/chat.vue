@@ -1,7 +1,7 @@
 <template>
   <div class="chat-container">
     <div class="content">
-      <div class="record">
+      <div class="record" :class="{ uploading: uploadedFiles.length > 0 }">
         <messageList
           :userInput="inputValue"
           :netSearch="netSearch"
@@ -30,10 +30,8 @@
               </div>
             </div>
             <!-- 文件信息 -->
-            <div v-else class="file-info">
-              <n-icon size="24" class="file-icon">
-                <FileText />
-              </n-icon>
+            <!-- <div v-else class="file-info">
+              <img :src="getFileIcon(file.name)" class="file-icon" />
               <div class="file-details">
                 <div class="file-name">{{ file.name }}</div>
                 <div class="file-size">{{ formatFileSize(file.size) }}</div>
@@ -43,7 +41,7 @@
                   <X />
                 </n-icon>
               </n-button>
-            </div>
+            </div> -->
           </div>
         </div>
 
@@ -113,7 +111,7 @@
               ref="fileInputRef"
               type="file"
               multiple
-              accept="image/*,application/pdf,.doc,.docx,.txt"
+              accept="image/*,application/pdf,.doc,.docx,.txt,.md"
               style="display: none"
               @change="handleFileSelect"
             />
@@ -146,15 +144,7 @@
 import { ref } from "vue";
 import { NInput, NButton, useMessage, NIcon } from "naive-ui";
 import messageList from "./messageList.vue";
-import {
-  World,
-  Atom,
-  Microphone,
-  Book,
-  Paperclip,
-  X,
-  FileText,
-} from "@vicons/tabler";
+import { World, Atom, Microphone, Book, Paperclip, X } from "@vicons/tabler";
 import { asrRecognize } from "@/services/asrService.js";
 
 const message = useMessage();
@@ -204,10 +194,12 @@ const sendMessage = async () => {
     // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
   }
 
-  // TODO: 这里需要将 uploadedFiles 传递给 messageList 组件
-  // 目前先保留文件列表，实际发送时需要根据 API 接口进行处理
+  // 提取图片数据
+  const images = uploadedFiles.value
+    .filter((file) => file.type.startsWith("image/"))
+    .map((file) => file.url);
 
-  const isVaild = listRef.value.sendMessage(inputValue.value.trim());
+  const isVaild = listRef.value.sendMessage(inputValue.value.trim(), images);
   if (!isVaild) {
     return;
   }
@@ -218,7 +210,7 @@ const sendMessage = async () => {
   abortController.value = new AbortController();
   return new Promise((resolve, reject) => {
     listRef.value
-      .fetchAI(abortController.value.signal)
+      .fetchAI(abortController.value.signal, images)
       .then(
         (res) => {
           resolve(res);
@@ -353,7 +345,7 @@ const handleFileSelect = (event) => {
   const invalidFiles = files.filter((file) => file.size > maxSize);
 
   if (invalidFiles.length > 0) {
-    message.warning(`文件 ${invalidFiles[0].name} 超过 10MB 限制`);
+    message.warning(`文件过大，请上传小于 10MB 的文件`);
     event.target.value = "";
     return;
   }
@@ -366,37 +358,47 @@ const handleFileSelect = (event) => {
   }
 
   // 处理文件并生成预览
-  files.forEach((file) => {
-    const fileData = {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file: file,
-      url: "",
-    };
+  const processFiles = async (fileList) => {
+    for (const file of fileList) {
+      let fileUrl = "";
 
-    // 如果是图片，生成预览 URL
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        fileData.url = e.target.result;
+      if (file.type.startsWith("image/")) {
+        try {
+          fileUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => {
+              reject(new Error("图片读取失败"));
+            };
+            reader.readAsDataURL(file);
+          });
+        } catch (error) {
+          console.error("图片预览生成失败:", error);
+        }
+      }
+
+      const fileData = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file,
+        url: fileUrl,
       };
-      reader.readAsDataURL(file);
+
+      uploadedFiles.value.push(fileData);
     }
+  };
 
-    uploadedFiles.value.push(fileData);
-  });
+  processFiles(files);
 
-  message.success(`成功添加 ${files.length} 个文件`);
   event.target.value = "";
 };
 
 const removeFile = (index) => {
-  const fileName = uploadedFiles.value[index].name;
   uploadedFiles.value.splice(index, 1);
-  message.info(`已移除文件: ${fileName}`);
 };
 
+/*
 const formatFileSize = (bytes) => {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -404,6 +406,21 @@ const formatFileSize = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 };
+
+const getFileIcon = (fileName) => {
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  switch (ext) {
+    case "pdf":
+      return new URL("@/assets/PDF.svg", import.meta.url).href;
+    case "doc":
+    case "docx":
+      return new URL("@/assets/DOCX.svg", import.meta.url).href;
+    case "txt":
+    case "md":
+    default:
+      return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  }
+}; */
 </script>
 
 <style lang="less" scoped>
@@ -421,6 +438,10 @@ const formatFileSize = (bytes) => {
     flex-direction: column;
     .record {
       margin-bottom: 3.33rem;
+
+      &.uploading {
+        margin-bottom: 0;
+      }
     }
     .input {
       display: flex;
@@ -501,7 +522,7 @@ const formatFileSize = (bytes) => {
             }
           }
 
-          .file-info {
+          /* .file-info {
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -521,6 +542,8 @@ const formatFileSize = (bytes) => {
             }
 
             .file-icon {
+              width: 24px;
+              height: 24px;
               color: var(--primary-color);
               flex-shrink: 0;
             }
@@ -574,7 +597,7 @@ const formatFileSize = (bytes) => {
             &:hover .remove-btn {
               opacity: 1;
             }
-          }
+          } */
         }
       }
 

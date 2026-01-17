@@ -30,7 +30,7 @@
               </div>
             </div>
             <!-- 文件信息 -->
-            <!-- <div v-else class="file-info">
+            <div v-else class="file-info">
               <img :src="getFileIcon(file.name)" class="file-icon" />
               <div class="file-details">
                 <div class="file-name">{{ file.name }}</div>
@@ -41,7 +41,7 @@
                   <X />
                 </n-icon>
               </n-button>
-            </div> -->
+            </div>
           </div>
         </div>
 
@@ -199,7 +199,16 @@ const sendMessage = async () => {
     .filter((file) => file.type.startsWith("image/"))
     .map((file) => file.url);
 
-  const isVaild = listRef.value.sendMessage(inputValue.value.trim(), images);
+  // 提取文件数据(不包含图片)
+  const files = uploadedFiles.value
+    .filter((file) => !file.type.startsWith("image/"))
+    .map((file) => file.file);
+
+  const isVaild = listRef.value.sendMessage(
+    inputValue.value.trim(),
+    images,
+    files
+  );
   if (!isVaild) {
     return;
   }
@@ -208,9 +217,10 @@ const sendMessage = async () => {
   uploadedFiles.value = [];
   loading.value = true;
   abortController.value = new AbortController();
+
   return new Promise((resolve, reject) => {
     listRef.value
-      .fetchAI(abortController.value.signal, images)
+      .fetchAI(abortController.value.signal, images, files)
       .then(
         (res) => {
           resolve(res);
@@ -350,7 +360,7 @@ const handleFileSelect = (event) => {
     return;
   }
 
-  // 检查文件总数（限制最多 5 个文件）
+  // 检查文件总数
   if (uploadedFiles.value.length + files.length > 5) {
     message.warning("最多只能上传 5 个文件");
     event.target.value = "";
@@ -398,7 +408,6 @@ const removeFile = (index) => {
   uploadedFiles.value.splice(index, 1);
 };
 
-/*
 const formatFileSize = (bytes) => {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -420,7 +429,7 @@ const getFileIcon = (fileName) => {
     default:
       return new URL("@/assets/Markdown.svg", import.meta.url).href;
   }
-}; */
+};
 </script>
 
 <style lang="less" scoped>
@@ -522,7 +531,7 @@ const getFileIcon = (fileName) => {
             }
           }
 
-          /* .file-info {
+          .file-info {
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -597,7 +606,7 @@ const getFileIcon = (fileName) => {
             &:hover .remove-btn {
               opacity: 1;
             }
-          } */
+          }
         }
       }
 

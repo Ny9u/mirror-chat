@@ -82,13 +82,30 @@
                   <div class="image-container" v-if="i.type === 'image'">
                     <img :src="i.data" class="message-image" />
                   </div>
+                  <!-- 文件内容渲染 -->
+                  <div class="file-message-container" v-if="i.type === 'file'">
+                    <div class="file-message-item">
+                      <img
+                        :src="getFileIcon(i.data)"
+                        class="file-message-icon"
+                      />
+                      <div class="file-message-info">
+                        <div class="file-message-name">{{ i.data }}</div>
+                        <div class="file-message-size">
+                          {{ formatFileSize(i.size) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div
                     class="text-container"
                     :style="{
                       maxWidth: item.role === 'assistant' ? '63vw' : '560px',
                     }"
                     v-if="
-                      i.type === 'content' && editingMessageKey !== item.key
+                      i.type === 'content' &&
+                      i.data &&
+                      editingMessageKey !== item.key
                     "
                   >
                     <div class="text">
@@ -635,7 +652,7 @@ const processContent = (content) => {
 };
 
 // 发送消息
-const sendMessage = (content, images = []) => {
+const sendMessage = (content, images = [], files = []) => {
   const currentModel = Models.find((m) => m.key === configStore.model);
 
   if (netSearch.value) {
@@ -663,6 +680,17 @@ const sendMessage = (content, images = []) => {
     });
   }
 
+  if (files && files.length > 0) {
+    files.forEach((file) => {
+      messageContent.push({
+        type: "file",
+        data: file.name,
+        size: file.size,
+        fileObject: file,
+      });
+    });
+  }
+
   // 添加文字内容
   messageContent.push({
     type: "content",
@@ -686,6 +714,7 @@ const sendMessage = (content, images = []) => {
 const fetchAI = async (
   signal,
   images = [],
+  files = [],
   content = null,
   isRegenerate = false
 ) => {
@@ -693,13 +722,23 @@ const fetchAI = async (
 
   // 如果没有传入 content则使用最后一条用户消息
   let userTextContent = content;
-  if (!userTextContent) {
+  let extractedFiles = files;
+
+  if (!userTextContent || !extractedFiles || extractedFiles.length === 0) {
     for (let i = chatHistory.value.length - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
           (c) => c.type === "content"
         );
         userTextContent = textContent ? textContent.data : "";
+
+        // 如果没有传入 files，从 chatHistory 中提取原始 File 对象
+        if (!extractedFiles || extractedFiles.length === 0) {
+          extractedFiles = chatHistory.value[i].content
+            .filter((c) => c.type === "file" && c.fileObject)
+            .map((c) => c.fileObject);
+        }
+
         break;
       }
     }
@@ -732,6 +771,7 @@ const fetchAI = async (
         {
           content: userTextContent,
           images: images,
+          files: extractedFiles,
           chatId,
           model: configStore.model,
           enableThinking: true,
@@ -809,7 +849,8 @@ const fetchAI = async (
               chatHistory.value.length - 1
             ].isFinishThinking = true;
           }
-        }
+        },
+        signal
       );
 
       return answerContent;
@@ -836,6 +877,7 @@ const fetchAI = async (
         {
           content: userTextContent,
           images: images,
+          files: extractedFiles,
           chatId,
           model: configStore.model,
           enableThinking: false,
@@ -900,7 +942,8 @@ const fetchAI = async (
           } else {
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
-        }
+        },
+        signal
       );
 
       return fullContent;
@@ -914,6 +957,7 @@ const fetchAI = async (
     }
   }
 };
+
 const getAvatar = (role) => {
   if (configStore.theme === "light" && role === "assistant") {
     return assistantDarkUrl;
@@ -959,6 +1003,7 @@ const regenerateResponse = (item) => {
   let lastMessage = null;
   let lastMessageIndex = null;
   let lastImages = [];
+  let lastFiles = [];
   for (let i = chatHistory.value.length - 1; i >= 0; i--) {
     if (chatHistory.value[i].role === "user") {
       lastMessage = chatHistory.value[i];
@@ -969,6 +1014,11 @@ const regenerateResponse = (item) => {
         .filter((c) => c.type === "image")
         .map((c) => c.data);
 
+      // 从 chatHistory 中提取原始 File 对象
+      lastFiles = lastMessage.content
+        .filter((c) => c.type === "file" && c.fileObject)
+        .map((c) => c.fileObject);
+
       break;
     }
   }
@@ -978,8 +1028,14 @@ const regenerateResponse = (item) => {
     // 正确提取文本内容（找到 type === 'content' 的元素）
     const textContent = lastMessage.content.find((c) => c.type === "content");
     const userText = textContent ? textContent.data : "";
-    sendMessage(userText, lastImages);
-    fetchAI(new AbortController().signal, lastImages, userText, true);
+    sendMessage(userText, lastImages, lastFiles);
+    fetchAI(
+      new AbortController().signal,
+      lastImages,
+      lastFiles,
+      userText,
+      true
+    );
   }
 };
 
@@ -1031,9 +1087,20 @@ const saveEdit = (item) => {
     .filter((c) => c.type === "image")
     .map((c) => c.data);
 
+  // 从 chatHistory 中提取原始 File 对象
+  const existingFiles = item.content
+    .filter((c) => c.type === "file" && c.fileObject)
+    .map((c) => c.fileObject);
+
   const editedText = editContent.value;
-  sendMessage(editedText, existingImages);
-  fetchAI(new AbortController().signal, existingImages, editedText, true);
+  sendMessage(editedText, existingImages, existingFiles);
+  fetchAI(
+    new AbortController().signal,
+    existingImages,
+    existingFiles,
+    editedText,
+    true
+  );
 
   editingMessageKey.value = null;
   editContent.value = "";
@@ -1233,6 +1300,31 @@ const handleLoadChatHistory = (event) => {
   }
 };
 
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
+
+// 获取文件图标
+const getFileIcon = (fileName) => {
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  switch (ext) {
+    case "pdf":
+      return new URL("@/assets/PDF.svg", import.meta.url).href;
+    case "doc":
+    case "docx":
+      return new URL("@/assets/DOCX.svg", import.meta.url).href;
+    case "txt":
+    case "md":
+    default:
+      return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  }
+};
+
 onMounted(() => {
   if (configStore.userId) {
     // 用户已登录且信息已加载，直接初始化
@@ -1407,6 +1499,62 @@ onBeforeUnmount(() => {
         }
       }
       &.message-user .image-container {
+        justify-content: flex-end;
+      }
+
+      .file-message-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+        animation: contentFadeIn 0.4s ease 0.2s forwards;
+        opacity: 0;
+
+        .file-message-item {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.5rem 0.8rem;
+          background: var(--message-color);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border-radius: 10px;
+          border: 0.5px solid rgba(255, 255, 255, 0.1);
+          min-width: 200px;
+          height: 52px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+          .file-message-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--primary-color);
+            flex-shrink: 0;
+          }
+
+          .file-message-info {
+            flex: 1;
+            min-width: 0;
+
+            .file-message-name {
+              font-size: 13px;
+              font-weight: 500;
+              color: var(--text-color);
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              margin-bottom: 0.15rem;
+              line-height: 1.3;
+            }
+
+            .file-message-size {
+              font-size: 11px;
+              color: var(--text-color);
+              opacity: 0.5;
+              line-height: 1.2;
+            }
+          }
+        }
+      }
+      &.message-user .file-message-container {
         justify-content: flex-end;
       }
       .edit-container-full {

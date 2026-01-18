@@ -8,12 +8,16 @@
         <div
           class="toggle-btn"
           :class="{ expanded: !configStore.sidebarCollapsed }"
-          @click="toggleSidebar"
           @mouseenter="toggleBtnHover = true"
           @mouseleave="toggleBtnHover = false"
         >
           <template v-if="configStore.sidebarCollapsed">
-            <n-icon v-show="toggleBtnHover" class="toggle-icon" size="20">
+            <n-icon
+              v-show="toggleBtnHover"
+              class="toggle-icon"
+              size="20"
+              @click.stop="toggleSidebar"
+            >
               <LayoutSidebarLeftExpand />
             </n-icon>
             <div
@@ -22,6 +26,7 @@
                 logo: configStore.theme === 'dark',
                 'logo-light': configStore.theme === 'light',
               }"
+              @click.stop="toggleSidebar"
             ></div>
           </template>
           <div
@@ -37,6 +42,15 @@
           :class="{ 'sidebar-title-hidden': configStore.sidebarCollapsed }"
         >
           Mirror Chat
+        </div>
+        <div
+          class="header-action"
+          @click="toggleSidebar"
+          v-show="!configStore.sidebarCollapsed"
+        >
+          <n-icon class="toggle-icon" size="22">
+            <LayoutSidebarLeftExpand />
+          </n-icon>
         </div>
       </div>
 
@@ -1522,17 +1536,40 @@ onBeforeUnmount(() => {
         font-weight: 700;
         color: var(--text-color);
         margin-left: 0.8rem;
+        flex: 1;
         white-space: nowrap;
         overflow: hidden;
-        max-width: 10rem;
         transition: opacity @transition-duration @ease-smooth,
-          max-width @transition-duration @ease-smooth,
           margin @transition-duration @ease-smooth;
 
         &.sidebar-title-hidden {
           opacity: 0;
           max-width: 0;
           margin-left: 0;
+        }
+      }
+
+      .header-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0.5rem;
+        margin-right: 0.8rem;
+        border-radius: 8px;
+        transition: all 0.3s @ease-smooth;
+        flex-shrink: 0;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          transform: scale(1.05);
+        }
+
+        .toggle-icon {
+          color: #afafaf;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
       }
     }

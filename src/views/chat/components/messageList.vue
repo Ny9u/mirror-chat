@@ -552,8 +552,10 @@ const props = defineProps({
   netSearch: Boolean,
   deepThinking: Boolean,
   knowledgeBase: Boolean,
+  imageGeneration: Boolean,
 });
-const { userInput, netSearch, deepThinking, knowledgeBase } = toRefs(props);
+const { userInput, netSearch, deepThinking, knowledgeBase, imageGeneration } =
+  toRefs(props);
 
 const configStore = useConfigStore();
 const message = useMessage();
@@ -777,6 +779,7 @@ const fetchAI = async (
           enableThinking: true,
           enableSearch: netSearch.value,
           enableKnowledge: knowledgeBase.value,
+          enableImageGeneration: imageGeneration.value,
           isRegenerate: isRegenerate,
         },
         (chunk) => {
@@ -883,6 +886,7 @@ const fetchAI = async (
           enableThinking: false,
           enableSearch: netSearch.value,
           enableKnowledge: knowledgeBase.value,
+          enableImageGeneration: imageGeneration.value,
           isRegenerate: isRegenerate,
         },
         (chunk) => {

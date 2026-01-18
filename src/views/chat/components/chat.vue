@@ -7,6 +7,7 @@
           :netSearch="netSearch"
           :deepThinking="deepThinking"
           :knowledgeBase="knowledgeBase"
+          :imageGeneration="imageGeneration"
           ref="listRef"
         ></messageList>
       </div>
@@ -46,7 +47,9 @@
         </div>
 
         <n-input
-          placeholder="有什么我能帮您的吗?"
+          :placeholder="
+            imageGeneration ? '描述你想要的图片' : '有什么我能帮您的吗?'
+          "
           type="textarea"
           size="tiny"
           round
@@ -62,6 +65,7 @@
         <div class="tool">
           <div class="features">
             <div
+              v-show="!imageGeneration"
               class="feature-button"
               :class="{ active: deepThinking }"
               @click="useDeepThinking"
@@ -72,6 +76,7 @@
               <div class="feature-button-text">深度思考</div>
             </div>
             <div
+              v-show="!imageGeneration"
               class="feature-button"
               :class="{ active: netSearch }"
               @click="useNetSearch"
@@ -82,6 +87,7 @@
               <div class="feature-button-text">搜索</div>
             </div>
             <div
+              v-show="!imageGeneration"
               class="feature-button"
               :class="{ active: knowledgeBase }"
               @click="useKnowledgeBase"
@@ -91,6 +97,139 @@
               </n-icon>
               <div class="feature-button-text">知识库</div>
             </div>
+            <n-popover
+              v-if="imageGeneration"
+              trigger="hover"
+              placement="bottom"
+              raw
+              :show-arrow="false"
+              class="feature-popover"
+            >
+              <template #trigger>
+                <div
+                  class="feature-button"
+                  :class="{ active: imageGeneration }"
+                  @click="useImageGeneration"
+                >
+                  <n-icon class="feature-button-icon" size="20">
+                    <Photo />
+                  </n-icon>
+                  <div class="feature-button-text">
+                    图像生成
+                    <n-icon class="exit-icon" size="14">
+                      <X />
+                    </n-icon>
+                  </div>
+                </div>
+              </template>
+              <span>点击退出技能</span>
+            </n-popover>
+            <div
+              v-else
+              class="feature-button"
+              :class="{ active: imageGeneration }"
+              @click="useImageGeneration"
+            >
+              <n-icon class="feature-button-icon" size="20">
+                <Photo />
+              </n-icon>
+              <div class="feature-button-text">图像生成</div>
+            </div>
+
+            <template v-if="imageGeneration">
+              <!-- 比例选择 -->
+              <div class="dropdown-wrapper">
+                <div
+                  class="dropdown-button"
+                  :class="{ active: showRatioDropdown }"
+                  @click="toggleRatioDropdown"
+                >
+                  <n-icon size="20">
+                    <ArrowsDiagonal />
+                  </n-icon>
+                  <span style="font-weight: 600">比例</span>
+                  <n-icon size="16" class="dropdown-arrow">
+                    <ChevronDown />
+                  </n-icon>
+                </div>
+                <Transition name="dropdown-fade">
+                  <div v-show="showRatioDropdown" class="dropdown-menu">
+                    <div class="dropdown-header">比例</div>
+                    <div class="dropdown-options">
+                      <div
+                        v-for="option in ratioOptions"
+                        :key="option.value"
+                        class="dropdown-option"
+                        :class="{
+                          selected: selectedRatio.value === option.value,
+                        }"
+                        @click="selectRatio(option)"
+                      >
+                        <div class="option-content">
+                          <div class="option-left">
+                            <n-icon size="16">
+                              <component :is="option.icon" />
+                            </n-icon>
+                            <span>{{ option.label }}</span>
+                            <n-icon
+                              v-if="selectedRatio.value === option.value"
+                              class="check-icon"
+                              size="16"
+                            >
+                              <Check />
+                            </n-icon>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+
+              <!-- 风格选择 -->
+              <div class="dropdown-wrapper">
+                <div
+                  class="dropdown-button"
+                  :class="{ active: showStyleDropdown }"
+                  @click="toggleStyleDropdown"
+                >
+                  <n-icon size="20">
+                    <Palette />
+                  </n-icon>
+                  <span style="font-weight: 600">风格</span>
+                  <n-icon size="16" class="dropdown-arrow">
+                    <ChevronDown />
+                  </n-icon>
+                </div>
+                <Transition name="dropdown-fade">
+                  <div v-show="showStyleDropdown" class="dropdown-menu">
+                    <div class="dropdown-header">风格</div>
+                    <div class="dropdown-options">
+                      <div
+                        v-for="option in styleOptions"
+                        :key="option.value"
+                        class="dropdown-option"
+                        :class="{
+                          selected: selectedStyle.value === option.value,
+                        }"
+                        @click="selectStyle(option)"
+                      >
+                        <div class="option-content">
+                          <span>{{ option.label }}</span>
+                          <n-icon
+                            v-if="selectedStyle.value === option.value"
+                            class="check-icon"
+                            size="16"
+                          >
+                            <Check />
+                          </n-icon>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+            </template>
           </div>
           <div class="buttons">
             <!-- 上传文件按钮 -->
@@ -111,7 +250,11 @@
               ref="fileInputRef"
               type="file"
               multiple
-              accept="image/*,application/pdf,.doc,.docx,.txt,.md"
+              :accept="
+                imageGeneration
+                  ? 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp'
+                  : 'image/*,application/pdf,.doc,.docx,.txt,.md'
+              "
               style="display: none"
               @change="handleFileSelect"
             />
@@ -141,23 +284,70 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { NInput, NButton, useMessage, NIcon } from "naive-ui";
+import { ref, onMounted, onUnmounted } from "vue";
+import { NInput, NButton, useMessage, NIcon, NPopover } from "naive-ui";
 import messageList from "./messageList.vue";
-import { World, Atom, Microphone, Book, Paperclip, X } from "@vicons/tabler";
+import {
+  World,
+  Atom,
+  Microphone,
+  Book,
+  Paperclip,
+  X,
+  Photo,
+  ArrowsDiagonal,
+  Palette,
+  Square,
+  Rectangle,
+  Layout,
+  LayoutList,
+  Check,
+  ChevronDown,
+} from "@vicons/tabler";
 import { asrRecognize } from "@/services/asrService.js";
+import { useConfigStore } from "@/stores/configStore";
+import Models from "@/config/models.js";
 
 const message = useMessage();
+const configStore = useConfigStore();
 const inputValue = ref("");
 const listRef = ref(null);
 const netSearch = ref(false);
 const deepThinking = ref(false);
 const knowledgeBase = ref(false);
+const imageGeneration = ref(false);
 const loading = ref(false);
 const recording = ref(false);
 const abortController = ref(null);
 const fileInputRef = ref(null);
 const uploadedFiles = ref([]);
+
+// 图像生成选项
+const showRatioDropdown = ref(false);
+const showStyleDropdown = ref(false);
+const selectedRatio = ref({ label: "", value: "" });
+const selectedStyle = ref({ label: "", value: "" });
+
+const ratioOptions = [
+  { label: "1:1", value: "1:1", icon: Square },
+  { label: "16:9", value: "16:9", icon: Rectangle },
+  { label: "9:16", value: "9:16", icon: Layout },
+  { label: "4:3", value: "4:3", icon: Layout },
+  { label: "3:4", value: "3:4", icon: LayoutList },
+];
+
+const styleOptions = [
+  { label: "写实", value: "realistic" },
+  { label: "卡通", value: "cartoon" },
+  { label: "油画", value: "oil-painting" },
+  { label: "水彩", value: "watercolor" },
+  { label: "素描", value: "sketch" },
+  { label: "3D渲染", value: "3d-render" },
+  { label: "极简主义", value: "minimalist" },
+  { label: "赛博朋克", value: "cyberpunk" },
+  { label: "吉卜力风格", value: "ghibli" },
+  { label: "像素风", value: "pixel-art" },
+];
 
 const handleInput = (value) => {
   inputValue.value = value;
@@ -249,6 +439,29 @@ const useDeepThinking = () => {
 
 const useKnowledgeBase = () => {
   knowledgeBase.value = !knowledgeBase.value;
+};
+
+const useImageGeneration = () => {
+  if (!imageGeneration.value) {
+    // 进入图像生成模式
+    imageGeneration.value = true;
+    configStore.setImageGenerationMode(true);
+    configStore.setPreviousModel(configStore.model);
+    const imageModel = Models.find((m) => m.key === "wan2.6-image");
+    if (imageModel) {
+      configStore.setModel(imageModel.key);
+    }
+    netSearch.value = false;
+    deepThinking.value = false;
+    knowledgeBase.value = false;
+  } else {
+    imageGeneration.value = false;
+    configStore.setImageGenerationMode(false);
+    if (configStore.previousModel) {
+      configStore.setModel(configStore.previousModel);
+      configStore.setPreviousModel(null);
+    }
+  }
 };
 
 let mediaRecorder = null;
@@ -350,6 +563,34 @@ const handleFileSelect = (event) => {
   const files = Array.from(event.target.files || []);
   if (files.length === 0) return;
 
+  const allowedExtensions = imageGeneration.value
+    ? [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]
+    : [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".svg",
+        ".doc",
+        ".docx",
+        ".txt",
+        ".md",
+      ];
+
+  // 检查文件类型（仅通过扩展名判断）
+  const invalidTypeFiles = files.filter((file) => {
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    return !allowedExtensions.includes(ext);
+  });
+
+  if (invalidTypeFiles.length > 0) {
+    const invalidNames = invalidTypeFiles.map((f) => f.name).join("、");
+    message.warning(`不支持的文件类型：${invalidNames}`);
+    event.target.value = "";
+    return;
+  }
+
   // 检查文件大小（限制单个文件最大 10MB）
   const maxSize = 10 * 1024 * 1024;
   const invalidFiles = files.filter((file) => file.size > maxSize);
@@ -430,6 +671,61 @@ const getFileIcon = (fileName) => {
       return new URL("@/assets/Markdown.svg", import.meta.url).href;
   }
 };
+
+const toggleRatioDropdown = () => {
+  showRatioDropdown.value = !showRatioDropdown.value;
+  if (showRatioDropdown.value) {
+    showStyleDropdown.value = false;
+  }
+};
+
+const selectRatio = (option) => {
+  selectedRatio.value = option;
+  showRatioDropdown.value = false;
+  const ratioText = `[比例: ${option.label}]`;
+  const ratioRegex = /\[比例: .+?\]/g;
+  if (inputValue.value.match(ratioRegex)) {
+    inputValue.value = inputValue.value.replace(ratioRegex, ratioText);
+  } else {
+    inputValue.value += ratioText;
+  }
+};
+
+const toggleStyleDropdown = () => {
+  showStyleDropdown.value = !showStyleDropdown.value;
+  if (showStyleDropdown.value) {
+    showRatioDropdown.value = false;
+  }
+};
+
+const selectStyle = (option) => {
+  selectedStyle.value = option;
+  showStyleDropdown.value = false;
+  const styleText = `[风格: ${option.label}]`;
+  const styleRegex = /\[风格: .+?\]/g;
+  if (inputValue.value.match(styleRegex)) {
+    inputValue.value = inputValue.value.replace(styleRegex, styleText);
+  } else {
+    inputValue.value += styleText;
+  }
+};
+
+const handleClickOutside = (event) => {
+  const target = event.target;
+  if (!target.closest(".dropdown-wrapper")) {
+    showRatioDropdown.value = false;
+    showStyleDropdown.value = false;
+  }
+};
+
+// 监听全局点击事件
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style lang="less" scoped>
@@ -629,7 +925,6 @@ const getFileIcon = (fileName) => {
             display: flex;
             align-items: center;
             padding: 0.5rem 1rem;
-            margin: 0 0.8rem 0 0;
             cursor: pointer;
             transition: all 0.2s ease;
             border-radius: 12px;
@@ -657,7 +952,7 @@ const getFileIcon = (fileName) => {
                 135deg,
                 rgba(200, 240, 220, 0.7) 0%,
                 rgba(167, 243, 208, 0.65) 50%,
-                rgba(110, 231, 183, 0.8) 100%
+                rgba(110, 231, 183, 0.4) 100%
               );
               box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
                 0 0 10px rgba(110, 231, 183, 0.05);
@@ -681,6 +976,18 @@ const getFileIcon = (fileName) => {
             .feature-button-text {
               color: var(--text-color);
               transition: color 0.2s ease;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+
+              .exit-icon {
+                opacity: 0.7;
+                transition: all 0.2s ease;
+              }
+            }
+
+            &:hover .exit-icon {
+              opacity: 1;
             }
           }
           :deep(.n-button) {
@@ -820,4 +1127,171 @@ const getFileIcon = (fileName) => {
 :deep(.n-button) {
   padding: 0 0.8rem;
 }
+
+.dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  color: var(--text-color);
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  user-select: none;
+  border: 1px solid transparent;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+.dropdown-arrow {
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.dropdown-button:hover .dropdown-arrow {
+  opacity: 1;
+}
+
+.dropdown-button.active .dropdown-arrow {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  max-width: 240px;
+  background: var(--message-color);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.dropdown-header {
+  padding: 12px 16px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.dropdown-options {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: translateX(2px);
+  }
+
+  &.selected {
+    background-color: rgba(24, 160, 88, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+}
+
+.option-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+
+  // 风格选择的option-content不需要option-left包裹
+  > span {
+    flex: 1;
+  }
+}
+
+.option-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+
+  > span {
+    flex: 1;
+  }
+}
+
+.check-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* 下拉框动画 */
+.dropdown-fade-enter-active {
+  animation: dropdownSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dropdown-fade-leave-active {
+  animation: dropdownSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+</style>
+
+<style lang="less">
+@import "../styles/featurePopover.less";
 </style>

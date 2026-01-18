@@ -104,15 +104,17 @@ class TypingEffects {
    */
   wave() {
     this.element.innerHTML = "";
-    const chars = this.text.split("");
 
-    chars.forEach((char, index) => {
+    const segments = Array.from(this.text);
+
+    segments.forEach((segment, index) => {
       const span = document.createElement("span");
-      span.textContent = char;
+      span.textContent = segment;
       span.style.display = "inline-block";
       span.style.opacity = "0";
       span.style.transform = "translateY(20px)";
       span.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+      span.style.whiteSpace = "pre"; // 保留空格
       this.element.appendChild(span);
 
       setTimeout(() => {
@@ -122,7 +124,7 @@ class TypingEffects {
       }, index * 30);
     });
 
-    setTimeout(() => this.complete(), chars.length * 30 + 500);
+    setTimeout(() => this.complete(), segments.length * 30 + 500);
     return this;
   }
 

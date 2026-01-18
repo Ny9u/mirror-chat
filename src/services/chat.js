@@ -27,6 +27,7 @@ const base64ToFile = async (imageUrl, filename) => {
  * @param {boolean} messageData.enableThinking - 是否启用深度思考(可选)
  * @param {boolean} messageData.enableSearch - 是否启用搜索(可选)
  * @param {boolean} messageData.enableKnowledge - 是否启用知识库(可选)
+ * @param {boolean} messageData.enableImageGeneration - 是否启用图像生成(可选)
  * @param {boolean} messageData.isRegenerate - 是否重新生成(可选)
  * @param {File[]} messageData.files - 文件数组(可选)
  * @param {Function} onChunk - 流式数据回调函数
@@ -55,6 +56,7 @@ export const chat = async (
     if (messageData.enableThinking) formData.append("enableThinking", "true");
     if (messageData.enableSearch) formData.append("enableSearch", "true");
     if (messageData.enableKnowledge) formData.append("enableKnowledge", "true");
+    if (messageData.enableImageGeneration) formData.append("enableImageGeneration", "true");
     if (messageData.isRegenerate) formData.append("isRegenerate", "true");
 
     // 图片处理

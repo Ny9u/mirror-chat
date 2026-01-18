@@ -10,7 +10,7 @@
         </n-icon>
         <div class="chat-button-text">新对话</div>
       </div>
-      <div class="model" @click="toggleModelSelect">
+      <div v-if="!configStore.imageGenerationMode" class="model" @click="toggleModelSelect">
         <div>{{ Models.find((m) => m.key === configStore.model).name }}</div>
         <div
           :class="{
@@ -19,6 +19,9 @@
             rotate: showSelect,
           }"
         ></div>
+      </div>
+      <div v-else class="model">
+        <div>wan2.6-image</div>
       </div>
     </div>
     <div class="tool">
@@ -172,6 +175,9 @@ import Models from "@/config/models.js";
 let showSelect = ref(false);
 let showSettings = ref(false);
 const toggleModelSelect = () => {
+  if (configStore.imageGenerationMode) {
+    return;
+  }
   showSelect.value = !showSelect.value;
 };
 const closeModelSelect = () => {

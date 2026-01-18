@@ -39,6 +39,14 @@ const Models = [
     thinkingMode: true,
     netSearch: false,
   },
+  {
+    name: "wan2.6-image",
+    key: "wan2.6-image",
+    desc: "通义万相2.6-图像生成，全能图像生成模型，支持图文一体化推理生成，具备多图创意融合、商用级一致性、美学要素迁移与镜头光影精确控制，全面提升图像生成的一致性、可控性和表现力。",
+    expiredTime: "2026-03-28",
+    thinkingMode: false,
+    netSearch: false,
+  },
 ];
 
 export default Models;

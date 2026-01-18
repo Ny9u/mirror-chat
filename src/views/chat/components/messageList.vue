@@ -1218,7 +1218,22 @@ const favoriteMessage = async (msg) => {
   }
 };
 
-defineExpose({ sendMessage, fetchAI });
+// 添加图片消息
+const addImageMessage = (imageUrl) => {
+  chatHistory.value.push({
+    role: "assistant",
+    content: [
+      {
+        type: "image",
+        data: imageUrl,
+      },
+    ],
+    key: Global.getRandomKey(),
+    time: new Date().toLocaleTimeString(),
+  });
+};
+
+defineExpose({ sendMessage, fetchAI, addImageMessage });
 
 // 存储当前的打字效果实例
 let typingInstance = null;

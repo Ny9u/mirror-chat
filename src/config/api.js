@@ -2,6 +2,7 @@ export const api = {
   netSearch: "https://api.bochaai.com/v1/ai-search",
   getModels: "https://dashscope.aliyuncs.com/api/v1/deployments/models",
   chat: "/api/v1/chat",
+  generateImage: "/api/v1/chat/generate-image",
   login: "/api/v1/user/login",
   register: "/api/v1/user/register",
   validate: "/api/v1/auth/validate",

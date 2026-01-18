@@ -305,6 +305,7 @@ import {
   ChevronDown,
 } from "@vicons/tabler";
 import { asrRecognize } from "@/services/asrService.js";
+import { generateImage } from "@/services/user.js";
 import { useConfigStore } from "@/stores/configStore";
 import Models from "@/config/models.js";
 
@@ -353,10 +354,68 @@ const handleInput = (value) => {
   inputValue.value = value;
 };
 
+const ratioToSize = {
+  "1:1": "1280*1280",
+  "16:9": "1280*720",
+  "9:16": "720*1280",
+  "4:3": "1280*960",
+  "3:4": "960*1280",
+};
+
+const generateImageMessage = async () => {
+  if (!inputValue.value.trim()) {
+    message.warning("请先输入图片描述 📝");
+    return;
+  }
+  if (!listRef.value) {
+    message.error("模型初始化失败，请稍后再试 ⚠️");
+    return;
+  }
+
+  let prompt = inputValue.value.trim();
+  const ratio = selectedRatio.value.value;
+
+  // 添加用户消息到消息列表
+  const isValid = listRef.value.sendMessage(prompt, [], []);
+  if (!isValid) {
+    return;
+  }
+
+  inputValue.value = "";
+  selectedRatio.value = { label: "", value: "" };
+  selectedStyle.value = { label: "", value: "" };
+  loading.value = true;
+
+  try {
+    const res = await generateImage({
+      prompt,
+      model: "wan2.6-image",
+      size: ratioToSize[ratio] || "1280*1280",
+      promptExtend: true,
+      watermark: false,
+      enableInterleave: true,
+    });
+
+    if (res && res.data && res.data.url) {
+      listRef.value.addImageMessage(res.data.url);
+    } else {
+      message.error("图片生成失败 ⚠️");
+    }
+  } catch (err) {
+    message.error("服务请求失败，请检查网络连接 🌐");
+  } finally {
+    loading.value = false;
+  }
+};
+
 const handleEnter = (e) => {
   if (!e.shiftKey) {
     e.preventDefault();
-    sendMessage();
+    if (imageGeneration.value) {
+      generateImageMessage();
+    } else {
+      sendMessage();
+    }
   }
 };
 
@@ -368,7 +427,11 @@ const handleSendClick = () => {
       return;
     }
   }
-  sendMessage();
+  if (imageGeneration.value) {
+    generateImageMessage();
+  } else {
+    sendMessage();
+  }
 };
 
 const sendMessage = async () => {
@@ -403,7 +466,6 @@ const sendMessage = async () => {
     return;
   }
   inputValue.value = "";
-  // 清空已上传的文件
   uploadedFiles.value = [];
   loading.value = true;
   abortController.value = new AbortController();
@@ -564,12 +626,13 @@ const handleFileSelect = (event) => {
   if (files.length === 0) return;
 
   const allowedExtensions = imageGeneration.value
-    ? [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]
+    ? [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
     : [
         ".png",
         ".jpg",
         ".jpeg",
         ".webp",
+        ".bmp",
         ".gif",
         ".svg",
         ".doc",

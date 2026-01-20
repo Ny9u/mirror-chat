@@ -375,26 +375,39 @@ const generateImageMessage = async () => {
   let prompt = inputValue.value.trim();
   const ratio = selectedRatio.value.value;
 
+  // 提取已上传的图片数据
+  const refImages = uploadedFiles.value
+    .filter((file) => file.type.startsWith("image/"))
+    .map((file) => file.url);
+
   // 添加用户消息到消息列表
-  const isValid = listRef.value.sendMessage(prompt, [], []);
+  const isValid = listRef.value.sendMessage(prompt, refImages, []);
   if (!isValid) {
     return;
   }
 
   inputValue.value = "";
+  uploadedFiles.value = [];
   selectedRatio.value = { label: "", value: "" };
   selectedStyle.value = { label: "", value: "" };
   loading.value = true;
 
   try {
-    const res = await generateImage({
+    const params = {
       prompt,
       model: "wan2.6-image",
       size: ratioToSize[ratio] || "1280*1280",
       promptExtend: true,
       watermark: false,
       enableInterleave: true,
-    });
+    };
+
+    // 如果有参考图片，添加到参数中
+    if (refImages.length > 0) {
+      params.refImgBase64 = refImages;
+    }
+
+    const res = await generateImage(params);
 
     if (res && res.data && res.data.url) {
       listRef.value.addImageMessage(res.data.url);

@@ -182,6 +182,6 @@ export const clearRole = async (params) => {
 };
 
 export const generateImage = async (params) => {
-  const res = await Request(api.generateImage, "POST", params);
+  const res = await Request(api.generateImage, "POST", params, "json", 0);
   return res;
 };

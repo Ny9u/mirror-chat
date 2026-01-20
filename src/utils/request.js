@@ -164,19 +164,22 @@ service.interceptors.response.use(
  * @param {string} method - 请求方法，默认为get
  * @param {Object} params - 请求参数
  * @param {boolean} returnRawResponse - 是否返回原始响应，用于处理二进制数据
+ * @param {number} timeout - 请求超时时间（毫秒），为0表示不限制
  * @returns {Promise} 返回Promise对象
  */
 export const Request = (
   url,
   method = "GET",
   params = {},
-  responseType = "json"
+  responseType = "json",
+  timeout = 20000
 ) => {
   return new Promise((resolve, reject) => {
     const config = {
       url: url,
       method: method,
       responseType: responseType,
+      timeout: timeout === 0 ? 0 : timeout,
     };
 
     if (method.toUpperCase() === "POST" || method.toUpperCase() === "PUT") {

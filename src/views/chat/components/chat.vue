@@ -1,7 +1,13 @@
 <template>
   <div class="chat-container">
     <div class="content">
-      <div class="record" :class="{ uploading: uploadedFiles.length > 0 }">
+      <div
+        class="record"
+        :class="{
+          uploading: uploadedFiles.length > 0,
+          'has-messages': hasMessages,
+        }"
+      >
         <messageList
           :userInput="inputValue"
           :netSearch="netSearch"
@@ -9,6 +15,8 @@
           :knowledgeBase="knowledgeBase"
           :imageGeneration="imageGeneration"
           ref="listRef"
+          @regenerateImage="handleRegenerateImage"
+          @generateImage="handleRegenerateImage"
         ></messageList>
       </div>
       <div class="input">
@@ -284,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { NInput, NButton, useMessage, NIcon, NPopover } from "naive-ui";
 import messageList from "./messageList.vue";
 import {
@@ -323,6 +331,12 @@ const abortController = ref(null);
 const fileInputRef = ref(null);
 const uploadedFiles = ref([]);
 
+// 判断聊天记录是否有用户消息
+const hasMessages = computed(() => {
+  if (!listRef.value?.chatHistory) return false;
+  return listRef.value.chatHistory.some((msg) => msg.role !== "system");
+});
+
 // 图像生成选项
 const showRatioDropdown = ref(false);
 const showStyleDropdown = ref(false);
@@ -355,11 +369,11 @@ const handleInput = (value) => {
 };
 
 const ratioToSize = {
-  "1:1": "1280*1280",
-  "16:9": "1280*720",
-  "9:16": "720*1280",
-  "4:3": "1280*960",
-  "3:4": "960*1280",
+  "1:1": "1328*1328",
+  "16:9": "1664*928",
+  "9:16": "928*1664",
+  "4:3": "1472*1104",
+  "3:4": "1104*1472",
 };
 
 const generateImageMessage = async () => {
@@ -375,13 +389,7 @@ const generateImageMessage = async () => {
   let prompt = inputValue.value.trim();
   const ratio = selectedRatio.value.value;
 
-  // 提取已上传的图片数据
-  const refImages = uploadedFiles.value
-    .filter((file) => file.type.startsWith("image/"))
-    .map((file) => file.url);
-
-  // 添加用户消息到消息列表
-  const isValid = listRef.value.sendMessage(prompt, refImages, []);
+  const isValid = listRef.value.sendMessage(prompt);
   if (!isValid) {
     return;
   }
@@ -395,22 +403,98 @@ const generateImageMessage = async () => {
   try {
     const params = {
       prompt,
-      model: "wan2.6-image",
-      size: ratioToSize[ratio] || "1280*1280",
-      promptExtend: true,
+      model: "qwen-image-max",
+      size: ratioToSize[ratio] || "1328*1328",
+      prompt_extend: true,
       watermark: false,
-      enableInterleave: true,
+      chatId: configStore.chatId || undefined,
     };
 
-    // 如果有参考图片，添加到参数中
-    if (refImages.length > 0) {
-      params.refImgBase64 = refImages;
+    const generatingKey = listRef.value.addImageMessage(ratio);
+    const res = await generateImage(params);
+
+    if (res && res.data && res.data.url) {
+      if (res.data.chatId) {
+        configStore.setChatId(res.data.chatId);
+      }
+      listRef.value.updateImageMessage(generatingKey, res.data.url, ratio);
+    } else {
+      message.error("图片生成失败 ⚠️");
     }
+  } catch (err) {
+    message.error("服务请求失败，请检查网络连接 🌐");
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleRegenerateImage = async ({ prompt, ratio }) => {
+  if (!listRef.value) {
+    message.error("模型初始化失败，请稍后再试 ⚠️");
+    return;
+  }
+
+  const selectedRatioValue = ratio || selectedRatio.value.value;
+
+  const generatingKey = listRef.value.addImageMessage(ratio);
+  loading.value = true;
+
+  try {
+    const params = {
+      prompt,
+      model: "qwen-image-max",
+      size: ratioToSize[selectedRatioValue] || "1328*1328",
+      prompt_extend: true,
+      watermark: false,
+      chatId: configStore.chatId || undefined,
+      isRegenerate: true,
+    };
 
     const res = await generateImage(params);
 
     if (res && res.data && res.data.url) {
-      listRef.value.addImageMessage(res.data.url);
+      if (res.data.chatId) {
+        configStore.setChatId(res.data.chatId);
+      }
+      listRef.value.updateImageMessage(generatingKey, res.data.url, ratio);
+    } else {
+      message.error("图片生成失败 ⚠️");
+    }
+  } catch (err) {
+    message.error("服务请求失败，请检查网络连接 🌐");
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleGenerateImage = async ({ prompt, ratio }) => {
+  if (!listRef.value) {
+    message.error("模型初始化失败，请稍后再试 ⚠️");
+    return;
+  }
+
+  const selectedRatioValue = ratio || selectedRatio.value.value;
+
+  const generatingKey = listRef.value.addImageMessage(ratio);
+  loading.value = true;
+
+  try {
+    const params = {
+      prompt,
+      model: "qwen-image-max",
+      size: ratioToSize[selectedRatioValue] || "1328*1328",
+      prompt_extend: true,
+      watermark: false,
+      chatId: configStore.chatId || undefined,
+    };
+
+    const res = await generateImage(params);
+
+    if (res && res.data && res.data.url) {
+      if (res.data.chatId) {
+        configStore.setChatId(res.data.chatId);
+      }
+      listRef.value.updateImageMessage(generatingKey, res.data.url, ratio);
     } else {
       message.error("图片生成失败 ⚠️");
     }
@@ -473,7 +557,7 @@ const sendMessage = async () => {
   const isVaild = listRef.value.sendMessage(
     inputValue.value.trim(),
     images,
-    files
+    files,
   );
   if (!isVaild) {
     return;
@@ -495,7 +579,7 @@ const sendMessage = async () => {
             message.error("服务请求失败，请检查网络连接 🌐");
           }
           reject(err);
-        }
+        },
       )
       .finally(() => {
         loading.value = false;
@@ -820,7 +904,8 @@ onUnmounted(() => {
     .record {
       margin-bottom: 3.33rem;
 
-      &.uploading {
+      &.uploading,
+      &.has-messages {
         margin-bottom: 0;
       }
     }
@@ -1030,7 +1115,8 @@ onUnmounted(() => {
                 rgba(167, 243, 208, 0.65) 50%,
                 rgba(110, 231, 183, 0.4) 100%
               );
-              box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
+              box-shadow:
+                0 2px 8px rgba(110, 231, 183, 0.2),
                 0 0 10px rgba(110, 231, 183, 0.05);
               border: 1px solid var(--primary-color);
 
@@ -1259,7 +1345,9 @@ onUnmounted(() => {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   z-index: 1000;

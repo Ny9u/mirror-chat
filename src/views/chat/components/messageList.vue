@@ -80,7 +80,16 @@
                   </div>
                   <!-- 图片内容渲染 -->
                   <div class="image-container" v-if="i.type === 'image'">
-                    <img :src="i.data" class="message-image" />
+                    <div v-if="i.generating" class="image-generating">
+                      <WaveCanvas />
+                      <div class="generating-text">图像生成中</div>
+                    </div>
+                    <img
+                      v-else
+                      :src="i.data.url"
+                      class="message-image"
+                      @click="openFullscreenImage(i.data.url)"
+                    />
                   </div>
                   <!-- 文件内容渲染 -->
                   <div class="file-message-container" v-if="i.type === 'file'">
@@ -202,6 +211,7 @@
                     trigger="hover"
                     raw
                     :show-arrow="false"
+                    v-if="item.content.some((c) => c.type === 'content')"
                   >
                     <template #trigger>
                       <n-button text size="large" @click="playVoice(item)">
@@ -473,6 +483,29 @@
     <div class="welcome" v-show="!chatHistory.slice(1).length">
       <div id="typed" class="welcome-text"></div>
     </div>
+    <Transition name="fullscreen-fade">
+      <div
+        v-if="isFullscreenImage"
+        class="fullscreen-image-overlay"
+        @click="closeFullscreenImage"
+      >
+        <div class="fullscreen-image-container" @click.stop>
+          <img :src="fullscreenImage" class="fullscreen-image" />
+          <div class="fullscreen-toolbar">
+            <n-button
+              type="text"
+              size="large"
+              circle
+              @click="downloadImage(fullscreenImage)"
+            >
+              <template #icon>
+                <n-icon :size="24"><Download /></n-icon>
+              </template>
+            </n-button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -499,6 +532,7 @@ import {
   NListItem,
   NInput,
 } from "naive-ui";
+import WaveCanvas from "@/components/WaveCanvas.vue";
 import {
   Loader,
   Copy,
@@ -512,6 +546,7 @@ import {
   X,
   Send,
   ChevronDown,
+  Download,
 } from "@vicons/tabler";
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
@@ -557,6 +592,8 @@ const props = defineProps({
 const { userInput, netSearch, deepThinking, knowledgeBase, imageGeneration } =
   toRefs(props);
 
+const emit = defineEmits(["regenerateImage", "generateImage"]);
+
 const configStore = useConfigStore();
 const message = useMessage();
 const dialog = useDialog();
@@ -586,6 +623,8 @@ const hoveredMessageKey = ref({});
 const editingMessageKey = ref(null);
 const editContent = ref("");
 const editInputRef = ref(null);
+const fullscreenImage = ref(null);
+const isFullscreenImage = ref(false);
 const chatHistory = ref([
   {
     role: "system",
@@ -718,7 +757,7 @@ const fetchAI = async (
   images = [],
   files = [],
   content = null,
-  isRegenerate = false
+  isRegenerate = false,
 ) => {
   const chatId = configStore.chatId || undefined;
 
@@ -730,7 +769,7 @@ const fetchAI = async (
     for (let i = chatHistory.value.length - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content"
+          (c) => c.type === "content",
         );
         userTextContent = textContent ? textContent.data : "";
 
@@ -805,9 +844,8 @@ const fetchAI = async (
               lastScrollTime = now;
             }
           } else if (chunk.content) {
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
             answerContent += chunk.content;
 
             if (!hasStartedAnswer) {
@@ -821,9 +859,8 @@ const fetchAI = async (
             chatHistory.value[chatHistory.value.length - 1].content[1].data =
               md.render(answerContent);
 
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].thinkingCollapsed = true;
+            chatHistory.value[chatHistory.value.length - 1].thinkingCollapsed =
+              true;
 
             const now = Date.now();
             if (now - lastScrollTime > scrollTime) {
@@ -843,17 +880,15 @@ const fetchAI = async (
         },
         (error) => {
           if (signal.aborted) {
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
           } else {
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
           }
         },
-        signal
+        signal,
       );
 
       return answerContent;
@@ -947,7 +982,7 @@ const fetchAI = async (
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
         },
-        signal
+        signal,
       );
 
       return fullContent;
@@ -1002,23 +1037,43 @@ const regenerateResponse = (item) => {
   const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
   if (index === -1) return;
 
-  chatHistory.value = chatHistory.value.slice(0, index);
+  const isImageMessage = item.content.some((c) => c.type === "image");
+
+  if (isImageMessage) {
+    const imageContent = item.content.find((c) => c.type === "image");
+    const ratio = imageContent?.ratio || "";
+
+    let lastImagePrompt = "";
+    for (let i = index - 1; i >= 0; i--) {
+      if (chatHistory.value[i].role === "user") {
+        const textContent = chatHistory.value[i].content.find(
+          (c) => c.type === "content",
+        );
+        lastImagePrompt = textContent ? textContent.data : "";
+        break;
+      }
+    }
+
+    chatHistory.value = chatHistory.value.slice(0, Math.max(1, index));
+    if (lastImagePrompt) {
+      emit("regenerateImage", { prompt: lastImagePrompt, ratio });
+    }
+    return;
+  }
 
   let lastMessage = null;
   let lastMessageIndex = null;
   let lastImages = [];
   let lastFiles = [];
-  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+  for (let i = index - 1; i >= 0; i--) {
     if (chatHistory.value[i].role === "user") {
       lastMessage = chatHistory.value[i];
       lastMessageIndex = i;
 
-      // 提取用户消息中的图片
       lastImages = lastMessage.content
         .filter((c) => c.type === "image")
         .map((c) => c.data);
 
-      // 从 chatHistory 中提取原始 File 对象
       lastFiles = lastMessage.content
         .filter((c) => c.type === "file" && c.fileObject)
         .map((c) => c.fileObject);
@@ -1027,9 +1082,12 @@ const regenerateResponse = (item) => {
     }
   }
 
+  chatHistory.value = chatHistory.value.slice(
+    0,
+    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1),
+  );
+
   if (lastMessage && lastMessageIndex !== null) {
-    chatHistory.value = chatHistory.value.slice(0, lastMessageIndex);
-    // 正确提取文本内容（找到 type === 'content' 的元素）
     const textContent = lastMessage.content.find((c) => c.type === "content");
     const userText = textContent ? textContent.data : "";
     sendMessage(userText, lastImages, lastFiles);
@@ -1038,8 +1096,26 @@ const regenerateResponse = (item) => {
       lastImages,
       lastFiles,
       userText,
-      true
+      true,
     );
+  }
+};
+
+const regenerateImageMessage = (ratio) => {
+  let lastImagePrompt = "";
+
+  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+    if (chatHistory.value[i].role === "user") {
+      const textContent = chatHistory.value[i].content.find(
+        (c) => c.type === "content",
+      );
+      lastImagePrompt = textContent ? textContent.data : "";
+      break;
+    }
+  }
+
+  if (lastImagePrompt) {
+    emit("regenerateImage", { prompt: lastImagePrompt, ratio });
   }
 };
 
@@ -1076,6 +1152,19 @@ const toggleThinking = (key) => {
   }
 };
 
+const getLastImageRatio = () => {
+  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+    const msg = chatHistory.value[i];
+    if (msg.role === "assistant") {
+      const imageContent = msg.content.find((c) => c.type === "image");
+      if (imageContent && imageContent.ratio) {
+        return imageContent.ratio;
+      }
+    }
+  }
+  return "";
+};
+
 const saveEdit = (item) => {
   if (!editContent.value.trim()) {
     message.warning("请先输入内容 📝");
@@ -1084,27 +1173,32 @@ const saveEdit = (item) => {
 
   const index = chatHistory.value.findIndex((msg) => msg.key === item.key);
   if (index === -1) return;
+  const lastRatio = getLastImageRatio();
   chatHistory.value = chatHistory.value.slice(0, index);
 
-  // 提取原消息中的图片
   const existingImages = item.content
     .filter((c) => c.type === "image")
     .map((c) => c.data);
 
-  // 从 chatHistory 中提取原始 File 对象
   const existingFiles = item.content
     .filter((c) => c.type === "file" && c.fileObject)
     .map((c) => c.fileObject);
 
   const editedText = editContent.value;
-  sendMessage(editedText, existingImages, existingFiles);
-  fetchAI(
-    new AbortController().signal,
-    existingImages,
-    existingFiles,
-    editedText,
-    true
-  );
+
+  if (imageGeneration.value) {
+    sendMessage(editedText);
+    emit("generateImage", { prompt: editedText, ratio: lastRatio });
+  } else {
+    sendMessage(editedText, existingImages, existingFiles);
+    fetchAI(
+      new AbortController().signal,
+      existingImages,
+      existingFiles,
+      editedText,
+      true,
+    );
+  }
 
   editingMessageKey.value = null;
   editContent.value = "";
@@ -1116,6 +1210,35 @@ const handleMouseEnter = (key) => {
 
 const handleMouseLeave = (key) => {
   hoveredMessageKey.value[key] = false;
+};
+
+const openFullscreenImage = (imageUrl) => {
+  fullscreenImage.value = imageUrl;
+  isFullscreenImage.value = true;
+};
+
+const closeFullscreenImage = () => {
+  isFullscreenImage.value = false;
+  fullscreenImage.value = null;
+};
+
+const downloadImage = async (imageUrl) => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const timestamp = new Date().getTime();
+    link.download = `image_${timestamp}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    message.success("图片保存成功");
+  } catch (error) {
+    message.error("图片保存失败：" + (error.message || "未知错误"));
+  }
 };
 
 const playVoice = async (item) => {
@@ -1146,7 +1269,7 @@ const playVoice = async (item) => {
     try {
       const audioData = await TTSService.synthesizeSpeech(
         textToSpeak,
-        configStore.voiceType
+        configStore.voiceType,
       );
       await TTSService.playAudio(audioData);
     } catch (error) {
@@ -1176,7 +1299,7 @@ const deleteMessage = (message) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)],
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1192,7 +1315,7 @@ const deleteMessage = (message) => {
     },
     onPositiveClick: () => {
       const index = chatHistory.value.findIndex(
-        (msg) => msg.key === message.key
+        (msg) => msg.key === message.key,
       );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
@@ -1219,21 +1342,46 @@ const favoriteMessage = async (msg) => {
 };
 
 // 添加图片消息
-const addImageMessage = (imageUrl) => {
+const addImageMessage = (ratio = "") => {
+  const generatingKey = Global.getRandomKey();
   chatHistory.value.push({
     role: "assistant",
     content: [
       {
         type: "image",
-        data: imageUrl,
+        data: null,
+        generating: true,
+        ratio: ratio,
       },
     ],
-    key: Global.getRandomKey(),
+    key: generatingKey,
     time: new Date().toLocaleTimeString(),
   });
+  return generatingKey;
 };
 
-defineExpose({ sendMessage, fetchAI, addImageMessage });
+// 更新图片消息
+const updateImageMessage = (generatingKey, imageUrl, ratio = "") => {
+  const index = chatHistory.value.findIndex((msg) => msg.key === generatingKey);
+  if (index !== -1) {
+    chatHistory.value[index].content = [
+      {
+        type: "image",
+        data: { url: imageUrl },
+        generating: false,
+        ratio: ratio,
+      },
+    ];
+  }
+};
+
+defineExpose({
+  sendMessage,
+  fetchAI,
+  addImageMessage,
+  updateImageMessage,
+  chatHistory,
+});
 
 // 存储当前的打字效果实例
 let typingInstance = null;
@@ -1281,7 +1429,7 @@ watch(
     ) {
       initTyped();
     }
-  }
+  },
 );
 
 // 监听 name 变化，用于用户主动修改昵称
@@ -1292,7 +1440,7 @@ watch(
     if (hasTypingInitialized && newName && oldName && newName !== oldName) {
       initTyped();
     }
-  }
+  },
 );
 
 const handleClearChatHistory = () => {
@@ -1416,6 +1564,28 @@ onBeforeUnmount(() => {
   }
 }
 
+/* 入场动画 - 淡入效果 */
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 图片生成文字动画 - 适配WaveCanvas */
+@keyframes textGradient {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
 .message-container {
   width: 70vw;
   height: 35vh;
@@ -1515,6 +1685,29 @@ onBeforeUnmount(() => {
           border-radius: 10px;
           object-fit: contain;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-generating {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0 1.5rem;
+          border-radius: 16px;
+          min-width: 140px;
+          min-height: 100px;
+
+          .generating-text {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: rgba(76, 175, 80, 0.8);
+            text-transform: uppercase;
+            animation: textGradient 2s linear infinite;
+            text-shadow:
+              0 0 10px rgba(var(--primary-color-rgb), 0.8),
+              0 0 20px rgba(var(--primary-color-rgb), 0.4),
+              0 0 30px rgba(var(--primary-color-rgb), 0.2);
+          }
         }
       }
       &.message-user .image-container {
@@ -1672,7 +1865,8 @@ onBeforeUnmount(() => {
         .think-content {
           overflow: hidden;
           opacity: 1;
-          transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          transition:
+            max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
             opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
           &.collapsed {
@@ -1840,6 +2034,58 @@ onBeforeUnmount(() => {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+.fullscreen-image-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.fullscreen-image-container {
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  cursor: default;
+
+  .fullscreen-image {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .fullscreen-toolbar {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+}
+
+.fullscreen-fade-enter-active,
+.fullscreen-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fullscreen-fade-enter-from,
+.fullscreen-fade-leave-to {
+  opacity: 0;
 }
 </style>
 

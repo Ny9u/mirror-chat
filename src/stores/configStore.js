@@ -35,6 +35,14 @@ export const useConfigStore = defineStore("config", {
     key: "mirror-chat-config",
     storage: localStorage,
     pick: ["theme", "model", "voiceType", "voiceName", "sidebarCollapsed"],
+    afterRestore: (ctx) => {
+      // 验证持久化的模型是否存在于Models数组中
+      const modelExists = Models.some((m) => m.key === ctx.store.model);
+      if (!modelExists) {
+        // 如果模型不存在，重置为第一个模型
+        ctx.store.model = Models[0].key;
+      }
+    },
   },
 
   actions: {

@@ -26,8 +26,12 @@
             <div class="item-title">{{ item.title }}</div>
             <div class="item-date">{{ formatDate(item.date) }}</div>
           </div>
+          <div class="item-content" style="padding: 0px" v-if="item.isImage">
+            <img :src="item.content" />
+          </div>
           <div
             class="item-content"
+            v-else
             v-html="truncateContent(item.content)"
           ></div>
           <div class="item-actions">
@@ -157,13 +161,20 @@ const loadCollections = async (page = 1) => {
       limit: pageSize.value,
     });
     if (res.code === 200 && res.data) {
-      collections.value = res.data.favorites.map((item) => ({
-        id: item.id,
-        title: item.title,
-        content: md.render(item.conversation[1]?.content[0]?.data || ""),
-        originalContent: item.conversation,
-        date: item.createdAt,
-      }));
+      collections.value = res.data.favorites.map((item) => {
+        const conversationContent = item.conversation[1]?.content[0];
+        const isImage = conversationContent?.type === "image";
+        return {
+          id: item.id,
+          title: item.title,
+          content: isImage
+            ? conversationContent?.data.url
+            : md.render(item.conversation[1]?.content[0]?.data || ""),
+          originalContent: item.conversation,
+          date: item.createdAt,
+          isImage: isImage,
+        };
+      });
       totalPage.value = res.data.total;
     } else {
       collections.value = [];
@@ -330,7 +341,8 @@ onUnmounted(() => {
       &:hover {
         transform: translateY(-6px) scale(1.05);
         border-color: var(--primary-color);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12),
+        box-shadow:
+          0 12px 28px rgba(0, 0, 0, 0.12),
           0 4px 12px rgba(var(--primary-color-rgb, 99, 102, 241), 0.15);
 
         .item-header .item-title {
@@ -402,6 +414,23 @@ onUnmounted(() => {
         position: relative;
         z-index: 1;
         border: 1px solid rgba(128, 128, 128, 0.08);
+
+        img {
+          width: 100%;
+          height: auto;
+          max-height: 180px;
+          object-fit: cover;
+          border-radius: 8px;
+          display: block;
+        }
+
+        span {
+          display: block;
+          text-align: center;
+          color: var(--text-color-3);
+          font-size: 12px;
+          padding: 1rem;
+        }
       }
 
       .item-actions {
@@ -417,7 +446,9 @@ onUnmounted(() => {
         backdrop-filter: blur(10px);
         border-radius: 10px;
         padding: 0.35rem 0.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        box-shadow:
+          0 4px 12px rgba(0, 0, 0, 0.1),
+          0 1px 3px rgba(0, 0, 0, 0.08);
         z-index: 10;
 
         :deep(.n-button) {

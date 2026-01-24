@@ -20,7 +20,7 @@ const processQueue = (error) => {
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 20000, // 请求超时时间
+  timeout: 10000, // 请求超时时间
   withCredentials: true, // 允许携带 Cookie
 });
 
@@ -86,7 +86,7 @@ service.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 service.interceptors.response.use(
@@ -155,7 +155,7 @@ service.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
@@ -172,7 +172,7 @@ export const Request = (
   method = "GET",
   params = {},
   responseType = "json",
-  timeout = 20000
+  timeout = 10000,
 ) => {
   return new Promise((resolve, reject) => {
     const config = {

@@ -88,6 +88,9 @@
                       <div v-html="processContent(i.data)"></div>
                     </div>
                   </div>
+                  <div class="image-container" v-else-if="i.type === 'image'">
+                    <img :src="i.data.url" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -380,7 +383,7 @@ const sharePicture = async () => {
     // 使用html2canvas截图
     const canvas = await html2canvas(element, {
       backgroundColor: getComputedStyle(
-        document.documentElement
+        document.documentElement,
       ).getPropertyValue("--background-color"),
       scale: 3,
       useCORS: true,
@@ -630,6 +633,29 @@ onMounted(async () => {
             padding: 0.6rem 1.33rem;
             font-size: 1.07rem;
             color: var(--text-color);
+          }
+        }
+
+        .image-container {
+          background: var(--message-color) no-repeat center;
+          border-radius: 10px;
+          padding: 0.6rem 1.33rem;
+          max-width: 700px;
+
+          img {
+            max-width: 100%;
+            max-height: 400px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+          }
+
+          span {
+            display: block;
+            text-align: center;
+            color: var(--text-color-3);
+            font-size: 14px;
+            padding: 1rem;
           }
         }
       }

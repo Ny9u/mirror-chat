@@ -10,8 +10,12 @@
         </n-icon>
         <div class="chat-button-text">新对话</div>
       </div>
-      <div v-if="!configStore.imageGenerationMode" class="model" @click="toggleModelSelect">
-        <div>{{ Models.find((m) => m.key === configStore.model).name }}</div>
+      <div
+        v-if="!configStore.imageGenerationMode"
+        class="model"
+        @click="toggleModelSelect"
+      >
+        <div>{{ Models.find((m) => m.key === configStore.model)?.name || '选择模型' }}</div>
         <div
           :class="{
             down: configStore.theme === 'dark',
@@ -21,7 +25,7 @@
         ></div>
       </div>
       <div v-else class="model">
-        <div>wan2.6-image</div>
+        <div>qwen-image-max</div>
       </div>
     </div>
     <div class="tool">
@@ -289,7 +293,7 @@ const logout = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)],
       ),
     style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -455,7 +459,8 @@ onMounted(async () => {
         );
         background-size: 300% 300%;
         animation: gradientFlow 10s ease-in-out infinite;
-        box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
+        box-shadow:
+          0 2px 8px rgba(110, 231, 183, 0.2),
           0 0 10px rgba(110, 231, 183, 0.05);
         transform: translateY(-1px);
 
@@ -558,7 +563,8 @@ onMounted(async () => {
       animation: gradientFlow 8s ease-in-out infinite;
       color: #333;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3),
+      box-shadow:
+        0 2px 8px rgba(0, 255, 136, 0.3),
         0 0 15px rgba(0, 200, 255, 0.2);
     }
 
@@ -689,7 +695,9 @@ onMounted(async () => {
   caret-color: transparent;
   padding: 1.33rem;
   box-sizing: border-box;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
 
   .user-info {
@@ -703,7 +711,8 @@ onMounted(async () => {
       width: 4rem;
       height: 4rem;
       margin-right: 1.07rem;
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transition:
+        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
         box-shadow 0.3s ease;
 
       &:hover {
@@ -807,7 +816,9 @@ onMounted(async () => {
   z-index: 999;
   caret-color: transparent;
   padding: 0.75rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
 
   .model-title {
@@ -829,7 +840,9 @@ onMounted(async () => {
       background: url("@/assets/question.svg") no-repeat center;
       background-size: 100% 100%;
       opacity: 0.5;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
       cursor: pointer;
 
       &:hover {
@@ -843,7 +856,9 @@ onMounted(async () => {
       background: url("@/assets/question-dark.svg") no-repeat center;
       background-size: 100% 100%;
       opacity: 0.5;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
       cursor: pointer;
 
       &:hover {
@@ -876,7 +891,9 @@ onMounted(async () => {
     .model-name {
       width: 100%;
       font-weight: 600;
-      transition: color 0.2s ease, transform 0.2s ease;
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
     }
     .model-desc {
       width: 100%;

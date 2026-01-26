@@ -18,14 +18,7 @@ class TypingEffects {
    * 随机选择一个效果并执行
    */
   static random(element, text, options = {}) {
-    const effects = [
-      "typewriter",
-      "fadeIn",
-      "slideUp",
-      "wave",
-      "glitch",
-      "reveal",
-    ];
+    const effects = ["typewriter", "fadeIn", "slideUp", "wave"];
 
     const randomEffect = effects[Math.floor(Math.random() * effects.length)];
     const instance = new TypingEffects(element, text, options);
@@ -37,21 +30,29 @@ class TypingEffects {
    * 效果1: 经典打字机效果
    */
   typewriter() {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = this.text;
+    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
     let index = 0;
     const speed = 40; // 更快的速度
-    this.element.textContent = "";
+    this.element.innerHTML = "";
     this.element.style.opacity = "1";
 
     const type = () => {
       if (this.isDestroyed) return;
 
-      if (index < this.text.length) {
-        this.element.textContent += this.text.charAt(index);
+      if (index < plainText.length) {
+        // 逐字添加，但保持HTML结构
+        const currentText = plainText.substring(0, index + 1);
+        // 重新构建带HTML标签的文本
+        this.element.innerHTML = this.text.replace(plainText, currentText);
         index++;
 
         const variation = Math.random() * 30 - 15;
         setTimeout(type, speed + variation);
       } else {
+        this.element.innerHTML = this.text;
         this.complete();
       }
     };
@@ -64,7 +65,7 @@ class TypingEffects {
    * 效果2: 柔和淡入效果
    */
   fadeIn() {
-    this.element.textContent = this.text;
+    this.element.innerHTML = this.text;
     this.element.style.opacity = "0";
     this.element.style.transform = "translateY(10px)";
     this.element.style.transition =
@@ -84,7 +85,7 @@ class TypingEffects {
    * 效果3: 从下往上滑入
    */
   slideUp() {
-    this.element.textContent = this.text;
+    this.element.innerHTML = this.text;
     this.element.style.opacity = "0";
     this.element.style.transform = "translateY(30px) scale(0.95)";
     this.element.style.transition = "all 1s cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -101,22 +102,58 @@ class TypingEffects {
 
   /**
    * 效果4: 字符波浪效果
+   * 支持HTML内容渲染
    */
   wave() {
-    this.element.innerHTML = "";
+    // 先将HTML内容设置到元素中
+    this.element.innerHTML = this.text;
 
-    const segments = Array.from(this.text);
+    // 获取所有文本节点并包裹每个字符
+    const wrapTextNodes = (node) => {
+      const textNodes = [];
+      const walker = document.createTreeWalker(
+        node,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false,
+      );
 
-    segments.forEach((segment, index) => {
-      const span = document.createElement("span");
-      span.textContent = segment;
-      span.style.display = "inline-block";
-      span.style.opacity = "0";
-      span.style.transform = "translateY(20px)";
-      span.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
-      span.style.whiteSpace = "pre"; // 保留空格
-      this.element.appendChild(span);
+      let currentNode;
+      while ((currentNode = walker.nextNode())) {
+        textNodes.push(currentNode);
+      }
 
+      return textNodes;
+    };
+
+    const textNodes = wrapTextNodes(this.element);
+    let charIndex = 0;
+    const allSpans = [];
+
+    textNodes.forEach((textNode) => {
+      const text = textNode.textContent;
+      const fragment = document.createDocumentFragment();
+
+      Array.from(text).forEach((char) => {
+        const span = document.createElement("span");
+        span.textContent = char;
+        span.style.display = "inline-block";
+        span.style.opacity = "0";
+        span.style.transform = "translateY(20px)";
+        span.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        span.style.whiteSpace = "pre"; // 保留空格
+        span.dataset.charIndex = charIndex;
+        fragment.appendChild(span);
+        allSpans.push({ span, index: charIndex });
+        charIndex++;
+      });
+
+      // 替换原文本节点
+      textNode.parentNode.replaceChild(fragment, textNode);
+    });
+
+    // 应用波浪动画
+    allSpans.forEach(({ span, index }) => {
       setTimeout(() => {
         if (this.isDestroyed) return;
         span.style.opacity = "1";
@@ -124,73 +161,7 @@ class TypingEffects {
       }, index * 30);
     });
 
-    setTimeout(() => this.complete(), segments.length * 30 + 500);
-    return this;
-  }
-
-  /**
-   * 效果5: 故障风格
-   */
-  glitch() {
-    this.element.textContent = this.text;
-    this.element.style.opacity = "0";
-
-    const glitchSequence = [0.3, 0, 0.7, 0.2, 1];
-    let step = 0;
-
-    const animate = () => {
-      if (this.isDestroyed) return;
-
-      if (step < glitchSequence.length) {
-        this.element.style.opacity = glitchSequence[step];
-        this.element.style.transform = `translateX(${
-          (Math.random() - 0.5) * 4
-        }px)`;
-        step++;
-        setTimeout(animate, 80);
-      } else {
-        this.element.style.opacity = "1";
-        this.element.style.transform = "translateX(0)";
-        this.complete();
-      }
-    };
-
-    animate();
-    return this;
-  }
-
-  /**
-   * 效果6: 遮罩揭示效果
-   */
-  reveal() {
-    this.element.textContent = this.text;
-    this.element.style.position = "relative";
-    this.element.style.overflow = "hidden";
-
-    // 创建遮罩层
-    const mask = document.createElement("div");
-    mask.style.position = "absolute";
-    mask.style.top = "0";
-    mask.style.left = "0";
-    mask.style.width = "100%";
-    mask.style.height = "100%";
-    mask.style.background = "var(--bg-color)";
-    mask.style.transform = "translateX(0)";
-    mask.style.transition = "transform 1.2s cubic-bezier(0.65, 0, 0.35, 1)";
-
-    this.element.appendChild(mask);
-
-    setTimeout(() => {
-      if (this.isDestroyed) return;
-      mask.style.transform = "translateX(100%)";
-      setTimeout(() => {
-        if (mask.parentNode) {
-          mask.remove();
-        }
-        this.complete();
-      }, 1200);
-    }, 100);
-
+    setTimeout(() => this.complete(), allSpans.length * 30 + 500);
     return this;
   }
 

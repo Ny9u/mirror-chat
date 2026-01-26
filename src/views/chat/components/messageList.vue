@@ -1404,12 +1404,12 @@ const initTyped = () => {
   if (!element) return;
 
   const time = getChineseGreeting(new Date());
-  const text = configStore.name
-    ? `${time}好, ${configStore.name} 🥰🥰`
-    : `${time}好, Master 👋👋`;
+  const username = configStore.name
+    ? `${configStore.name} 🥰🥰`
+    : "Master 👋👋";
+  const textWithHighlight = `${time}好, <span class="username-highlight">${username}</span>`;
 
-  // 随机使用不同的打字效果
-  typingInstance = TypingEffects.random(element, text, {
+  typingInstance = TypingEffects.random(element, textWithHighlight, {
     duration: 2000,
     onComplete: () => {},
   });
@@ -1976,15 +1976,15 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 欢迎页面动画 */
+/* 欢迎页面动画 - Apple 风格 */
 @keyframes welcomeFadeIn {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(30px) scale(0.96);
   }
-  100% {
+  to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1994,45 +1994,43 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   align-items: end;
-  padding-bottom: 3rem;
-  animation: welcomeFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  padding-bottom: 4rem;
+  animation: welcomeFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
   .welcome-text {
     font-size: 2.5rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-color);
     cursor: default;
-    letter-spacing: -0.015em; // Apple 风格的紧密字间距
-    line-height: 1.2;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
     outline: none;
     user-select: none;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    padding: 0 2rem;
+    max-width: 90%;
+    position: relative;
+    will-change: opacity, transform;
 
-    // Apple 风格的字体渲染优化
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "kern" 1;
+    text-rendering: optimizeLegibility;
 
-    // 确保文本居中对齐
-    text-align: center;
-    padding: 0 1rem;
-    max-width: 90%;
+    // 微妙的文字阴影
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
-    // 为不同效果预留空间
-    position: relative;
-    will-change: opacity, transform;
-  }
-}
+    // 用户名高亮样式
+    :deep(.username-highlight) {
+      color: #72eaaa;
+      font-weight: 800;
+      position: relative;
+      display: inline-block;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
-// 优化欢迎动画
-@keyframes welcomeFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+      // 添加微妙的发光效果
+      text-shadow: 0 0 20px rgba(74, 244, 153, 0.1);
+    }
   }
 }
 

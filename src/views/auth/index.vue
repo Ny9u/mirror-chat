@@ -10,8 +10,8 @@
             activeTab === "login"
               ? "登录到Mirror 💚"
               : activeTab === "reset"
-              ? "重置密码 🔑"
-              : "注册Mirror 👏"
+                ? "重置密码 🔑"
+                : "注册Mirror 👏"
           }}
         </h1>
       </div>
@@ -456,7 +456,6 @@ const createTextFloatAnimation = () => {
           window.anime({
             targets: chars[targetIndex],
             translateY: -5 * intensity,
-            scale: 1 + 0.1 * intensity,
             opacity: 0.9 + 0.1 * intensity,
             color: color,
             duration: 300 + distance * 50,
@@ -879,7 +878,8 @@ watch(activeTab, () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: radial-gradient(
+    background-image:
+      radial-gradient(
         circle at 20% 30%,
         rgba(46, 213, 115, 0.4) 0%,
         rgba(10, 31, 15, 0) 50%
@@ -956,7 +956,8 @@ watch(activeTab, () => {
 
     &:hover {
       transform: translateY(-5px) scale(1.01);
-      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1),
+      box-shadow:
+        0 15px 45px rgba(0, 0, 0, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
 
@@ -1010,7 +1011,6 @@ watch(activeTab, () => {
 
       &:hover {
         background: rgba(248, 250, 252, 0.8);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
       }
 
       :deep(.n-form-item) {

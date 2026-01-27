@@ -1404,10 +1404,18 @@ const initTyped = () => {
   if (!element) return;
 
   const time = getChineseGreeting(new Date());
-  const username = configStore.name
-    ? `${configStore.name} 🥰🥰`
-    : "Master 👋👋";
-  const textWithHighlight = `${time}好, <span class="username-highlight">${username}</span>`;
+
+  // 分离用户名文本和 emoji，以便应用不同样式
+  let username, emoji;
+  if (configStore.name) {
+    username = configStore.name;
+    emoji = "🥰🥰";
+  } else {
+    username = "Master";
+    emoji = "👋👋";
+  }
+
+  const textWithHighlight = `${time}好, <span class="username-highlight"><span class="username-text">${username}</span><span class="username-emoji">${emoji}</span></span>`;
 
   typingInstance = TypingEffects.random(element, textWithHighlight, {
     duration: 2000,
@@ -1417,27 +1425,21 @@ const initTyped = () => {
   hasTypingInitialized = true;
 };
 
-watch(
-  () => configStore.userId,
-  (newUserId, oldUserId) => {
-    // 当 userId 从 null 变为有值时
-    if (
-      !hasTypingInitialized &&
-      isWaitingForUserInfo &&
-      newUserId &&
-      !oldUserId
-    ) {
-      initTyped();
-    }
-  },
-);
-
-// 监听 name 变化，用于用户主动修改昵称
+// 监听 name 变化 - 处理首次登录和昵称修改
 watch(
   () => configStore.name,
   (newName, oldName) => {
-    // 只在已初始化后，且用户主动修改昵称时重新初始化
-    if (hasTypingInitialized && newName && oldName && newName !== oldName) {
+    // 情况1: 首次登录 - 当 name 从空值变为有值时
+    if (!hasTypingInitialized && isWaitingForUserInfo && newName && !oldName) {
+      initTyped();
+    }
+    // 情况2: 用户主动修改昵称 - 已初始化后重新初始化
+    else if (
+      hasTypingInitialized &&
+      newName &&
+      oldName &&
+      newName !== oldName
+    ) {
       initTyped();
     }
   },
@@ -1493,7 +1495,8 @@ const getFileIcon = (fileName) => {
 };
 
 onMounted(() => {
-  if (configStore.userId) {
+  // 检查用户信息是否已加载（优先检查 name，因为 initTyped 需要用到）
+  if (configStore.name || configStore.userId) {
     // 用户已登录且信息已加载，直接初始化
     initTyped();
   } else {
@@ -1503,7 +1506,7 @@ onMounted(() => {
     isWaitingForUserInfo = true;
     setTimeout(() => {
       if (isWaitingForUserInfo && !hasTypingInitialized) {
-        // 超时后仍未加载用户信息，执行初始化
+        // 超时后仍未加载用户信息，执行初始化（显示默认 Master）
         initTyped();
       }
     }, 500);
@@ -2022,14 +2025,83 @@ onBeforeUnmount(() => {
 
     // 用户名高亮样式
     :deep(.username-highlight) {
-      color: #72eaaa;
       font-weight: 800;
       position: relative;
       display: inline-block;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
       // 添加微妙的发光效果
-      text-shadow: 0 0 20px rgba(74, 244, 153, 0.1);
+      text-shadow: 0 0 20px rgba(167, 243, 208, 0.15);
+
+      // 文本部分
+      .username-text {
+        background: linear-gradient(
+          90deg,
+          #88f8b1 0%,
+          #79ebb5 50%,
+          #ade9c2 80%,
+          #86efac 100%
+        );
+        background-size: 300% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: slowFloat 8s ease-in-out infinite;
+        display: inline-block;
+      }
+
+      // emoji 部分
+      .username-emoji {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: 1.05em;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        // 鼠标悬浮动画效果
+        &:hover {
+          animation: emojiHover 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+        }
+      }
+
+      // emoji 悬浮动画 - 摇摆效果
+      @keyframes emojiHover {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        25% {
+          transform: rotate(-3deg);
+        }
+        75% {
+          transform: rotate(3deg);
+        }
+      }
+
+      // 动画定义
+      @keyframes slowFloat {
+        0%,
+        100% {
+          background-position: 0% 50%;
+          transform: translateY(0px);
+          filter: brightness(1);
+        }
+        25% {
+          background-position: 100% 50%;
+          transform: translateY(-0.3px);
+          filter: brightness(1.02);
+        }
+        50% {
+          background-position: 200% 50%;
+          transform: translateY(0.3px);
+          filter: brightness(0.98);
+        }
+        75% {
+          background-position: 100% 50%;
+          transform: translateY(-0.2px);
+          filter: brightness(1.01);
+        }
+      }
     }
   }
 }

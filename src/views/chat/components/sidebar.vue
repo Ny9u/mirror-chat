@@ -38,12 +38,6 @@
           ></div>
         </div>
         <div
-          class="sidebar-title"
-          :class="{ 'sidebar-title-hidden': configStore.sidebarCollapsed }"
-        >
-          Mirror Chat
-        </div>
-        <div
           class="header-action"
           @click="toggleSidebar"
           v-show="!configStore.sidebarCollapsed"
@@ -1457,6 +1451,7 @@ onBeforeUnmount(() => {
     .sidebar-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 0.8rem 0;
       padding-left: 1.2rem;
       user-select: none;
@@ -1528,24 +1523,6 @@ onBeforeUnmount(() => {
 
         .logo-light {
           background-image: url("@/assets/logo_dark.svg");
-        }
-      }
-
-      .sidebar-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--text-color);
-        margin-left: 0.8rem;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        transition: opacity @transition-duration @ease-smooth,
-          margin @transition-duration @ease-smooth;
-
-        &.sidebar-title-hidden {
-          opacity: 0;
-          max-width: 0;
-          margin-left: 0;
         }
       }
 

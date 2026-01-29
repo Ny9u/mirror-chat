@@ -21,7 +21,11 @@
       </div>
       <div class="input">
         <!-- 文件预览区域 -->
-        <div v-if="uploadedFiles.length > 0" class="file-preview-container">
+        <div
+          v-if="uploadedFiles.length > 0"
+          class="file-preview-container"
+          :class="{ 'show-files': uploadedFiles.length > 0 }"
+        >
           <div
             v-for="(file, index) in uploadedFiles"
             :key="index"
@@ -557,7 +561,7 @@ const sendMessage = async () => {
   const isVaild = listRef.value.sendMessage(
     inputValue.value.trim(),
     images,
-    files,
+    files
   );
   if (!isVaild) {
     return;
@@ -579,7 +583,7 @@ const sendMessage = async () => {
             message.error("服务请求失败，请检查网络连接 🌐");
           }
           reject(err);
-        },
+        }
       )
       .finally(() => {
         loading.value = false;
@@ -889,7 +893,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="less" scoped>
-.chat-container {
+  .chat-container {
   width: 100%;
   height: 100%;
   margin-top: 3.6rem;
@@ -898,20 +902,30 @@ onUnmounted(() => {
   background: var(--background-color) no-repeat center;
   .content {
     width: 70vw;
-    height: 100vh;
+    height: calc(100vh - 3.6rem);
+    max-height: calc(100vh - 3.6rem);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     .record {
+      flex: 0 0 auto;
+      overflow: hidden;
+      height: auto;
+      min-height: 35vh;
       margin-bottom: 3.33rem;
 
-      &.uploading,
       &.has-messages {
+        flex: 1;
         margin-bottom: 0;
+        min-height: 0;
       }
     }
     .input {
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      position: relative;
+      min-height: auto;
 
       .file-preview-container {
         display: flex;
@@ -920,6 +934,16 @@ onUnmounted(() => {
         gap: 0.6rem;
         margin-bottom: 0.6rem;
         padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &.show-files {
+          max-height: 200px;
+          opacity: 1;
+          margin-bottom: 0.6rem;
+        }
 
         .file-preview-item {
           position: relative;
@@ -1115,8 +1139,7 @@ onUnmounted(() => {
                 rgba(167, 243, 208, 0.65) 50%,
                 rgba(110, 231, 183, 0.4) 100%
               );
-              box-shadow:
-                0 2px 8px rgba(110, 231, 183, 0.2),
+              box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
                 0 0 10px rgba(110, 231, 183, 0.05);
               border: 1px solid var(--primary-color);
 
@@ -1345,9 +1368,7 @@ onUnmounted(() => {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 12px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   z-index: 1000;

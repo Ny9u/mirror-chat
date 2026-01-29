@@ -1,9 +1,11 @@
 <template>
-  <div class="message-container" :class="{ chat: chatHistory.slice(1).length }">
+  <div
+    class="message-container"
+    :class="{ 'has-messages': chatHistory.slice(1).length }"
+  >
     <div class="message-list" v-if="chatHistory.slice(1).length">
       <n-virtual-list
         ref="virtualListRef"
-        style="max-height: 70vh"
         :item-size="30"
         :items="chatHistory.slice(1)"
         item-resizable
@@ -757,7 +759,7 @@ const fetchAI = async (
   images = [],
   files = [],
   content = null,
-  isRegenerate = false,
+  isRegenerate = false
 ) => {
   const chatId = configStore.chatId || undefined;
 
@@ -769,7 +771,7 @@ const fetchAI = async (
     for (let i = chatHistory.value.length - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content",
+          (c) => c.type === "content"
         );
         userTextContent = textContent ? textContent.data : "";
 
@@ -844,8 +846,9 @@ const fetchAI = async (
               lastScrollTime = now;
             }
           } else if (chunk.content) {
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
             answerContent += chunk.content;
 
             if (!hasStartedAnswer) {
@@ -859,8 +862,9 @@ const fetchAI = async (
             chatHistory.value[chatHistory.value.length - 1].content[1].data =
               md.render(answerContent);
 
-            chatHistory.value[chatHistory.value.length - 1].thinkingCollapsed =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].thinkingCollapsed = true;
 
             const now = Date.now();
             if (now - lastScrollTime > scrollTime) {
@@ -880,15 +884,17 @@ const fetchAI = async (
         },
         (error) => {
           if (signal.aborted) {
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
           } else {
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
           }
         },
-        signal,
+        signal
       );
 
       return answerContent;
@@ -982,7 +988,7 @@ const fetchAI = async (
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
         },
-        signal,
+        signal
       );
 
       return fullContent;
@@ -1047,7 +1053,7 @@ const regenerateResponse = (item) => {
     for (let i = index - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content",
+          (c) => c.type === "content"
         );
         lastImagePrompt = textContent ? textContent.data : "";
         break;
@@ -1084,7 +1090,7 @@ const regenerateResponse = (item) => {
 
   chatHistory.value = chatHistory.value.slice(
     0,
-    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1),
+    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1)
   );
 
   if (lastMessage && lastMessageIndex !== null) {
@@ -1096,7 +1102,7 @@ const regenerateResponse = (item) => {
       lastImages,
       lastFiles,
       userText,
-      true,
+      true
     );
   }
 };
@@ -1107,7 +1113,7 @@ const regenerateImageMessage = (ratio) => {
   for (let i = chatHistory.value.length - 1; i >= 0; i--) {
     if (chatHistory.value[i].role === "user") {
       const textContent = chatHistory.value[i].content.find(
-        (c) => c.type === "content",
+        (c) => c.type === "content"
       );
       lastImagePrompt = textContent ? textContent.data : "";
       break;
@@ -1196,7 +1202,7 @@ const saveEdit = (item) => {
       existingImages,
       existingFiles,
       editedText,
-      true,
+      true
     );
   }
 
@@ -1269,7 +1275,7 @@ const playVoice = async (item) => {
     try {
       const audioData = await TTSService.synthesizeSpeech(
         textToSpeak,
-        configStore.voiceType,
+        configStore.voiceType
       );
       await TTSService.playAudio(audioData);
     } catch (error) {
@@ -1299,7 +1305,7 @@ const deleteMessage = (message) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)],
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1315,7 +1321,7 @@ const deleteMessage = (message) => {
     },
     onPositiveClick: () => {
       const index = chatHistory.value.findIndex(
-        (msg) => msg.key === message.key,
+        (msg) => msg.key === message.key
       );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
@@ -1389,15 +1395,26 @@ let typingInstance = null;
 let hasTypingInitialized = false;
 // 标记是否正在等待用户信息加载
 let isWaitingForUserInfo = false;
+// MutationObserver 用于监听欢迎语元素变化
+let welcomeObserver = null;
 
 const initTyped = () => {
   // 如果正在等待用户信息，取消等待
   isWaitingForUserInfo = false;
 
-  // 销毁旧实例
+  // 只有在没有聊天消息时才初始化欢迎语
+  if (chatHistory.value.length > 1) {
+    return;
+  }
+
+  // 销毁旧实例和观察者
   if (typingInstance) {
     typingInstance.destroy();
     typingInstance = null;
+  }
+  if (welcomeObserver) {
+    welcomeObserver.disconnect();
+    welcomeObserver = null;
   }
 
   const element = document.getElementById("typed");
@@ -1423,26 +1440,72 @@ const initTyped = () => {
   });
 
   hasTypingInitialized = true;
+
+  // 使用 MutationObserver 监听欢迎语元素变化
+  setupWelcomeObserver(element, username);
+};
+
+const setupWelcomeObserver = (element, expectedUsername) => {
+  if (welcomeObserver) {
+    welcomeObserver.disconnect();
+  }
+
+  // 监听子节点的变化
+  welcomeObserver = new MutationObserver(() => {
+    if (chatHistory.value.length > 1) {
+      if (welcomeObserver) {
+        welcomeObserver.disconnect();
+        welcomeObserver = null;
+      }
+      return;
+    }
+
+    // 检查用户名是否正确
+    const usernameElement = element.querySelector(".username-text");
+    if (usernameElement && usernameElement.textContent !== expectedUsername) {
+      // 用户名丢失，重新初始化
+      initTyped();
+    }
+  });
+
+  // 开始观察
+  welcomeObserver.observe(element, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
 };
 
 // 监听 name 变化 - 处理首次登录和昵称修改
 watch(
   () => configStore.name,
   (newName, oldName) => {
-    // 情况1: 首次登录 - 当 name 从空值变为有值时
-    if (!hasTypingInitialized && isWaitingForUserInfo && newName && !oldName) {
-      initTyped();
+    if (chatHistory.value.length > 1) {
+      return;
     }
-    // 情况2: 用户主动修改昵称 - 已初始化后重新初始化
-    else if (
-      hasTypingInitialized &&
-      newName &&
-      oldName &&
-      newName !== oldName
-    ) {
-      initTyped();
+
+    // 名称变化时重新初始化欢迎语
+    if (newName !== oldName) {
+      hasTypingInitialized = false;
+      nextTick(() => {
+        initTyped();
+      });
     }
-  },
+  }
+);
+
+// 监听 chatHistory 变化 - 确保欢迎语始终显示正确的用户名称
+watch(
+  () => chatHistory.value.length,
+  (newLength, oldLength) => {
+    // 如果从有消息变为无消息（清空聊天），重新初始化欢迎语
+    if (oldLength > 1 && newLength <= 1) {
+      hasTypingInitialized = false;
+      nextTick(() => {
+        initTyped();
+      });
+    }
+  }
 );
 
 const handleClearChatHistory = () => {
@@ -1458,6 +1521,11 @@ const handleClearChatHistory = () => {
 const handleLoadChatHistory = (event) => {
   const conversationData = event.detail.data;
   if (conversationData) {
+    if (welcomeObserver) {
+      welcomeObserver.disconnect();
+      welcomeObserver = null;
+    }
+
     chatHistory.value = conversationData;
     setTimeout(() => {
       if (virtualListRef.value) {
@@ -1495,22 +1563,28 @@ const getFileIcon = (fileName) => {
 };
 
 onMounted(() => {
-  // 检查用户信息是否已加载（优先检查 name，因为 initTyped 需要用到）
-  if (configStore.name || configStore.userId) {
-    // 用户已登录且信息已加载，直接初始化
-    initTyped();
-  } else {
-    // 用户信息未加载，可能是：
-    // 1. 路由守卫正在执行（已登录但信息还在加载中）
-    // 2. 用户未登录
-    isWaitingForUserInfo = true;
-    setTimeout(() => {
-      if (isWaitingForUserInfo && !hasTypingInitialized) {
-        // 超时后仍未加载用户信息，执行初始化（显示默认 Master）
-        initTyped();
-      }
-    }, 500);
-  }
+  // 重置初始化状态，确保从其他页面返回时能重新初始化
+  hasTypingInitialized = false;
+
+  // 等待 DOM 更新后再初始化欢迎语
+  nextTick(() => {
+    // 检查用户信息是否已加载
+    if (configStore.name || configStore.userId) {
+      // 用户已登录且信息已加载，直接初始化
+      initTyped();
+    } else {
+      // 用户信息未加载，可能是：
+      // 1. 路由守卫正在执行（已登录但信息还在加载中）
+      // 2. 用户未登录
+      isWaitingForUserInfo = true;
+      setTimeout(() => {
+        if (isWaitingForUserInfo && !hasTypingInitialized) {
+          // 超时后仍未加载用户信息，执行初始化（显示默认 Master）
+          initTyped();
+        }
+      }, 500);
+    }
+  });
 
   if (virtualListRef.value && chatHistory.value.length > 2) {
     scrollToBottom();
@@ -1525,6 +1599,12 @@ onBeforeUnmount(() => {
   if (typingInstance) {
     typingInstance.destroy();
     typingInstance = null;
+  }
+
+  // 清理欢迎语观察者
+  if (welcomeObserver) {
+    welcomeObserver.disconnect();
+    welcomeObserver = null;
   }
 
   window.removeEventListener("clearChatHistory", handleClearChatHistory);
@@ -1593,15 +1673,47 @@ onBeforeUnmount(() => {
   width: 70vw;
   height: 35vh;
   background: var(--background-color) no-repeat center;
-  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
 
-  &.chat {
-    height: 70vh;
+  &.has-messages {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
   }
 
   .message-list {
     width: 100%;
     height: 100%;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    :deep(.n-virtual-list) {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    :deep(.n-scrollbar) {
+      width: 100%;
+      height: 100%;
+    }
+
+    :deep(.n-scrollbar-container) {
+      width: 100%;
+      height: 100%;
+    }
+
+    :deep(.n-scrollbar-content) {
+      width: 100%;
+    }
+
     .item {
       display: flex;
       align-items: flex-start;
@@ -1706,8 +1818,7 @@ onBeforeUnmount(() => {
             color: rgba(76, 175, 80, 0.8);
             text-transform: uppercase;
             animation: textGradient 2s linear infinite;
-            text-shadow:
-              0 0 10px rgba(var(--primary-color-rgb), 0.8),
+            text-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8),
               0 0 20px rgba(var(--primary-color-rgb), 0.4),
               0 0 30px rgba(var(--primary-color-rgb), 0.2);
           }
@@ -1868,8 +1979,7 @@ onBeforeUnmount(() => {
         .think-content {
           overflow: hidden;
           opacity: 1;
-          transition:
-            max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
             opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
           &.collapsed {
@@ -1994,10 +2104,10 @@ onBeforeUnmount(() => {
 .welcome {
   width: 100%;
   height: 100%;
+  flex: 1;
   display: flex;
   justify-content: center;
-  align-items: end;
-  padding-bottom: 4rem;
+  align-items: flex-end;
   animation: welcomeFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
   .welcome-text {
@@ -2025,7 +2135,7 @@ onBeforeUnmount(() => {
 
     // 用户名高亮样式
     :deep(.username-highlight) {
-      font-weight: 800;
+      font-weight: 700;
       position: relative;
       display: inline-block;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

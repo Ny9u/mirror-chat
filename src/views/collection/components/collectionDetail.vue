@@ -209,7 +209,7 @@ import { getFavoriteDetail } from "@/services/user.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import MarkdownIt from "markdown-it";
 import { formatDate } from "@/utils/date.js";
-import html2canvas from "html2canvas";
+import { domToPng } from "modern-screenshot";
 import hljs from "highlight.js/lib/core";
 // 按需导入常用语言包
 import javascript from "highlight.js/lib/languages/javascript";
@@ -380,29 +380,24 @@ const sharePicture = async () => {
     // 获取要截图的元素
     const element = document.querySelector(".collection-detail-content");
 
-    // 使用html2canvas截图
-    const canvas = await html2canvas(element, {
-      backgroundColor: getComputedStyle(
-        document.documentElement,
-      ).getPropertyValue("--background-color"),
+    // 获取背景颜色
+    const backgroundColor = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue("--background-color");
+
+    // 使用 modern-screenshot 截图
+    const dataUrl = await domToPng(element, {
+      backgroundColor,
       scale: 3,
-      useCORS: true,
-      allowTaint: true,
       width: element.scrollWidth,
       height: element.scrollHeight,
-      scrollX: 0,
-      scrollY: 0,
-      onclone: function (clonedDoc) {
-        // 确保克隆文档中的图片完全加载
-        const images = clonedDoc.querySelectorAll("img");
-        images.forEach((img) => {
-          img.style.maxWidth = "none";
-          img.style.maxHeight = "none";
-        });
+      style: {
+        margin: "0",
+        padding: "0",
       },
     });
 
-    capturedImage.value = canvas.toDataURL("image/png");
+    capturedImage.value = dataUrl;
 
     if (editHeader) editHeader.style.display = "";
     if (editFooter) editFooter.style.display = "";

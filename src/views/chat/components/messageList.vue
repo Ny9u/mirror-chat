@@ -275,24 +275,13 @@
                       }"
                     >
                       <div
-                        style="
-                          padding: 8px 12px;
-                          border-radius: 10px;
-                          cursor: pointer;
-                          display: flex;
-                          align-items: center;
-                          gap: 8px;
-                          transition: background-color 0.2s ease;
-                        "
+                        class="action-button"
+                        :class="`action-button-${item.key}`"
                         @click="favoriteMessage(item)"
                         @mouseover="
-                          $event.currentTarget.style.backgroundColor =
-                            'rgba(0, 0, 0, 0.1)'
+                          handleMouseOver($event, 'favorite', item.key)
                         "
-                        @mouseout="
-                          $event.currentTarget.style.backgroundColor =
-                            'transparent'
-                        "
+                        @mouseout="handleMouseOut($event, 'favorite', item.key)"
                       >
                         <n-icon size="18">
                           <Bookmark />
@@ -300,24 +289,11 @@
                         <span>收藏</span>
                       </div>
                       <div
-                        style="
-                          padding: 8px 12px;
-                          border-radius: 10px;
-                          cursor: pointer;
-                          display: flex;
-                          align-items: center;
-                          gap: 8px;
-                          transition: background-color 0.2s ease;
-                        "
+                        class="action-button"
+                        :class="`action-button-${item.key}`"
                         @click="deleteMessage(item)"
-                        @mouseover="
-                          $event.currentTarget.style.backgroundColor =
-                            'rgba(0, 0, 0, 0.1)'
-                        "
-                        @mouseout="
-                          $event.currentTarget.style.backgroundColor =
-                            'transparent'
-                        "
+                        @mouseover="handleMouseOver($event, 'delete', item.key)"
+                        @mouseout="handleMouseOut($event, 'delete', item.key)"
                       >
                         <n-icon size="18" color="rgba(249,57,32,1)">
                           <Trash />
@@ -424,24 +400,13 @@
                       }"
                     >
                       <div
-                        style="
-                          padding: 8px 12px;
-                          border-radius: 10px;
-                          cursor: pointer;
-                          display: flex;
-                          align-items: center;
-                          gap: 8px;
-                          transition: background-color 0.2s ease;
-                        "
+                        class="action-button"
+                        :class="`action-button-${item.key}`"
                         @click="favoriteMessage(item)"
                         @mouseover="
-                          $event.currentTarget.style.backgroundColor =
-                            'rgba(0, 0, 0, 0.1)'
+                          handleMouseOver($event, 'favorite', item.key)
                         "
-                        @mouseout="
-                          $event.currentTarget.style.backgroundColor =
-                            'transparent'
-                        "
+                        @mouseout="handleMouseOut($event, 'favorite', item.key)"
                       >
                         <n-icon size="18">
                           <Bookmark />
@@ -521,19 +486,6 @@ import {
   onBeforeUnmount,
   h,
 } from "vue";
-import {
-  NVirtualList,
-  NAvatar,
-  useMessage,
-  NSpin,
-  NIcon,
-  NButton,
-  NPopover,
-  useDialog,
-  NList,
-  NListItem,
-  NInput,
-} from "naive-ui";
 import WaveCanvas from "@/components/WaveCanvas.vue";
 import {
   Loader,
@@ -553,36 +505,16 @@ import {
 import assistantUrl from "@/assets/assistant.svg";
 import assistantDarkUrl from "@/assets/assistant_dark.svg";
 import Global from "@/utils/global.js";
-import MarkdownIt from "markdown-it";
 import TypingEffects from "@/utils/typingEffects.js";
+import PerformanceUtils from "@/utils/performance.js";
+import hljs from "@/utils/highlight.js";
+import { md } from "@/services/markdownService.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getChineseGreeting } from "@/utils/date.js";
 import Models from "@/config/models.js";
 import TTSService from "@/services/ttsService.js";
 import { addFavorites } from "@/services/user.js";
 import { chat } from "@/services/chat.js";
-import hljs from "highlight.js/lib/core";
-// 按需导入常用语言包
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import java from "highlight.js/lib/languages/java";
-import json from "highlight.js/lib/languages/json";
-import bash from "highlight.js/lib/languages/bash";
-import cpp from "highlight.js/lib/languages/cpp";
-import "highlight.js/styles/github.css";
-
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("js", javascript);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("py", python);
-hljs.registerLanguage("java", java);
-hljs.registerLanguage("json", json);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("shell", bash);
-hljs.registerLanguage("sh", bash);
-hljs.registerLanguage("cpp", cpp);
-hljs.registerLanguage("c++", cpp);
-hljs.registerLanguage("c", cpp);
 
 const props = defineProps({
   userInput: String,
@@ -599,26 +531,7 @@ const emit = defineEmits(["regenerateImage", "generateImage"]);
 const configStore = useConfigStore();
 const message = useMessage();
 const dialog = useDialog();
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-  breaks: true,
-  highlight: function (str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return (
-          '<pre class="hljs"><code>' +
-          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-          "</code></pre>"
-        );
-      } catch (__) {}
-    }
-    return (
-      '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + "</code></pre>"
-    );
-  },
-});
+
 const virtualListRef = ref(null);
 const popoverShowMap = ref({});
 const hoveredMessageKey = ref({});
@@ -1011,9 +924,11 @@ const getAvatar = (role) => {
 };
 
 const scrollToBottom = () => {
-  virtualListRef.value.scrollTo({
-    index: chatHistory.value.length - 2,
-  });
+  PerformanceUtils.debounceScroll(() => {
+    virtualListRef.value.scrollTo({
+      index: chatHistory.value.length - 2,
+    });
+  }, 100)();
 };
 
 const copyMessage = (item) => {
@@ -1395,30 +1310,59 @@ let typingInstance = null;
 let hasTypingInitialized = false;
 // 标记是否正在等待用户信息加载
 let isWaitingForUserInfo = false;
+// 标记是否正在进行打字动画，防止 MutationObserver 误触发
+let isTypingInProgress = false;
+// 保存超时 ID，用于取消超时
+let userInfoTimeout = null;
 // MutationObserver 用于监听欢迎语元素变化
 let welcomeObserver = null;
+
+// 优化鼠标事件处理，使用 CSS 类代替直接操作 style
+const handleMouseOver = (event, action, key) => {
+  const target = event.currentTarget;
+  target.classList.add(`action-${action}-hover-${key}`);
+};
+
+const handleMouseOut = (event, action, key) => {
+  const target = event.currentTarget;
+  target.classList.remove(`action-${action}-hover-${key}`);
+};
 
 const initTyped = () => {
   // 如果正在等待用户信息，取消等待
   isWaitingForUserInfo = false;
+
+  // 清除超时，避免重复初始化
+  if (userInfoTimeout) {
+    clearTimeout(userInfoTimeout);
+    userInfoTimeout = null;
+  }
 
   // 只有在没有聊天消息时才初始化欢迎语
   if (chatHistory.value.length > 1) {
     return;
   }
 
-  // 销毁旧实例和观察者
+  // 如果正在打字动画中，先销毁旧实例
   if (typingInstance) {
     typingInstance.destroy();
     typingInstance = null;
   }
+
+  // 标记正在打字动画中
+  isTypingInProgress = true;
+
+  // 销毁旧观察者
   if (welcomeObserver) {
     welcomeObserver.disconnect();
     welcomeObserver = null;
   }
 
   const element = document.getElementById("typed");
-  if (!element) return;
+  if (!element) {
+    isTypingInProgress = false;
+    return;
+  }
 
   const time = getChineseGreeting(new Date());
 
@@ -1432,11 +1376,37 @@ const initTyped = () => {
     emoji = "👋👋";
   }
 
-  const textWithHighlight = `${time}好, <span class="username-highlight"><span class="username-text">${username}</span><span class="username-emoji">${emoji}</span></span>`;
+  // 先渲染不含 emoji 的文本，避免 emoji 参与打字动画造成延迟
+  const textWithoutEmoji = `${time}好, <span class="username-highlight"><span class="username-text">${username}</span><span class="username-emoji" style="opacity:0">${emoji}</span></span>`;
 
-  typingInstance = TypingEffects.random(element, textWithHighlight, {
+  let emojiShown = false;
+  typingInstance = TypingEffects.random(element, textWithoutEmoji, {
     duration: 2000,
-    onComplete: () => {},
+    onProgress: (progress) => {
+      if (!emojiShown && progress >= 0.3) {
+        emojiShown = true;
+        const emojiEl = element.querySelector(".username-emoji");
+        if (emojiEl) {
+          emojiEl.style.opacity = "1";
+          emojiEl.classList.add("emoji-visible");
+        }
+      }
+    },
+    onComplete: () => {
+      // 确保 emoji 显示
+      if (!emojiShown) {
+        const emojiEl = element.querySelector(".username-emoji");
+        if (emojiEl) {
+          emojiEl.style.opacity = "1";
+          emojiEl.classList.add("emoji-visible");
+        }
+      }
+
+      // 延迟标记动画完成，等待 HTML 完全恢复和 MutationObserver 触发完成
+      setTimeout(() => {
+        isTypingInProgress = false;
+      }, 150);
+    },
   });
 
   hasTypingInitialized = true;
@@ -1460,6 +1430,11 @@ const setupWelcomeObserver = (element, expectedUsername) => {
       return;
     }
 
+    // 如果正在打字动画中，跳过检查，避免误触发
+    if (isTypingInProgress) {
+      return;
+    }
+
     // 检查用户名是否正确
     const usernameElement = element.querySelector(".username-text");
     if (usernameElement && usernameElement.textContent !== expectedUsername) {
@@ -1472,7 +1447,7 @@ const setupWelcomeObserver = (element, expectedUsername) => {
   welcomeObserver.observe(element, {
     childList: true,
     subtree: true,
-    characterData: true
+    characterData: true,
   });
 };
 
@@ -1577,11 +1552,12 @@ onMounted(() => {
       // 1. 路由守卫正在执行（已登录但信息还在加载中）
       // 2. 用户未登录
       isWaitingForUserInfo = true;
-      setTimeout(() => {
+      userInfoTimeout = setTimeout(() => {
         if (isWaitingForUserInfo && !hasTypingInitialized) {
           // 超时后仍未加载用户信息，执行初始化（显示默认 Master）
           initTyped();
         }
+        userInfoTimeout = null;
       }, 500);
     }
   });
@@ -1595,6 +1571,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  // 停止音频播放，防止阻止 bfcache
+  TTSService.stopCurrentAudio();
+
   // 清理打字效果实例
   if (typingInstance) {
     typingInstance.destroy();
@@ -1605,6 +1584,12 @@ onBeforeUnmount(() => {
   if (welcomeObserver) {
     welcomeObserver.disconnect();
     welcomeObserver = null;
+  }
+
+  // 清理超时
+  if (userInfoTimeout) {
+    clearTimeout(userInfoTimeout);
+    userInfoTimeout = null;
   }
 
   window.removeEventListener("clearChatHistory", handleClearChatHistory);
@@ -1669,6 +1654,26 @@ onBeforeUnmount(() => {
   }
 }
 
+/* 性能优化：减少自动重排 */
+.action-button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  will-change: background-color;
+}
+
+/* 使用 CSS 类代替直接操作 style */
+.action-button:hover,
+.action-favorite-hover-[key],
+.action-regenerate-hover-[key],
+.action-voice-hover-[key] {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
 .message-container {
   width: 70vw;
   height: 35vh;
@@ -1678,6 +1683,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  will-change: opacity, transform;
 
   &.has-messages {
     flex: 1;
@@ -2166,11 +2172,33 @@ onBeforeUnmount(() => {
         margin-left: 4px;
         font-size: 1.05em;
         cursor: pointer;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: opacity 0.3s ease,
+          transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        will-change: transform, opacity;
+
+        // 打字动画完成后的显示动画
+        &.emoji-visible {
+          animation: emojiPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
 
         // 鼠标悬浮动画效果
         &:hover {
           animation: emojiHover 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+        }
+      }
+
+      // emoji 弹出动画
+      @keyframes emojiPopIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.5) translateY(10px);
+        }
+        70% {
+          transform: scale(1.1) translateY(-2px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
         }
       }
 

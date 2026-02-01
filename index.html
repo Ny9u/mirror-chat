@@ -1,23 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/src/assets/logo_dark.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.8" />
     <meta
-      name="viewport"
-      content="width=device-width, initial-scale=0.8, user-scalable=no"
+      name="description"
+      content="Mirror Chat - 智能AI对话助手，为您提供专业、精准、高效的智能问答服务。"
     />
+    <meta
+      name="keywords"
+      content="AI聊天,智能助手,人工智能,对话机器人,知识库,LLM,大语言模型,Mirror Chat"
+    />
+    <meta name="author" content="wishxhuang" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#4ade80" />
+
+    <link rel="icon" type="image/svg+xml" href="/src/assets/logo_dark.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>Mirror Chat</title>
   </head>
   <body>
     <div id="app"></div>
-    <script src="https://cdn.bootcdn.net/ajax/libs/animejs/3.2.2/anime.min.js"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

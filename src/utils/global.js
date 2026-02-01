@@ -1,4 +1,4 @@
-import _ from "lodash";
+import { cloneDeep } from "lodash-es";
 import Models from "@/config/models.js";
 
 const getRandomKey = () => {
@@ -6,7 +6,7 @@ const getRandomKey = () => {
 };
 
 const sortThinkingMessages = (chatHistory) => {
-  let obj = _.cloneDeep(chatHistory);
+  let obj = cloneDeep(chatHistory);
   for (let i = 0; i < obj.length; i++) {
     if (Array.isArray(obj[i].content)) {
       let arr = obj[i].content;

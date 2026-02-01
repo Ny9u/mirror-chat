@@ -114,19 +114,6 @@
 import { ref, onMounted, computed, h } from "vue";
 import { useRouter } from "vue-router";
 import {
-  NButton,
-  NIcon,
-  useMessage,
-  useDialog,
-  NUpload,
-  NUploadDragger,
-  NText,
-  NP,
-  NSpin,
-  NPagination,
-  NPopover,
-} from "naive-ui";
-import {
   Trash,
   X,
   Upload,
@@ -144,9 +131,7 @@ import {
   getKnowledgeDetail,
   downloadKnowledge,
 } from "@/services/user.js";
-import MarkdownIt from "markdown-it";
-
-const md = new MarkdownIt();
+import { md } from "@/services/markdownService.js";
 
 const router = useRouter();
 const message = useMessage();

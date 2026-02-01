@@ -195,43 +195,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import {
-  NIcon,
-  NSpin,
-  NButton,
-  useMessage,
-  NVirtualList,
-  NPopover,
-  NModal,
-} from "naive-ui";
 import { X, AlertCircle, ArrowUpRight, Copy, Download } from "@vicons/tabler";
 import { getFavoriteDetail } from "@/services/user.js";
 import { useConfigStore } from "@/stores/configStore.js";
-import MarkdownIt from "markdown-it";
+import { md } from "@/services/markdownService.js";
 import { formatDate } from "@/utils/date.js";
 import { domToPng } from "modern-screenshot";
 import hljs from "highlight.js/lib/core";
-// 按需导入常用语言包
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import java from "highlight.js/lib/languages/java";
-import json from "highlight.js/lib/languages/json";
-import bash from "highlight.js/lib/languages/bash";
-import cpp from "highlight.js/lib/languages/cpp";
 import "highlight.js/styles/github.css";
-
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("js", javascript);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("py", python);
-hljs.registerLanguage("java", java);
-hljs.registerLanguage("json", json);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("shell", bash);
-hljs.registerLanguage("sh", bash);
-hljs.registerLanguage("cpp", cpp);
-hljs.registerLanguage("c++", cpp);
-hljs.registerLanguage("c", cpp);
 
 const router = useRouter();
 const route = useRoute();
@@ -246,26 +217,6 @@ const showImageModal = ref(false);
 const capturedImage = ref("");
 const isCapturing = ref(false);
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-  breaks: true,
-  highlight: function (str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return (
-          '<pre class="hljs"><code>' +
-          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-          "</code></pre>"
-        );
-      } catch (__) {}
-    }
-    return (
-      '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + "</code></pre>"
-    );
-  },
-});
 
 // 处理内容，将Markdown转换为HTML并确保代码块高亮
 const processContent = (content) => {

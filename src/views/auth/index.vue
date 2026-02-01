@@ -280,18 +280,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  useMessage,
-  NForm,
-  NFormItem,
-  NInput,
-  NCheckbox,
-  NButton,
-  NIcon,
-} from "naive-ui";
-import { User, Mail, Lock } from "@vicons/tabler";
+import { useMessage } from "naive-ui";
 import {
   login,
   register,
@@ -379,11 +370,17 @@ const createTextFloatAnimation = () => {
   // 清除之前的动画
   window.anime.remove(titleElement.value);
 
+  // 移除所有旧的事件监听器
+  animationEventListeners.forEach(({ element, event, handler }) => {
+    element.removeEventListener(event, handler);
+  });
+  animationEventListeners = [];
+
   // 获取标题文本
   const text = titleElement.value.innerText;
 
   // 使用Array.from正确处理Unicode字符（包括表情符号）
-  const chars = Array.from(text).map((char, index) => {
+  const chars = Array.from(text).map((char, _index) => {
     const span = document.createElement("span");
     span.innerText = char;
     span.style.display = "inline-block";
@@ -425,7 +422,7 @@ const createTextFloatAnimation = () => {
   let mouseDirection = "right";
 
   // 为整个标题容器添加鼠标移动监听
-  titleElement.value.addEventListener("mousemove", function (e) {
+  const handleMouseMove = function (e) {
     const currentMouseX = e.clientX;
     if (currentMouseX > lastMouseX) {
       mouseDirection = "right";
@@ -433,11 +430,13 @@ const createTextFloatAnimation = () => {
       mouseDirection = "left";
     }
     lastMouseX = currentMouseX;
-  });
+  };
+  titleElement.value.addEventListener("mousemove", handleMouseMove);
+  animationEventListeners.push({ element: titleElement.value, event: "mousemove", handler: handleMouseMove });
 
   // 为每个字符添加动画效果
   chars.forEach((charElement, index) => {
-    charElement.addEventListener("mouseenter", function () {
+    const handleMouseEnter = function () {
       // 根据鼠标移动方向设置不同的效果
       const isMovingRight = mouseDirection === "right";
       const color = isMovingRight ? "#18a058" : "#000000";
@@ -463,9 +462,11 @@ const createTextFloatAnimation = () => {
           });
         }
       }
-    });
+    };
+    charElement.addEventListener("mouseenter", handleMouseEnter);
+    animationEventListeners.push({ element: charElement, event: "mouseenter", handler: handleMouseEnter });
 
-    charElement.addEventListener("mouseleave", function () {
+    const handleMouseLeave = function () {
       // 定义影响范围
       const affectRange = 2;
 
@@ -486,7 +487,9 @@ const createTextFloatAnimation = () => {
           });
         }
       }
-    });
+    };
+    charElement.addEventListener("mouseleave", handleMouseLeave);
+    animationEventListeners.push({ element: charElement, event: "mouseleave", handler: handleMouseLeave });
   });
 };
 
@@ -688,6 +691,7 @@ const handleRegister = async (e) => {
 };
 
 let countdownTimer = null;
+let animationEventListeners = [];
 const getVerifyCode = async (e) => {
   e.preventDefault();
   if (!registerForm.email) {
@@ -850,11 +854,44 @@ const backToLogin = () => {
   activeTab.value = "login";
 };
 
-onMounted(() => {
-  createTextFloatAnimation();
+onMounted(async () => {
+  // 延迟加载 anime.js
+  try {
+    await window.loadAnimeJS();
+    createTextFloatAnimation();
+  } catch (error) {
+    console.warn('动画库加载失败，跳过动画效果');
+  }
 });
 
-watch(activeTab, () => {
+onUnmounted(() => {
+  // 清理所有动画事件监听器
+  animationEventListeners.forEach(({ element, event, handler }) => {
+    element.removeEventListener(event, handler);
+  });
+  animationEventListeners = [];
+
+  // 清理倒计时定时器
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  // 清理 anime.js 动画
+  if (titleElement.value && window.anime) {
+    window.anime.remove(titleElement.value);
+  }
+});
+
+watch(activeTab, async () => {
+  // 确保 anime.js 已加载
+  if (!window.anime) {
+    try {
+      await window.loadAnimeJS();
+    } catch (error) {
+      return;
+    }
+  }
   setTimeout(() => {
     createTextFloatAnimation();
   }, 50);

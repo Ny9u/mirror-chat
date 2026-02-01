@@ -85,11 +85,10 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { NButton, NIcon, useMessage, NPagination, NSpin } from "naive-ui";
 import { Trash, X, BookmarkOff, Eye, Copy } from "@vicons/tabler";
 import { getUserFavorites, removeFavorite } from "@/services/user.js";
 import { useConfigStore } from "@/stores/configStore.js";
-import MarkdownIt from "markdown-it";
+import { md } from "@/services/markdownService.js";
 import { formatDate } from "@/utils/date.js";
 
 const router = useRouter();
@@ -101,11 +100,6 @@ const currentPage = ref(1);
 const pageSize = ref(18);
 const loading = ref(true);
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-});
 
 const totalPages = computed(() => {
   return Math.ceil(totalPage.value / pageSize.value);

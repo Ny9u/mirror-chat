@@ -3,7 +3,9 @@
     <div class="main" :class="{ 'light-mode': configStore.theme === 'light' }">
       <n-dialog-provider>
         <n-message-provider>
-          <router-view />
+          <main>
+            <router-view />
+          </main>
         </n-message-provider>
       </n-dialog-provider>
     </div>
@@ -13,7 +15,6 @@
 <script setup>
 import { computed, watch } from "vue";
 import { darkTheme } from "naive-ui";
-import { NConfigProvider, NMessageProvider, NDialogProvider } from "naive-ui";
 import { useConfigStore } from "./stores/configStore";
 
 const configStore = useConfigStore();

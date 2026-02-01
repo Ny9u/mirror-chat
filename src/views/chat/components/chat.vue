@@ -245,7 +245,12 @@
           </div>
           <div class="buttons">
             <!-- 上传文件按钮 -->
-            <n-button text @click="triggerFileUpload" :disabled="loading">
+            <n-button
+              text
+              @click="triggerFileUpload"
+              :disabled="loading"
+              aria-label="上传文件"
+            >
               <div
                 class="file-upload-icon"
                 :class="{ active: uploadedFiles.length > 0 }"
@@ -271,7 +276,12 @@
               @change="handleFileSelect"
             />
             <!-- 录音按钮 -->
-            <n-button text @click="handleRecordClick" :disabled="loading">
+            <n-button
+              text
+              @click="handleRecordClick"
+              :disabled="loading"
+              :aria-label="recording ? '停止录音' : '开始录音'"
+            >
               <div v-show="!recording" class="record-icon">
                 <n-icon size="24">
                   <Microphone />
@@ -284,7 +294,11 @@
               </div>
             </n-button>
             <!-- 发送按钮 -->
-            <n-button text @click="handleSendClick">
+            <n-button
+              text
+              @click="handleSendClick"
+              :aria-label="loading ? '停止生成' : '发送消息'"
+            >
               <div v-show="!loading" class="upload"></div>
               <div v-show="loading" class="loading"></div>
             </n-button>
@@ -297,7 +311,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
-import { NInput, NButton, useMessage, NIcon, NPopover } from "naive-ui";
 import messageList from "./messageList.vue";
 import {
   World,
@@ -889,6 +902,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
+
+  // 停止录音并清理 MediaRecorder，防止阻止 bfcache
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+    mediaRecorder = null;
+  }
 });
 </script>
 

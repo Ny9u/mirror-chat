@@ -15,7 +15,11 @@
         class="model"
         @click="toggleModelSelect"
       >
-        <div>{{ Models.find((m) => m.key === configStore.model)?.name || '选择模型' }}</div>
+        <div>
+          {{
+            Models.find((m) => m.key === configStore.model)?.name || "选择模型"
+          }}
+        </div>
         <div
           :class="{
             down: configStore.theme === 'dark',
@@ -154,15 +158,6 @@
 </template>
 
 <script setup>
-import {
-  NAvatar,
-  NIcon,
-  useMessage,
-  NInfiniteScroll,
-  NTooltip,
-  NButton,
-  useDialog,
-} from "naive-ui";
 import { Logout, Settings, MessagePlus, AlertTriangle } from "@vicons/tabler";
 import { ref, h, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
@@ -293,7 +288,7 @@ const logout = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)],
+        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -364,47 +359,18 @@ onMounted(async () => {
 }
 
 @keyframes gradientFlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  8% {
-    background-position: 90% 10%;
-  }
-  16% {
-    background-position: 45% 90%;
-  }
-  24% {
-    background-position: 85% 25%;
-  }
-  32% {
-    background-position: 15% 75%;
-  }
-  40% {
-    background-position: 95% 60%;
-  }
-  48% {
-    background-position: 55% 15%;
-  }
-  56% {
-    background-position: 25% 85%;
-  }
-  64% {
-    background-position: 75% 35%;
-  }
-  72% {
-    background-position: 10% 45%;
-  }
-  80% {
-    background-position: 65% 80%;
-  }
-  88% {
-    background-position: 40% 20%;
-  }
-  96% {
-    background-position: 85% 70%;
-  }
+  0%,
   100% {
     background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
   }
 }
 
@@ -459,8 +425,7 @@ onMounted(async () => {
         );
         background-size: 300% 300%;
         animation: gradientFlow 10s ease-in-out infinite;
-        box-shadow:
-          0 2px 8px rgba(110, 231, 183, 0.2),
+        box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
           0 0 10px rgba(110, 231, 183, 0.05);
         transform: translateY(-1px);
 
@@ -481,6 +446,7 @@ onMounted(async () => {
 
       .chat-button-text {
         color: var(--primary-color);
+        font-weight: 600;
         transition: color 0.2s ease;
       }
     }
@@ -561,10 +527,10 @@ onMounted(async () => {
       );
       background-size: 300% 300%;
       animation: gradientFlow 8s ease-in-out infinite;
-      color: #333;
+      color: var(--primary-color);
+      font-weight: 600;
       transition: all 0.2s ease;
-      box-shadow:
-        0 2px 8px rgba(0, 255, 136, 0.3),
+      box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3),
         0 0 15px rgba(0, 200, 255, 0.2);
     }
 
@@ -572,13 +538,14 @@ onMounted(async () => {
       margin: 0 1rem;
       border-radius: 10px;
       background-color: transparent;
+      font-weight: 600;
       &:hover {
         color: var(--primary-color);
       }
     }
 
     .register-btn-light {
-      color: #333;
+      color: #777777;
     }
 
     .register-btn-dark {
@@ -695,9 +662,7 @@ onMounted(async () => {
   caret-color: transparent;
   padding: 1.33rem;
   box-sizing: border-box;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
 
   .user-info {
@@ -711,8 +676,7 @@ onMounted(async () => {
       width: 4rem;
       height: 4rem;
       margin-right: 1.07rem;
-      transition:
-        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
         box-shadow 0.3s ease;
 
       &:hover {
@@ -816,9 +780,7 @@ onMounted(async () => {
   z-index: 999;
   caret-color: transparent;
   padding: 0.75rem;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
 
   .model-title {
@@ -840,9 +802,7 @@ onMounted(async () => {
       background: url("@/assets/question.svg") no-repeat center;
       background-size: 100% 100%;
       opacity: 0.5;
-      transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
+      transition: opacity 0.2s ease, transform 0.2s ease;
       cursor: pointer;
 
       &:hover {
@@ -856,9 +816,7 @@ onMounted(async () => {
       background: url("@/assets/question-dark.svg") no-repeat center;
       background-size: 100% 100%;
       opacity: 0.5;
-      transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
+      transition: opacity 0.2s ease, transform 0.2s ease;
       cursor: pointer;
 
       &:hover {
@@ -891,9 +849,7 @@ onMounted(async () => {
     .model-name {
       width: 100%;
       font-weight: 600;
-      transition:
-        color 0.2s ease,
-        transform 0.2s ease;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
     .model-desc {
       width: 100%;

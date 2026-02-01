@@ -123,18 +123,8 @@
 
 <script setup>
 import { ref, computed, onMounted, h } from "vue";
-import MarkdownIt from "markdown-it";
 import { useRouter } from "vue-router";
-import {
-  useMessage,
-  NIcon,
-  NButton,
-  NVirtualList,
-  NSpin,
-  NPopover,
-  useDialog,
-  NInput,
-} from "naive-ui";
+import { md } from "@/services/markdownService.js";
 import { useConfigStore } from "@/stores/configStore";
 import {
   X,
@@ -162,13 +152,6 @@ const popoverShowMap = ref({});
 const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
-
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-  breaks: true,
-});
 
 // 按时间分组的历史列表
 const groupedHistory = computed(() => {

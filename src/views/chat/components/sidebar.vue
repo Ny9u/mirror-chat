@@ -593,15 +593,6 @@
 import { ref, computed, onMounted, h, onBeforeUnmount, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
-  NIcon,
-  NInput,
-  NPopover,
-  NModal,
-  NButton,
-  useDialog,
-  useMessage,
-} from "naive-ui";
-import {
   MessageCircle,
   Bookmark,
   Book,
@@ -666,6 +657,7 @@ const systemRoles = ref([]); // 系统角色
 const customRoles = ref([]); // 用户自定义角色
 const currentRole = ref(null); // 当前选中的角色
 const rolesLoading = ref(false);
+const selectedRoleIdToSet = ref(null); // 待设置的角色ID
 
 // 角色切换同步优化
 let roleSelectDebounceTimer = null;
@@ -761,11 +753,13 @@ const fetchUserRoles = async () => {
 // 获取当前选中的角色
 const fetchSelectedRole = async () => {
   if (!configStore.userId) {
-    // 未登录时使用系统角色的第一个
-    const fallbackRole = systemRoles.value[0] || null;
-    if (fallbackRole) {
-      currentRole.value = fallbackRole;
-      configStore.setCurrentRole(fallbackRole);
+    // 未登录时使用系统角色的第一个（如果已加载）
+    if (systemRoles.value.length > 0) {
+      const fallbackRole = systemRoles.value[0] || null;
+      if (fallbackRole) {
+        currentRole.value = fallbackRole;
+        configStore.setCurrentRole(fallbackRole);
+      }
     }
     return;
   }
@@ -774,14 +768,22 @@ const fetchSelectedRole = async () => {
     if (res.code === 200 && res.data) {
       // 从已加载的角色列表中查找对应的角色
       const roleId = res.data.id;
-      const allRoles = [...systemRoles.value, ...customRoles.value];
-      const role = allRoles.find((r) => r.id === roleId);
 
-      if (role) {
-        currentRole.value = role;
-        configStore.setCurrentRole(role);
-      } else {
-        // 如果在列表中找不到该角色，使用系统角色的第一个
+      // 如果角色列表已加载，立即设置
+      if (systemRoles.value.length > 0 || customRoles.value.length > 0) {
+        const allRoles = [...systemRoles.value, ...customRoles.value];
+        const role = allRoles.find((r) => r.id === roleId);
+        if (role) {
+          currentRole.value = role;
+          configStore.setCurrentRole(role);
+          return;
+        }
+      }
+
+      // 如果角色列表还未加载，保存ID供后续使用
+      selectedRoleIdToSet.value = roleId;
+
+      if (systemRoles.value.length > 0) {
         const fallbackRole = systemRoles.value[0] || null;
         if (fallbackRole) {
           currentRole.value = fallbackRole;
@@ -790,18 +792,23 @@ const fetchSelectedRole = async () => {
       }
     } else {
       // 没有选中角色时使用系统角色的第一个
+      if (systemRoles.value.length > 0) {
+        const fallbackRole = systemRoles.value[0] || null;
+        if (fallbackRole) {
+          currentRole.value = fallbackRole;
+          configStore.setCurrentRole(fallbackRole);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("获取当前角色失败:", error);
+    // 使用系统角色的第一个作为fallback
+    if (systemRoles.value.length > 0) {
       const fallbackRole = systemRoles.value[0] || null;
       if (fallbackRole) {
         currentRole.value = fallbackRole;
         configStore.setCurrentRole(fallbackRole);
       }
-    }
-  } catch (error) {
-    console.error("获取当前角色失败:", error);
-    const fallbackRole = systemRoles.value[0] || null;
-    if (fallbackRole) {
-      currentRole.value = fallbackRole;
-      configStore.setCurrentRole(fallbackRole);
     }
   }
 };
@@ -810,8 +817,13 @@ const fetchSelectedRole = async () => {
 const initRoles = async () => {
   rolesLoading.value = true;
   try {
-    await fetchSystemRoles();
-    await Promise.all([fetchUserRoles(), fetchSelectedRole()]);
+    await Promise.allSettled([
+      fetchSystemRoles(),
+      fetchUserRoles(),
+      fetchSelectedRole()
+    ]);
+  } catch (error) {
+    console.error("加载角色数据时出错:", error);
   } finally {
     rolesLoading.value = false;
   }
@@ -1332,11 +1344,27 @@ onMounted(() => {
     loadConversation(conversationId);
   }
 
-  initRoles();
+  // 延迟加载角色数据，避免阻塞首屏渲染
+  setTimeout(() => {
+    initRoles();
+  }, 100);
 
   if (configStore.userId) {
     fetchHistoryList();
   }
+
+  // 监听角色列表加载完成，同步待设置的角色
+  watch([systemRoles, customRoles], () => {
+    if (selectedRoleIdToSet.value) {
+      const allRoles = [...systemRoles.value, ...customRoles.value];
+      const role = allRoles.find((r) => r.id === selectedRoleIdToSet.value);
+      if (role) {
+        currentRole.value = role;
+        configStore.setCurrentRole(role);
+        selectedRoleIdToSet.value = null; // 清除待设置ID
+      }
+    }
+  }, { deep: true });
 
   // 监听用户登录/登出状态变化
   watch(

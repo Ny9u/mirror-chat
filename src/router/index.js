@@ -69,42 +69,35 @@ router.beforeEach(async (to, from, next) => {
   if (requiresAuth.includes(to.name)) {
     const configStore = useConfigStore();
 
-    if (!configStore.userId) {
-      try {
-        // 调用验证接口，Token 会通过 Cookie 自动发送
-        const res = await validate();
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
+    if ((!configStore.userId && isLoggedIn) || to.meta.forceRefresh) {
+      // 非阻塞式验证：先放行路由，后台验证
+      validate().then((res) => {
         if (res.code === 200 && res.data) {
-          // 保存用户信息到 store
           configStore.setUserId(res.data.id);
           configStore.setName(res.data.username);
           configStore.setAvatar(res.data.avatar);
-
-          // 设置登录状态标记（用于前端判断）
           localStorage.setItem("isLoggedIn", "true");
-          next();
         } else {
-          // 验证失败，跳转到登录页
           localStorage.removeItem("isLoggedIn");
-          next("/auth");
+          // 如果是需要认证的页面，则跳转进行认证
+          if (to.name !== "Chat" && to.name !== "Home") {
+            window.location.href = "/auth";
+          }
         }
-      } catch (error) {
-        // 验证接口调用失败（可能是未登录或 Token 过期）
+      }).catch(() => {
         localStorage.removeItem("isLoggedIn");
-
-        // Chat 和 Home 页面允许未登录访问
         if (to.name !== "Chat" && to.name !== "Home") {
-          next("/auth");
-        } else {
-          next();
+          window.location.href = "/auth";
         }
-      }
-    } else {
-      next();
+      });
+    } else if (!configStore.userId && !isLoggedIn && to.name !== "Chat" && to.name !== "Home") {
+      // 如果既没有userId也没有登录标记，直接跳转登录页
+      window.location.href = "/auth";
     }
-  } else {
-    next();
   }
+  next();
 });
 
 export default router;

@@ -67,7 +67,6 @@
 import { ref, reactive } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
-import { useMessage, NIcon, NAvatar, NButton, NInput, NUpload } from "naive-ui";
 import { ArrowLeft, Plus } from "@vicons/tabler";
 import { updateInfo } from "@/services/user";
 import Global from "@/utils/global";

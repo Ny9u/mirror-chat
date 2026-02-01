@@ -28,32 +28,96 @@ class TypingEffects {
 
   /**
    * 效果1: 经典打字机效果
+   * 支持HTML标签，保留样式和类名
    */
   typewriter() {
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = this.text;
-    const plainText = tempDiv.textContent || tempDiv.innerText || "";
-
-    let index = 0;
     const speed = 40; // 更快的速度
     this.element.innerHTML = "";
     this.element.style.opacity = "1";
 
+    // 创建临时容器解析HTML
+    const tempContainer = document.createElement("div");
+    tempContainer.innerHTML = this.text;
+
+    // 收集所有需要显示的节点（标签和文本）
+    const nodes = [];
+    const collectNodes = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent.trim()) {
+          nodes.push({ type: "text", content: node.textContent });
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // 保存开始标签
+        nodes.push({ type: "tag-open", element: node.cloneNode(false) });
+
+        // 递归处理子节点
+        Array.from(node.childNodes).forEach(collectNodes);
+
+        // 保存结束标签
+        nodes.push({ type: "tag-close", element: node });
+      }
+    };
+
+    Array.from(tempContainer.childNodes).forEach(collectNodes);
+
+    let nodeIndex = 0;
+    const elementStack = [];
+    let currentContainer = this.element;
+
     const type = () => {
       if (this.isDestroyed) return;
 
-      if (index < plainText.length) {
-        // 逐字添加，但保持HTML结构
-        const currentText = plainText.substring(0, index + 1);
-        // 重新构建带HTML标签的文本
-        this.element.innerHTML = this.text.replace(plainText, currentText);
-        index++;
-
-        const variation = Math.random() * 30 - 15;
-        setTimeout(type, speed + variation);
-      } else {
+      if (nodeIndex >= nodes.length) {
         this.element.innerHTML = this.text;
         this.complete();
+        return;
+      }
+
+      const node = nodes[nodeIndex];
+
+      if (node.type === "tag-open") {
+        // 处理开始标签
+        const element = node.element;
+        currentContainer.appendChild(element);
+        elementStack.push({ element, parent: currentContainer });
+        currentContainer = element;
+        nodeIndex++;
+        setTimeout(type, 5); // 标签渲染更快
+      } else if (node.type === "text") {
+        // 处理文本节点
+        const text = node.content;
+        const span = document.createElement("span");
+        span.className = "typing-text";
+        currentContainer.appendChild(span);
+
+        let charIndex = 0;
+        const typeChar = () => {
+          if (this.isDestroyed || charIndex >= text.length) {
+            // 文本打字完成，移除span包裹，直接显示文本
+            if (span.parentNode) {
+              span.parentNode.replaceChild(document.createTextNode(text), span);
+            }
+            nodeIndex++;
+            setTimeout(type, speed);
+            return;
+          }
+
+          span.textContent += text[charIndex];
+          charIndex++;
+
+          const variation = Math.random() * 30 - 15;
+          setTimeout(typeChar, speed + variation);
+        };
+
+        typeChar();
+      } else if (node.type === "tag-close") {
+        // 处理结束标签
+        const stackItem = elementStack.pop();
+        if (stackItem) {
+          currentContainer = stackItem.parent;
+        }
+        nodeIndex++;
+        setTimeout(type, 5);
       }
     };
 
@@ -115,7 +179,7 @@ class TypingEffects {
         node,
         NodeFilter.SHOW_TEXT,
         null,
-        false,
+        false
       );
 
       let currentNode;

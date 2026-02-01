@@ -1,0 +1,9 @@
+# robots.txt - Mirror Chat
+User-agent: *
+Allow: /
+
+# 禁止爬取敏感目录
+Disallow: /src/
+Disallow: /node_modules/
+Disallow: /assets/
+Disallow: /.git

@@ -387,7 +387,7 @@
 </template>
 
 <script setup>
-import { ref, h } from "vue";
+import { ref, h, onBeforeUnmount } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import {
@@ -397,19 +397,6 @@ import {
   getModelConfig,
   logout as logoutApi,
 } from "@/services/user";
-import {
-  useMessage,
-  useDialog,
-  NAvatar,
-  NIcon,
-  NButton,
-  NSwitch,
-  NModal,
-  NForm,
-  NFormItem,
-  NInput,
-  NSpin,
-} from "naive-ui";
 import {
   User,
   Key,
@@ -793,6 +780,11 @@ const previewVoice = async (voice) => {
     message.error("播放失败：" + (error.message || "未知错误"));
   }
 };
+
+// 在组件卸载时停止音频播放，防止阻止 bfcache
+onBeforeUnmount(() => {
+  TTSService.stopCurrentAudio();
+});
 </script>
 
 <style lang="less" scoped>

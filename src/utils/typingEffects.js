@@ -43,9 +43,8 @@ class TypingEffects {
     const nodes = [];
     const collectNodes = (node) => {
       if (node.nodeType === Node.TEXT_NODE) {
-        if (node.textContent.trim()) {
-          nodes.push({ type: "text", content: node.textContent });
-        }
+        // 保留所有文本，包括空白字符
+        nodes.push({ type: "text", content: node.textContent });
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         // 保存开始标签
         nodes.push({ type: "tag-open", element: node.cloneNode(false) });
@@ -68,7 +67,7 @@ class TypingEffects {
       if (this.isDestroyed) return;
 
       if (nodeIndex >= nodes.length) {
-        this.element.innerHTML = this.text;
+        // 动画完成，不再重置innerHTML，保持已构建的DOM结构
         this.complete();
         return;
       }
@@ -86,6 +85,15 @@ class TypingEffects {
       } else if (node.type === "text") {
         // 处理文本节点
         const text = node.content;
+
+        // 如果文本只包含空白字符，直接添加并跳过
+        if (!text.trim() && text.length > 0) {
+          currentContainer.appendChild(document.createTextNode(text));
+          nodeIndex++;
+          setTimeout(type, 5);
+          return;
+        }
+
         const span = document.createElement("span");
         span.className = "typing-text";
         currentContainer.appendChild(span);
@@ -166,13 +174,14 @@ class TypingEffects {
 
   /**
    * 效果4: 字符波浪效果
-   * 支持HTML内容渲染
+   * 支持HTML内容渲染，保留HTML结构
    */
   wave() {
     // 先将HTML内容设置到元素中
     this.element.innerHTML = this.text;
 
     // 获取所有文本节点并包裹每个字符
+    // 注意：这个方法会保留HTML标签结构，只拆分最底层的文本节点
     const wrapTextNodes = (node) => {
       const textNodes = [];
       const walker = document.createTreeWalker(
@@ -184,21 +193,53 @@ class TypingEffects {
 
       let currentNode;
       while ((currentNode = walker.nextNode())) {
-        textNodes.push(currentNode);
+        // 只处理非空文本节点
+        if (currentNode.textContent.trim().length > 0) {
+          textNodes.push(currentNode);
+        }
       }
 
       return textNodes;
     };
 
     const textNodes = wrapTextNodes(this.element);
+
+    // 如果没有文本节点，直接完成
+    if (textNodes.length === 0) {
+      setTimeout(() => this.complete(), 500);
+      return this;
+    }
+
     let charIndex = 0;
     const allSpans = [];
 
+    // 收集所有需要动画的节点，但先不修改DOM
+    const nodesToAnimate = [];
+
     textNodes.forEach((textNode) => {
       const text = textNode.textContent;
-      const fragment = document.createDocumentFragment();
+      const chars = Array.from(text);
 
-      Array.from(text).forEach((char) => {
+      nodesToAnimate.push({
+        node: textNode,
+        chars: chars,
+        startIndex: charIndex,
+        parentElement: textNode.parentElement,
+      });
+
+      charIndex += chars.length;
+    });
+
+    // 批量替换文本节点，减少DOM操作
+    nodesToAnimate.forEach(({ node, chars, startIndex, parentElement }) => {
+      const fragment = document.createDocumentFragment();
+      const spans = [];
+
+      // 检查父元素是否有渐变文字样式
+      const hasGradientParent =
+        parentElement && parentElement.classList.contains("username-text");
+
+      chars.forEach((char, idx) => {
         const span = document.createElement("span");
         span.textContent = char;
         span.style.display = "inline-block";
@@ -206,14 +247,24 @@ class TypingEffects {
         span.style.transform = "translateY(20px)";
         span.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
         span.style.whiteSpace = "pre"; // 保留空格
-        span.dataset.charIndex = charIndex;
+
+        // 如果父元素有渐变文字样式，让子元素继承
+        if (hasGradientParent) {
+          span.style.background = "inherit";
+          span.style.backgroundSize = "inherit";
+          span.style.backgroundClip = "text";
+          span.style.webkitTextFillColor = "transparent";
+        }
+
         fragment.appendChild(span);
-        allSpans.push({ span, index: charIndex });
-        charIndex++;
+        spans.push({ span, index: startIndex + idx });
       });
 
       // 替换原文本节点
-      textNode.parentNode.replaceChild(fragment, textNode);
+      if (node.parentNode) {
+        node.parentNode.replaceChild(fragment, node);
+        allSpans.push(...spans);
+      }
     });
 
     // 应用波浪动画

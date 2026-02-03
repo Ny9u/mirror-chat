@@ -1452,6 +1452,9 @@ const initTyped = () => {
         }
       }
 
+      // 验证并修复用户名高亮结构
+      ensureUsernameHighlight(element, username, emoji);
+
       // 延迟标记动画完成，等待 HTML 完全恢复和 MutationObserver 触发完成
       setTimeout(() => {
         isTypingInProgress = false;
@@ -1462,16 +1465,45 @@ const initTyped = () => {
   hasTypingInitialized = true;
 
   // 使用 MutationObserver 监听欢迎语元素变化
-  setupWelcomeObserver(element, username);
+  setupWelcomeObserver(element, username, emoji);
 };
 
-const setupWelcomeObserver = (element, expectedUsername) => {
+/**
+ * 确保用户名高亮结构完整
+ * 如果结构被破坏，重新构建正确的HTML结构
+ */
+const ensureUsernameHighlight = (element, username, emoji) => {
+  if (!element || chatHistory.value.length > 1) return;
+
+  const time = getChineseGreeting(new Date());
+  const expectedPrefix = `${time}好, `;
+
+  // 检查当前HTML结构是否正确
+  const highlightEl = element.querySelector(".username-highlight");
+  const textEl = element.querySelector(".username-text");
+  const emojiEl = element.querySelector(".username-emoji");
+
+  // 如果所有元素都存在且内容正确，不需要修复
+  if (highlightEl && textEl && emojiEl &&
+      textEl.textContent === username &&
+      emojiEl.textContent === emoji) {
+    return;
+  }
+
+  // 如果结构被破坏，重新构建
+  if (!highlightEl || !textEl || textEl.textContent !== username) {
+    // 重新设置正确的HTML结构
+    element.innerHTML = `${expectedPrefix}<span class="username-highlight"><span class="username-text">${username}</span><span class="username-emoji emoji-visible">${emoji}</span></span>`;
+  }
+};
+
+const setupWelcomeObserver = (element, expectedUsername, expectedEmoji) => {
   if (welcomeObserver) {
     welcomeObserver.disconnect();
   }
 
   // 监听子节点的变化
-  welcomeObserver = new MutationObserver(() => {
+  welcomeObserver = new MutationObserver((mutations) => {
     if (chatHistory.value.length > 1) {
       if (welcomeObserver) {
         welcomeObserver.disconnect();
@@ -1485,11 +1517,16 @@ const setupWelcomeObserver = (element, expectedUsername) => {
       return;
     }
 
-    // 检查用户名是否正确
-    const usernameElement = element.querySelector(".username-text");
-    if (usernameElement && usernameElement.textContent !== expectedUsername) {
-      // 用户名丢失，重新初始化
-      initTyped();
+    // 检查是否需要修复结构
+    const highlightEl = element.querySelector(".username-highlight");
+    const textEl = element.querySelector(".username-text");
+    
+    // 检查用户名是否正确或结构是否完整
+    const needsRepair = !highlightEl || !textEl || textEl.textContent !== expectedUsername;
+    
+    if (needsRepair) {
+      // 结构被破坏，修复它
+      ensureUsernameHighlight(element, expectedUsername, expectedEmoji);
     }
   });
 
@@ -2199,7 +2236,7 @@ onBeforeUnmount(() => {
       // 添加微妙的发光效果
       text-shadow: 0 0 20px rgba(167, 243, 208, 0.15);
 
-      // 文本部分
+      // 文本部分 - 确保所有子元素都继承渐变样式
       .username-text {
         background: linear-gradient(
           90deg,
@@ -2214,6 +2251,15 @@ onBeforeUnmount(() => {
         -webkit-text-fill-color: transparent;
         animation: slowFloat 8s ease-in-out infinite;
         display: inline-block;
+
+        // 确保 span 子元素也应用相同样式
+        span {
+          background: inherit;
+          background-size: inherit;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
       }
 
       // emoji 部分

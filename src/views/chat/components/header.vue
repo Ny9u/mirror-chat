@@ -159,7 +159,7 @@
 
 <script setup>
 import { Logout, Settings, MessagePlus, AlertTriangle } from "@vicons/tabler";
-import { ref, h, onMounted } from "vue";
+import { ref, h, onMounted, resolveComponent } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import { validate, logout as logoutApi } from "@/services/user";
@@ -270,6 +270,9 @@ const clearPersonalData = () => {
 };
 
 const logout = () => {
+  // 动态获取自动导入的 NIcon 组件
+  const NIconComponent = resolveComponent("NIcon");
+
   dialog.warning({
     title: "确定退出登录？",
     content: `退出登录不会丢失任何数据，你仍可以登录此账号。`,
@@ -288,7 +291,7 @@ const logout = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -328,27 +331,8 @@ const createNewChat = () => {
   window.dispatchEvent(new CustomEvent("createNewChat"));
 };
 
-// const getModelList = async () => {
-//   Request({
-//     headers: {
-//       Authorization: "Bearer" + import.meta.env.VITE_ALIYUN_API_KEY,
-//       "Content-Type": "application/json",
-//       Accept: "*/*",
-//     },
-//     url: proxy.$api.getModels,
-//     method: "GET",
-//     data: {
-//       page_no: 1,
-//       page_size: 10,
-//     },
-//   }).then((res) => {
-//     console.log(res);
-//   });
-// };
-
 onMounted(async () => {
   await autoLogin();
-  // await getModelList();
 });
 </script>
 
@@ -356,22 +340,6 @@ onMounted(async () => {
 :root {
   --primary-color: #18a058;
   --hover-color: rgba(24, 160, 88, 0.1);
-}
-
-@keyframes gradientFlow {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  25% {
-    background-position: 100% 0%;
-  }
-  50% {
-    background-position: 100% 100%;
-  }
-  75% {
-    background-position: 0% 100%;
-  }
 }
 
 .header {
@@ -417,25 +385,8 @@ onMounted(async () => {
       font-size: 14px;
 
       &:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(200, 240, 220, 0.7) 0%,
-          rgba(167, 243, 208, 0.65) 50%,
-          rgba(110, 231, 183, 0.8) 100%
-        );
-        background-size: 300% 300%;
-        animation: gradientFlow 10s ease-in-out infinite;
-        box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
-          0 0 10px rgba(110, 231, 183, 0.05);
-        transform: translateY(-1px);
-
-        .chat-button-icon {
-          color: black;
-        }
-
-        .chat-button-text {
-          color: black;
-        }
+        background: rgba(30, 221, 119, 0.2);
+        box-shadow: 0 2px 16px rgba(24, 160, 88, 0.1);
       }
 
       .chat-button-icon {
@@ -518,6 +469,7 @@ onMounted(async () => {
     }
 
     .login-btn {
+      width: 4.5rem;
       border-radius: 10px;
       background: linear-gradient(
         135deg,
@@ -526,15 +478,13 @@ onMounted(async () => {
         rgba(110, 231, 183, 0.8) 100%
       );
       background-size: 300% 300%;
-      animation: gradientFlow 8s ease-in-out infinite;
-      color: var(--primary-color);
+      color: #32b464;
       font-weight: 600;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3),
-        0 0 15px rgba(0, 200, 255, 0.2);
     }
 
     .register-btn {
+      width: 4.5rem;
       margin: 0 1rem;
       border-radius: 10px;
       background-color: transparent;

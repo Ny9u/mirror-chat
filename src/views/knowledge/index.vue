@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, h } from "vue";
+import { ref, onMounted, computed, h, resolveComponent } from "vue";
 import { useRouter } from "vue-router";
 import {
   Trash,
@@ -326,7 +326,7 @@ const showUploadDialog = () => {
                   default: () => [
                     h("div", { style: "margin-bottom: 12px" }, [
                       h(
-                        NIcon,
+                        NIconComponent,
                         { size: 48, depth: 3 },
                         {
                           default: () => h(CloudUpload),
@@ -430,6 +430,7 @@ const openKnowledge = async (item) => {
 };
 
 const openDeleteKnowledgeDialog = async (item) => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确定删除文件？",
     content: `确定要删除"${item.fileName}"吗？删除后，文件将不可恢复。`,
@@ -448,7 +449,7 @@ const openDeleteKnowledgeDialog = async (item) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",

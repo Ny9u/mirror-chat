@@ -122,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h } from "vue";
+import { ref, computed, onMounted, h, resolveComponent } from "vue";
 import { useRouter } from "vue-router";
 import { md } from "@/services/markdownService.js";
 import { useConfigStore } from "@/stores/configStore";
@@ -342,6 +342,7 @@ const editChat = (chat) => {
 
 // 删除对话
 const deleteChat = async (chat) => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确定删除对话？",
     content: "删除后，聊天记录将不可恢复。",
@@ -360,7 +361,7 @@ const deleteChat = async (chat) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",

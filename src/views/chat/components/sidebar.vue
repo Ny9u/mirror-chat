@@ -590,7 +590,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h, onBeforeUnmount, watch } from "vue";
+import {
+  ref,
+  computed,
+  onMounted,
+  h,
+  onBeforeUnmount,
+  watch,
+  resolveComponent,
+} from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   MessageCircle,
@@ -820,7 +828,7 @@ const initRoles = async () => {
     await Promise.allSettled([
       fetchSystemRoles(),
       fetchUserRoles(),
-      fetchSelectedRole()
+      fetchSelectedRole(),
     ]);
   } catch (error) {
     console.error("加载角色数据时出错:", error);
@@ -1021,6 +1029,7 @@ const openEditRoleDialog = (role) => {
 };
 
 const openDeleteRoleDialog = (role) => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确定删除角色？",
     content: `确定要删除"${role.name}"吗？删除后将不可恢复。`,
@@ -1039,7 +1048,7 @@ const openDeleteRoleDialog = (role) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 140px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1277,6 +1286,7 @@ const handleDeleteConversation = (id) => {
   const item = historyList.value.find((item) => item.id === id);
   const title = item ? item.title : "该对话";
 
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确定删除对话？",
     content: `确定要删除"${title}"吗？删除后，聊天记录将不可恢复。`,
@@ -1295,7 +1305,7 @@ const handleDeleteConversation = (id) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1354,17 +1364,21 @@ onMounted(() => {
   }
 
   // 监听角色列表加载完成，同步待设置的角色
-  watch([systemRoles, customRoles], () => {
-    if (selectedRoleIdToSet.value) {
-      const allRoles = [...systemRoles.value, ...customRoles.value];
-      const role = allRoles.find((r) => r.id === selectedRoleIdToSet.value);
-      if (role) {
-        currentRole.value = role;
-        configStore.setCurrentRole(role);
-        selectedRoleIdToSet.value = null; // 清除待设置ID
+  watch(
+    [systemRoles, customRoles],
+    () => {
+      if (selectedRoleIdToSet.value) {
+        const allRoles = [...systemRoles.value, ...customRoles.value];
+        const role = allRoles.find((r) => r.id === selectedRoleIdToSet.value);
+        if (role) {
+          currentRole.value = role;
+          configStore.setCurrentRole(role);
+          selectedRoleIdToSet.value = null; // 清除待设置ID
+        }
       }
-    }
-  }, { deep: true });
+    },
+    { deep: true }
+  );
 
   // 监听用户登录/登出状态变化
   watch(

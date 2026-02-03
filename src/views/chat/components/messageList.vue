@@ -485,6 +485,7 @@ import {
   watch,
   onBeforeUnmount,
   h,
+  resolveComponent,
 } from "vue";
 import WaveCanvas from "@/components/WaveCanvas.vue";
 import {
@@ -1252,6 +1253,7 @@ const playVoice = async (item) => {
 };
 
 const deleteMessage = (message) => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "是否删除该条消息？",
     content: "删除后，聊天记录不可恢复，对话内的文件也将被彻底删除。",
@@ -1270,7 +1272,7 @@ const deleteMessage = (message) => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",

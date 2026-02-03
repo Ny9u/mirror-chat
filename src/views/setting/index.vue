@@ -387,7 +387,7 @@
 </template>
 
 <script setup>
-import { ref, h, onBeforeUnmount } from "vue";
+import { ref, h, onBeforeUnmount, resolveComponent } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useRouter } from "vue-router";
 import {
@@ -554,6 +554,7 @@ const renderPasswordTitle = () =>
   h("span", { style: "font-weight: 600;" }, "密码管理");
 
 const openDeleteAccountDialog = () => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确认删除账号？",
     content:
@@ -573,7 +574,7 @@ const openDeleteAccountDialog = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 180px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -625,6 +626,7 @@ const renderAboutTitle = () =>
 
 const dialog = useDialog();
 const logout = () => {
+  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确认退出登录？",
     content: "退出登录不会丢失任何数据，你仍可以登录此账号。",
@@ -643,7 +645,7 @@ const logout = () => {
             align-items: center;
           `,
         },
-        [h(NIcon, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 160px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",

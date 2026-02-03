@@ -7,6 +7,7 @@ import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 import Icons from "unplugin-icons/vite";
 import IconsResolver from "unplugin-icons/resolver";
 import compression from "vite-plugin-compression";
+import { visualizer } from "rollup-plugin-visualizer";
 
 /**
  * 开发环境配置
@@ -87,9 +88,21 @@ const prodConfig = {
             }
 
             // ===== 非首屏功能（懒加载）=====
-            // 代码高亮
-            if (id.includes("highlight.js")) {
-              return "highlight";
+            // 代码高亮 - 核心库 + 样式
+            if (
+              id.includes("highlight.js/lib/core") ||
+              id.includes("highlight.js/styles")
+            ) {
+              return "highlight-base";
+            }
+            // 代码高亮 - 语言文件单独打包，实现按需加载
+            if (id.includes("highlight.js/lib/languages")) {
+              // 每个语言单独一个 chunk，例如: highlight-lang-java
+              const langMatch = id.match(/languages\/(\w+)/);
+              if (langMatch) {
+                return `highlight-lang-${langMatch[1]}`;
+              }
+              return "highlight-langs";
             }
             // Markdown 解析
             if (id.includes("markdown-it")) {
@@ -214,6 +227,13 @@ const prodPlugins = [
     ext: ".br",
     threshold: 1024,
     deleteOriginFile: false,
+  }),
+  // 打包分析
+  visualizer({
+    open: true, // 构建后自动打开浏览器
+    gzipSize: true, // gzip 压缩后大小
+    brotliSize: true, // brotli 压缩后大小
+    filename: "stats.html",
   }),
 ];
 

@@ -507,8 +507,13 @@ import assistantDarkUrl from "@/assets/assistant_dark.svg";
 import Global from "@/utils/global.js";
 import TypingEffects from "@/utils/typingEffects.js";
 import PerformanceUtils from "@/utils/performance.js";
-import hljs from "@/utils/highlight.js";
-import { md } from "@/services/markdownService.js";
+import hljs, { isLanguageRegistered, loadLanguage } from "@/utils/highlight.js";
+import {
+  md,
+  preloadMarkdownLanguages,
+  rehighlightAll,
+  onLanguageLoaded,
+} from "@/services/markdownService.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getChineseGreeting } from "@/utils/date.js";
 import Models from "@/config/models.js";
@@ -555,30 +560,66 @@ const processContent = (content) => {
   if (/<[^>]+>/.test(content)) {
     // 创建一个临时DOM元素来解析HTML
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = content;
+    // 先移除/替换外部图片，避免不必要的请求
+    const sanitizedContent = content.replace(
+      /<img[^>]+src=["'](https?:\/\/[^"']+)["'][^>]*>/gi,
+      (match, src) => {
+        // 只允许同源或特定白域名的图片立即加载
+        const allowedDomains = ["localhost"];
+        const isAllowed = allowedDomains.some((domain) => src.includes(domain));
+        if (isAllowed) {
+          return match;
+        }
+        // 其他图片替换为占位符，避免请求
+        return `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E" data-original-src="${src}" />`;
+      }
+    );
+    tempDiv.innerHTML = sanitizedContent;
 
     // 查找所有的pre和code标签
     const codeBlocks = tempDiv.querySelectorAll("pre code");
+
     codeBlocks.forEach((block) => {
       const codeText = block.textContent;
-      // 尝试检测语言（如果有class属性）
+      // 尝试检测语言
       const classes = block.className.split(" ");
       const langClass = classes.find((c) => c.startsWith("language-"));
       const lang = langClass ? langClass.replace("language-", "") : "";
+      const langLower = lang ? lang.toLowerCase() : "";
 
       // 使用highlight.js高亮代码
-      if (lang && hljs.getLanguage(lang)) {
+      if (langLower && isLanguageRegistered(langLower)) {
+        // 语言已注册，直接高亮
         try {
           const highlighted = hljs.highlight(codeText, {
-            language: lang,
+            language: langLower,
             ignoreIllegals: true,
           }).value;
           block.innerHTML = highlighted;
           block.classList.add("hljs");
         } catch (__) {
-          // 如果高亮失败，至少添加hljs类以应用基本样式
+          // 如果高亮失败，添加hljs类以应用基本样式
           block.classList.add("hljs");
         }
+      } else if (langLower) {
+        // 语言未注册，需要按需加载，先添加基本样式
+        block.classList.add("hljs");
+
+        // 异步加载语言，加载完成后单独高亮此代码块
+        loadLanguage(langLower).then((success) => {
+          if (success) {
+            try {
+              const highlighted = hljs.highlight(codeText, {
+                language: langLower,
+                ignoreIllegals: true,
+              }).value;
+              block.innerHTML = highlighted;
+              block.classList.add("hljs");
+            } catch (__) {
+              // 高亮失败，保持原样
+            }
+          }
+        });
       } else {
         // 尝试自动检测语言
         try {
@@ -604,7 +645,16 @@ const processContent = (content) => {
   }
 
   // 如果不是HTML格式，使用MarkdownIt渲染
-  return md.render(content);
+  const html = md.render(content);
+
+  // 异步加载语言并在加载完成后重新高亮
+  preloadMarkdownLanguages(content).then((hasNewLanguages) => {
+    if (hasNewLanguages) {
+      rehighlightAll();
+    }
+  });
+
+  return html;
 };
 
 // 发送消息

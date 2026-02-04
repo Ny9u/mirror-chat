@@ -230,7 +230,7 @@ const prodPlugins = [
   }),
   // 打包分析
   visualizer({
-    open: true, // 构建后自动打开浏览器
+    open: false, // 构建后自动打开浏览器
     gzipSize: true, // gzip 压缩后大小
     brotliSize: true, // brotli 压缩后大小
     filename: "stats.html",

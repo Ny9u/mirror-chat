@@ -110,8 +110,9 @@
                   </div>
                   <div
                     class="text-container"
-                    :style="{
-                      maxWidth: item.role === 'assistant' ? '63vw' : '560px',
+                    :class="{
+                      'text-container-assistant': item.role === 'assistant',
+                      'text-container-user': item.role === 'user',
                     }"
                     v-if="
                       i.type === 'content' &&
@@ -513,7 +514,6 @@ import {
   md,
   preloadMarkdownLanguages,
   rehighlightAll,
-  onLanguageLoaded,
 } from "@/services/markdownService.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getChineseGreeting } from "@/utils/date.js";
@@ -529,14 +529,12 @@ const props = defineProps({
   knowledgeBase: Boolean,
   imageGeneration: Boolean,
 });
-const { userInput, netSearch, deepThinking, knowledgeBase, imageGeneration } =
+const { netSearch, deepThinking, knowledgeBase, imageGeneration } =
   toRefs(props);
 
 const emit = defineEmits(["regenerateImage", "generateImage"]);
 
 const configStore = useConfigStore();
-const message = useMessage();
-const dialog = useDialog();
 
 const virtualListRef = ref(null);
 const popoverShowMap = ref({});
@@ -557,8 +555,14 @@ const chatHistory = ref([
 
 // 处理内容，将Markdown转换为HTML并确保代码块高亮
 const processContent = (content) => {
-  // 如果内容已经是HTML格式，我们需要处理其中的代码块
-  if (/<[^>]+>/.test(content)) {
+  if (!content) return "";
+
+  // 检查是否是 HTML 格式（更严格的判断，避免误判）
+  const isHTML = /<(p|div|pre|code|h[1-6]|ul|ol|li|blockquote)[\s>]/.test(
+    content,
+  );
+
+  if (isHTML) {
     // 创建一个临时DOM元素来解析HTML
     const tempDiv = document.createElement("div");
     // 先移除/替换外部图片，避免不必要的请求
@@ -573,7 +577,7 @@ const processContent = (content) => {
         }
         // 其他图片替换为占位符，避免请求
         return `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E" data-original-src="${src}" />`;
-      }
+      },
     );
     tempDiv.innerHTML = sanitizedContent;
 
@@ -588,6 +592,10 @@ const processContent = (content) => {
       const lang = langClass ? langClass.replace("language-", "") : "";
       const langLower = lang ? lang.toLowerCase() : "";
 
+      // 清除已有的高亮标记，重新处理
+      block.classList.remove("hljs");
+      block.removeAttribute("data-highlighted");
+
       // 使用highlight.js高亮代码
       if (langLower && isLanguageRegistered(langLower)) {
         // 语言已注册，直接高亮
@@ -598,29 +606,19 @@ const processContent = (content) => {
           }).value;
           block.innerHTML = highlighted;
           block.classList.add("hljs");
-        } catch (__) {
-          // 如果高亮失败，添加hljs类以应用基本样式
+          if (!block.classList.contains(`language-${langLower}`)) {
+            block.classList.add(`language-${langLower}`);
+          }
+        } catch (error) {
+          // 如果高亮失败，保持原始文本并添加hljs类以应用基本样式
+          console.warn(`[processContent] 代码高亮失败: ${langLower}`, error);
+          block.textContent = codeText;
           block.classList.add("hljs");
         }
       } else if (langLower) {
-        // 语言未注册，需要按需加载，先添加基本样式
+        // 语言未注册，保持原始文本并添加基本样式
+        block.textContent = codeText;
         block.classList.add("hljs");
-
-        // 异步加载语言，加载完成后单独高亮此代码块
-        loadLanguage(langLower).then((success) => {
-          if (success) {
-            try {
-              const highlighted = hljs.highlight(codeText, {
-                language: langLower,
-                ignoreIllegals: true,
-              }).value;
-              block.innerHTML = highlighted;
-              block.classList.add("hljs");
-            } catch (__) {
-              // 高亮失败，保持原样
-            }
-          }
-        });
       } else {
         // 尝试自动检测语言
         try {
@@ -630,7 +628,8 @@ const processContent = (content) => {
           if (result.language) {
             block.classList.add(`language-${result.language}`);
           }
-        } catch (__) {
+        } catch (error) {
+          block.textContent = codeText;
           block.classList.add("hljs");
         }
       }
@@ -639,7 +638,9 @@ const processContent = (content) => {
     // 处理单独的code标签（不在pre内的）
     const inlineCodes = tempDiv.querySelectorAll("code:not(pre code)");
     inlineCodes.forEach((code) => {
-      code.classList.add("hljs");
+      if (!code.classList.contains("hljs")) {
+        code.classList.add("hljs");
+      }
     });
 
     return tempDiv.innerHTML;
@@ -723,7 +724,7 @@ const fetchAI = async (
   images = [],
   files = [],
   content = null,
-  isRegenerate = false
+  isRegenerate = false,
 ) => {
   const chatId = configStore.chatId || undefined;
 
@@ -735,7 +736,7 @@ const fetchAI = async (
     for (let i = chatHistory.value.length - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content"
+          (c) => c.type === "content",
         );
         userTextContent = textContent ? textContent.data : "";
 
@@ -810,9 +811,8 @@ const fetchAI = async (
               lastScrollTime = now;
             }
           } else if (chunk.content) {
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
             answerContent += chunk.content;
 
             if (!hasStartedAnswer) {
@@ -826,9 +826,8 @@ const fetchAI = async (
             chatHistory.value[chatHistory.value.length - 1].content[1].data =
               md.render(answerContent);
 
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].thinkingCollapsed = true;
+            chatHistory.value[chatHistory.value.length - 1].thinkingCollapsed =
+              true;
 
             const now = Date.now();
             if (now - lastScrollTime > scrollTime) {
@@ -843,22 +842,20 @@ const fetchAI = async (
             configStore.setChatId(chunk.chatId);
           }
         },
-        (result) => {
+        () => {
           scrollToBottom();
         },
         (error) => {
           if (signal.aborted) {
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
           } else {
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
-            chatHistory.value[
-              chatHistory.value.length - 1
-            ].isFinishThinking = true;
+            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
+              true;
           }
         },
-        signal
+        signal,
       );
 
       return answerContent;
@@ -940,7 +937,7 @@ const fetchAI = async (
             configStore.setChatId(chunk.chatId);
           }
         },
-        (result) => {
+        () => {
           if (!shouldAbort) {
             scrollToBottom();
           }
@@ -952,7 +949,7 @@ const fetchAI = async (
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
         },
-        signal
+        signal,
       );
 
       return fullContent;
@@ -1019,7 +1016,7 @@ const regenerateResponse = (item) => {
     for (let i = index - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content"
+          (c) => c.type === "content",
         );
         lastImagePrompt = textContent ? textContent.data : "";
         break;
@@ -1056,7 +1053,7 @@ const regenerateResponse = (item) => {
 
   chatHistory.value = chatHistory.value.slice(
     0,
-    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1)
+    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1),
   );
 
   if (lastMessage && lastMessageIndex !== null) {
@@ -1068,28 +1065,28 @@ const regenerateResponse = (item) => {
       lastImages,
       lastFiles,
       userText,
-      true
+      true,
     );
   }
 };
 
-const regenerateImageMessage = (ratio) => {
-  let lastImagePrompt = "";
+// const regenerateImageMessage = (ratio) => {
+//   let lastImagePrompt = "";
 
-  for (let i = chatHistory.value.length - 1; i >= 0; i--) {
-    if (chatHistory.value[i].role === "user") {
-      const textContent = chatHistory.value[i].content.find(
-        (c) => c.type === "content"
-      );
-      lastImagePrompt = textContent ? textContent.data : "";
-      break;
-    }
-  }
+//   for (let i = chatHistory.value.length - 1; i >= 0; i--) {
+//     if (chatHistory.value[i].role === "user") {
+//       const textContent = chatHistory.value[i].content.find(
+//         (c) => c.type === "content"
+//       );
+//       lastImagePrompt = textContent ? textContent.data : "";
+//       break;
+//     }
+//   }
 
-  if (lastImagePrompt) {
-    emit("regenerateImage", { prompt: lastImagePrompt, ratio });
-  }
-};
+//   if (lastImagePrompt) {
+//     emit("regenerateImage", { prompt: lastImagePrompt, ratio });
+//   }
+// };
 
 const showEditIcon = (item) => {
   for (let i = chatHistory.value.length - 1; i >= 0; i--) {
@@ -1168,7 +1165,7 @@ const saveEdit = (item) => {
       existingImages,
       existingFiles,
       editedText,
-      true
+      true,
     );
   }
 
@@ -1241,7 +1238,7 @@ const playVoice = async (item) => {
     try {
       const audioData = await TTSService.synthesizeSpeech(
         textToSpeak,
-        configStore.voiceType
+        configStore.voiceType,
       );
       await TTSService.playAudio(audioData);
     } catch (error) {
@@ -1272,7 +1269,7 @@ const deleteMessage = (message) => {
             align-items: center;
           `,
         },
-        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)],
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1288,7 +1285,7 @@ const deleteMessage = (message) => {
     },
     onPositiveClick: () => {
       const index = chatHistory.value.findIndex(
-        (msg) => msg.key === message.key
+        (msg) => msg.key === message.key,
       );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
@@ -1486,9 +1483,13 @@ const ensureUsernameHighlight = (element, username, emoji) => {
   const emojiEl = element.querySelector(".username-emoji");
 
   // 如果所有元素都存在且内容正确，不需要修复
-  if (highlightEl && textEl && emojiEl &&
-      textEl.textContent === username &&
-      emojiEl.textContent === emoji) {
+  if (
+    highlightEl &&
+    textEl &&
+    emojiEl &&
+    textEl.textContent === username &&
+    emojiEl.textContent === emoji
+  ) {
     return;
   }
 
@@ -1505,7 +1506,7 @@ const setupWelcomeObserver = (element, expectedUsername, expectedEmoji) => {
   }
 
   // 监听子节点的变化
-  welcomeObserver = new MutationObserver((mutations) => {
+  welcomeObserver = new MutationObserver(() => {
     if (chatHistory.value.length > 1) {
       if (welcomeObserver) {
         welcomeObserver.disconnect();
@@ -1522,10 +1523,11 @@ const setupWelcomeObserver = (element, expectedUsername, expectedEmoji) => {
     // 检查是否需要修复结构
     const highlightEl = element.querySelector(".username-highlight");
     const textEl = element.querySelector(".username-text");
-    
+
     // 检查用户名是否正确或结构是否完整
-    const needsRepair = !highlightEl || !textEl || textEl.textContent !== expectedUsername;
-    
+    const needsRepair =
+      !highlightEl || !textEl || textEl.textContent !== expectedUsername;
+
     if (needsRepair) {
       // 结构被破坏，修复它
       ensureUsernameHighlight(element, expectedUsername, expectedEmoji);
@@ -1555,7 +1557,7 @@ watch(
         initTyped();
       });
     }
-  }
+  },
 );
 
 // 监听 chatHistory 变化 - 确保欢迎语始终显示正确的用户名称
@@ -1569,7 +1571,7 @@ watch(
         initTyped();
       });
     }
-  }
+  },
 );
 
 const handleClearChatHistory = () => {
@@ -1582,7 +1584,7 @@ const handleClearChatHistory = () => {
   ];
 };
 
-const handleLoadChatHistory = (event) => {
+const handleLoadChatHistory = async (event) => {
   const conversationData = event.detail.data;
   if (conversationData) {
     if (welcomeObserver) {
@@ -1590,14 +1592,115 @@ const handleLoadChatHistory = (event) => {
       welcomeObserver = null;
     }
 
+    // 预加载所有历史消息中的代码语言
+    const allLanguages = new Set();
+    conversationData.forEach((msg) => {
+      if (msg.content && Array.isArray(msg.content)) {
+        msg.content.forEach((item) => {
+          if (item.type === "content" || item.type === "thinking") {
+            const content = item.data || "";
+            // 从 Markdown 中提取语言标记
+            const codeBlockRegex = /```(\w+)/g;
+            let match;
+            while ((match = codeBlockRegex.exec(content)) !== null) {
+              allLanguages.add(match[1].toLowerCase());
+            }
+            // 从 HTML 中提取语言标记
+            const htmlLangRegex = /language-(\w+)/g;
+            while ((match = htmlLangRegex.exec(content)) !== null) {
+              allLanguages.add(match[1].toLowerCase());
+            }
+          }
+        });
+      }
+    });
+
+    // 过滤掉已注册的语言并加载
+    const languagesToLoad = Array.from(allLanguages).filter(
+      (lang) => !isLanguageRegistered(lang),
+    );
+
+    if (languagesToLoad.length > 0) {
+      console.log("[messageList] 预加载历史对话语言:", languagesToLoad);
+      await Promise.all(languagesToLoad.map((lang) => loadLanguage(lang)));
+    }
+
+    // 预处理历史消息内容，确保都是正确渲染的 HTML 格式
+    conversationData.forEach((msg) => {
+      if (msg.content && Array.isArray(msg.content)) {
+        msg.content.forEach((item) => {
+          if (item.type === "content" || item.type === "thinking") {
+            const content = item.data || "";
+            // 检查是否是 HTML 格式（更严格的判断）
+            const isHTML =
+              /<(p|div|pre|code|h[1-6]|ul|ol|li|blockquote)[\s>]/.test(content);
+
+            if (!isHTML && content.trim()) {
+              // 如果不是 HTML 格式，先转换为 HTML
+              console.log("[messageList] 转换 Markdown 为 HTML");
+              item.data = md.render(content);
+            }
+          }
+        });
+      }
+    });
+
+    // 设置数据
     chatHistory.value = conversationData;
+
+    // 等待 DOM 更新后重新高亮所有代码块
+    await nextTick();
     setTimeout(() => {
+      // 重新高亮所有代码块
+      const codeBlocks = document.querySelectorAll("pre code");
+      codeBlocks.forEach((block) => {
+        const classes = block.className.split(" ");
+        const langClass = classes.find((c) => c.startsWith("language-"));
+        const lang = langClass ? langClass.replace("language-", "") : "";
+        const langLower = lang ? lang.toLowerCase() : "";
+
+        // 清除旧的高亮
+        block.classList.remove("hljs");
+        block.removeAttribute("data-highlighted");
+
+        if (langLower && isLanguageRegistered(langLower)) {
+          try {
+            const codeText = block.textContent;
+            const highlighted = hljs.highlight(codeText, {
+              language: langLower,
+              ignoreIllegals: true,
+            }).value;
+            block.innerHTML = highlighted;
+            block.classList.add("hljs");
+            console.log(`[messageList] 高亮代码块: ${langLower}`);
+          } catch (error) {
+            console.error(`[messageList] 高亮失败: ${langLower}`, error);
+            block.classList.add("hljs");
+          }
+        } else if (langLower) {
+          block.classList.add("hljs");
+        } else {
+          try {
+            const codeText = block.textContent;
+            const result = hljs.highlightAuto(codeText);
+            block.innerHTML = result.value;
+            block.classList.add("hljs");
+            if (result.language) {
+              block.classList.add(`language-${result.language}`);
+            }
+          } catch (error) {
+            block.classList.add("hljs");
+          }
+        }
+      });
+
+      // 滚动到底部
       if (virtualListRef.value) {
         virtualListRef.value.scrollTo({
           position: "bottom",
         });
       }
-    }, 100);
+    }, 150);
   }
 };
 
@@ -1817,6 +1920,22 @@ onBeforeUnmount(() => {
       color: var(--text-color);
       animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       transition: all 0.3s ease;
+
+      @media (min-width: 1920px) {
+        padding: 0.5rem 6rem;
+      }
+
+      @media (min-width: 1440px) and (max-width: 1919px) {
+        padding: 0.5rem 4rem;
+      }
+
+      @media (max-width: 1024px) {
+        padding: 0.5rem 1rem;
+      }
+
+      @media (max-width: 768px) {
+        padding: 0.5rem 0.5rem;
+      }
     }
     .avatar {
       width: 2rem;
@@ -1826,6 +1945,8 @@ onBeforeUnmount(() => {
     .message {
       flex-direction: column;
       max-width: calc(100% - 4rem);
+      flex: 1;
+      min-width: 0;
 
       &:hover .time {
         opacity: 0.7 !important;
@@ -1865,7 +1986,6 @@ onBeforeUnmount(() => {
           forwards;
       }
       .text-container {
-        max-width: 37.33rem;
         display: flex;
         background: var(--message-color) no-repeat center;
         border-radius: 1rem;
@@ -1880,6 +2000,40 @@ onBeforeUnmount(() => {
           font-size: 1rem;
           line-height: 1.7;
           caret-color: transparent;
+        }
+
+        // 助手消息 - 宽屏优化
+        &.text-container-assistant {
+          max-width: min(75vw, 1200px);
+
+          // 超宽屏优化
+          @media (min-width: 1920px) {
+            max-width: min(70vw, 1400px);
+          }
+
+          // 中等屏幕
+          @media (max-width: 1440px) {
+            max-width: min(75vw, 1000px);
+          }
+
+          // 小屏幕
+          @media (max-width: 1024px) {
+            max-width: 85vw;
+          }
+
+          // 移动端
+          @media (max-width: 768px) {
+            max-width: 90vw;
+          }
+        }
+
+        // 用户消息 - 保持相对较窄
+        &.text-container-user {
+          max-width: min(560px, 90vw);
+
+          @media (max-width: 768px) {
+            max-width: 85vw;
+          }
         }
       }
       .image-container {
@@ -1913,7 +2067,8 @@ onBeforeUnmount(() => {
             color: rgba(76, 175, 80, 0.8);
             text-transform: uppercase;
             animation: textGradient 2s linear infinite;
-            text-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8),
+            text-shadow:
+              0 0 10px rgba(var(--primary-color-rgb), 0.8),
               0 0 20px rgba(var(--primary-color-rgb), 0.4),
               0 0 30px rgba(var(--primary-color-rgb), 0.2);
           }
@@ -2029,9 +2184,29 @@ onBeforeUnmount(() => {
       }
       .think-wrapper {
         width: 100%;
-        max-width: 60rem;
+        max-width: min(75vw, 1200px);
         display: flex;
         flex-direction: column;
+
+        // 超宽屏优化
+        @media (min-width: 1920px) {
+          max-width: min(70vw, 1400px);
+        }
+
+        // 中等屏幕
+        @media (max-width: 1440px) {
+          max-width: min(75vw, 1000px);
+        }
+
+        // 小屏幕
+        @media (max-width: 1024px) {
+          max-width: 85vw;
+        }
+
+        // 移动端
+        @media (max-width: 768px) {
+          max-width: 90vw;
+        }
 
         .think-title-bar {
           display: flex;
@@ -2074,7 +2249,8 @@ onBeforeUnmount(() => {
         .think-content {
           overflow: hidden;
           opacity: 1;
-          transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          transition:
+            max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
             opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
           &.collapsed {
@@ -2270,7 +2446,8 @@ onBeforeUnmount(() => {
         margin-left: 4px;
         font-size: 1.05em;
         cursor: pointer;
-        transition: opacity 0.3s ease,
+        transition:
+          opacity 0.3s ease,
           transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         will-change: transform, opacity;
 

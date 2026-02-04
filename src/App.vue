@@ -47,5 +47,19 @@ watch(
   display: flex;
   flex-direction: column;
   font-family: var(--font-family);
+
+  main {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    > * {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+  }
 }
 </style>

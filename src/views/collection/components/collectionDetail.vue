@@ -217,7 +217,6 @@ const showImageModal = ref(false);
 const capturedImage = ref("");
 const isCapturing = ref(false);
 
-
 // 处理内容，将Markdown转换为HTML并确保代码块高亮
 const processContent = (content) => {
   if (/<[^>]+>/.test(content)) {
@@ -333,7 +332,7 @@ const sharePicture = async () => {
 
     // 获取背景颜色
     const backgroundColor = getComputedStyle(
-      document.documentElement,
+      document.documentElement
     ).getPropertyValue("--background-color");
 
     // 使用 modern-screenshot 截图
@@ -667,4 +666,8 @@ onMounted(async () => {
 <style lang="less">
 @import "../styles/imageModal.less";
 @import "@/styles/hljs.less";
+
+.collection-detail-content .n-scrollbar-rail {
+  display: none !important;
+}
 </style>

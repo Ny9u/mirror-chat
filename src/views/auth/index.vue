@@ -10,8 +10,8 @@
             activeTab === "login"
               ? "登录到Mirror 💚"
               : activeTab === "reset"
-                ? "重置密码 🔑"
-                : "注册Mirror 👏"
+              ? "重置密码 🔑"
+              : "注册Mirror 👏"
           }}
         </h1>
       </div>
@@ -292,6 +292,7 @@ import {
 } from "@/services/user";
 import { useConfigStore } from "@/stores/configStore";
 import { encrypt } from "@/utils/encryption";
+import { Mail, Lock, User } from "@vicons/tabler";
 
 const route = useRoute();
 const router = useRouter();
@@ -432,7 +433,11 @@ const createTextFloatAnimation = () => {
     lastMouseX = currentMouseX;
   };
   titleElement.value.addEventListener("mousemove", handleMouseMove);
-  animationEventListeners.push({ element: titleElement.value, event: "mousemove", handler: handleMouseMove });
+  animationEventListeners.push({
+    element: titleElement.value,
+    event: "mousemove",
+    handler: handleMouseMove,
+  });
 
   // 为每个字符添加动画效果
   chars.forEach((charElement, index) => {
@@ -464,7 +469,11 @@ const createTextFloatAnimation = () => {
       }
     };
     charElement.addEventListener("mouseenter", handleMouseEnter);
-    animationEventListeners.push({ element: charElement, event: "mouseenter", handler: handleMouseEnter });
+    animationEventListeners.push({
+      element: charElement,
+      event: "mouseenter",
+      handler: handleMouseEnter,
+    });
 
     const handleMouseLeave = function () {
       // 定义影响范围
@@ -489,7 +498,11 @@ const createTextFloatAnimation = () => {
       }
     };
     charElement.addEventListener("mouseleave", handleMouseLeave);
-    animationEventListeners.push({ element: charElement, event: "mouseleave", handler: handleMouseLeave });
+    animationEventListeners.push({
+      element: charElement,
+      event: "mouseleave",
+      handler: handleMouseLeave,
+    });
   });
 };
 
@@ -860,7 +873,7 @@ onMounted(async () => {
     await window.loadAnimeJS();
     createTextFloatAnimation();
   } catch (error) {
-    console.warn('动画库加载失败，跳过动画效果');
+    console.warn("动画库加载失败，跳过动画效果");
   }
 });
 
@@ -915,8 +928,7 @@ watch(activeTab, async () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image:
-      radial-gradient(
+    background-image: radial-gradient(
         circle at 20% 30%,
         rgba(46, 213, 115, 0.4) 0%,
         rgba(10, 31, 15, 0) 50%
@@ -977,24 +989,11 @@ watch(activeTab, async () => {
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    animation: cardFloat 6s ease-in-out infinite;
     position: relative;
     z-index: 5;
 
-    @keyframes cardFloat {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-5px);
-      }
-    }
-
     &:hover {
-      transform: translateY(-5px) scale(1.01);
-      box-shadow:
-        0 15px 45px rgba(0, 0, 0, 0.1),
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
 
@@ -1067,6 +1066,32 @@ watch(activeTab, async () => {
         // 隐藏必填红点
         .n-form-item-label .n-form-item-label__asterisk {
           display: none !important;
+        }
+
+        .n-input {
+          border-radius: 12px;
+          background: #f2f2f7;
+          border: none;
+          transition: all 0.25s ease;
+
+          .n-input__input-el,
+          .n-input__textarea-el {
+            height: 3rem;
+            font-size: 1rem;
+            color: #1c1c1e;
+            caret-color: var(--primary-color);
+          }
+
+          .n-input__prefix {
+            color: #8e8e93;
+            margin-right: 0.5rem;
+          }
+        }
+
+        .n-input--password {
+          .n-input__suffix {
+            color: #8e8e93;
+          }
         }
       }
 

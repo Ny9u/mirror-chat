@@ -559,7 +559,7 @@ const processContent = (content) => {
 
   // 检查是否是 HTML 格式（更严格的判断，避免误判）
   const isHTML = /<(p|div|pre|code|h[1-6]|ul|ol|li|blockquote)[\s>]/.test(
-    content,
+    content
   );
 
   if (isHTML) {
@@ -577,7 +577,7 @@ const processContent = (content) => {
         }
         // 其他图片替换为占位符，避免请求
         return `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E" data-original-src="${src}" />`;
-      },
+      }
     );
     tempDiv.innerHTML = sanitizedContent;
 
@@ -724,7 +724,7 @@ const fetchAI = async (
   images = [],
   files = [],
   content = null,
-  isRegenerate = false,
+  isRegenerate = false
 ) => {
   const chatId = configStore.chatId || undefined;
 
@@ -736,7 +736,7 @@ const fetchAI = async (
     for (let i = chatHistory.value.length - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content",
+          (c) => c.type === "content"
         );
         userTextContent = textContent ? textContent.data : "";
 
@@ -811,8 +811,9 @@ const fetchAI = async (
               lastScrollTime = now;
             }
           } else if (chunk.content) {
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
             answerContent += chunk.content;
 
             if (!hasStartedAnswer) {
@@ -826,8 +827,9 @@ const fetchAI = async (
             chatHistory.value[chatHistory.value.length - 1].content[1].data =
               md.render(answerContent);
 
-            chatHistory.value[chatHistory.value.length - 1].thinkingCollapsed =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].thinkingCollapsed = true;
 
             const now = Date.now();
             if (now - lastScrollTime > scrollTime) {
@@ -847,15 +849,17 @@ const fetchAI = async (
         },
         (error) => {
           if (signal.aborted) {
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
           } else {
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
-            chatHistory.value[chatHistory.value.length - 1].isFinishThinking =
-              true;
+            chatHistory.value[
+              chatHistory.value.length - 1
+            ].isFinishThinking = true;
           }
         },
-        signal,
+        signal
       );
 
       return answerContent;
@@ -949,7 +953,7 @@ const fetchAI = async (
             message.error(error.message || "请求服务失败，请检查网络连接 🌐");
           }
         },
-        signal,
+        signal
       );
 
       return fullContent;
@@ -1016,7 +1020,7 @@ const regenerateResponse = (item) => {
     for (let i = index - 1; i >= 0; i--) {
       if (chatHistory.value[i].role === "user") {
         const textContent = chatHistory.value[i].content.find(
-          (c) => c.type === "content",
+          (c) => c.type === "content"
         );
         lastImagePrompt = textContent ? textContent.data : "";
         break;
@@ -1053,7 +1057,7 @@ const regenerateResponse = (item) => {
 
   chatHistory.value = chatHistory.value.slice(
     0,
-    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1),
+    Math.max(1, lastMessageIndex !== null ? lastMessageIndex : 1)
   );
 
   if (lastMessage && lastMessageIndex !== null) {
@@ -1065,7 +1069,7 @@ const regenerateResponse = (item) => {
       lastImages,
       lastFiles,
       userText,
-      true,
+      true
     );
   }
 };
@@ -1165,7 +1169,7 @@ const saveEdit = (item) => {
       existingImages,
       existingFiles,
       editedText,
-      true,
+      true
     );
   }
 
@@ -1238,7 +1242,7 @@ const playVoice = async (item) => {
     try {
       const audioData = await TTSService.synthesizeSpeech(
         textToSpeak,
-        configStore.voiceType,
+        configStore.voiceType
       );
       await TTSService.playAudio(audioData);
     } catch (error) {
@@ -1269,7 +1273,7 @@ const deleteMessage = (message) => {
             align-items: center;
           `,
         },
-        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)],
+        [h(NIconComponent, { size: 28, component: AlertTriangle }, null)]
       ),
     style: "height: 170px; border-radius: 10px; overflow: hidden;",
     titleStyle: "font-weight: 600;",
@@ -1285,7 +1289,7 @@ const deleteMessage = (message) => {
     },
     onPositiveClick: () => {
       const index = chatHistory.value.findIndex(
-        (msg) => msg.key === message.key,
+        (msg) => msg.key === message.key
       );
       if (index !== -1) {
         chatHistory.value.splice(index, 1);
@@ -1557,7 +1561,7 @@ watch(
         initTyped();
       });
     }
-  },
+  }
 );
 
 // 监听 chatHistory 变化 - 确保欢迎语始终显示正确的用户名称
@@ -1571,7 +1575,7 @@ watch(
         initTyped();
       });
     }
-  },
+  }
 );
 
 const handleClearChatHistory = () => {
@@ -1617,7 +1621,7 @@ const handleLoadChatHistory = async (event) => {
 
     // 过滤掉已注册的语言并加载
     const languagesToLoad = Array.from(allLanguages).filter(
-      (lang) => !isLanguageRegistered(lang),
+      (lang) => !isLanguageRegistered(lang)
     );
 
     if (languagesToLoad.length > 0) {
@@ -1915,7 +1919,7 @@ onBeforeUnmount(() => {
     .item {
       display: flex;
       align-items: flex-start;
-      margin: 2rem 0;
+      margin: 1.8rem 0;
       padding: 0.5rem 0;
       color: var(--text-color);
       animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -1935,12 +1939,18 @@ onBeforeUnmount(() => {
 
       @media (max-width: 768px) {
         padding: 0.5rem 0.5rem;
+        margin: 1.2rem 0;
       }
     }
     .avatar {
       width: 2rem;
       height: 2rem;
       margin: 0 0.67rem;
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
     }
     .message {
       flex-direction: column;
@@ -1988,23 +1998,24 @@ onBeforeUnmount(() => {
       .text-container {
         display: flex;
         background: var(--message-color) no-repeat center;
-        border-radius: 1rem;
+        border-radius: 12px;
         position: relative;
         overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
 
-        .text {
-          width: 100%;
-          padding: 0.8rem 1.2rem;
-          font-size: 1rem;
-          line-height: 1.7;
-          caret-color: transparent;
-        }
-
-        // 助手消息 - 宽屏优化
+        // 助手消息 - 透明背景，清晰阅读
         &.text-container-assistant {
+          background-color: transparent;
+          border: none;
+          box-shadow: none;
           max-width: min(75vw, 1200px);
+
+          .text {
+            padding: 0.5rem 0;
+            font-size: 1rem;
+            line-height: 1.75;
+            color: var(--text-color);
+          }
 
           // 超宽屏优化
           @media (min-width: 1920px) {
@@ -2035,6 +2046,44 @@ onBeforeUnmount(() => {
             max-width: 85vw;
           }
         }
+
+        .text {
+          width: 100%;
+          padding: 0.75rem 1.25rem;
+          font-size: 1rem;
+          line-height: 1.7;
+          caret-color: transparent;
+
+          // 字体渲染优化
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-rendering: optimizeLegibility;
+
+          // 优化段落间距
+          :deep(p) {
+            margin: 0.6em 0;
+
+            &:first-child {
+              margin-top: 0;
+            }
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+          }
+
+          // 优化列表显示
+          :deep(ul),
+          :deep(ol) {
+            padding-left: 1.5em;
+            margin: 0.6em 0;
+          }
+
+          // 确保代码块清晰
+          :deep(code) {
+            font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+          }
+        }
       }
       .image-container {
         display: flex;
@@ -2057,7 +2106,7 @@ onBeforeUnmount(() => {
           align-items: center;
           justify-content: center;
           padding: 0 1.5rem;
-          border-radius: 16px;
+          border-radius: 12px;
           min-width: 140px;
           min-height: 100px;
 
@@ -2067,8 +2116,7 @@ onBeforeUnmount(() => {
             color: rgba(76, 175, 80, 0.8);
             text-transform: uppercase;
             animation: textGradient 2s linear infinite;
-            text-shadow:
-              0 0 10px rgba(var(--primary-color-rgb), 0.8),
+            text-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8),
               0 0 20px rgba(var(--primary-color-rgb), 0.4),
               0 0 30px rgba(var(--primary-color-rgb), 0.2);
           }
@@ -2212,7 +2260,7 @@ onBeforeUnmount(() => {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.5rem 1.33rem;
+          padding: 0.5rem 1rem;
           cursor: pointer;
           user-select: none;
           border-radius: 10px;
@@ -2232,7 +2280,7 @@ onBeforeUnmount(() => {
 
           .think-title-text {
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 500;
             color: #8c8d9b;
           }
 
@@ -2249,8 +2297,7 @@ onBeforeUnmount(() => {
         .think-content {
           overflow: hidden;
           opacity: 1;
-          transition:
-            max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
             opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
           &.collapsed {
@@ -2259,35 +2306,73 @@ onBeforeUnmount(() => {
           }
 
           .think-content-inner {
-            padding: 0.5rem 1.33rem 0.07rem 1.33rem;
-            font-size: 0.87rem;
-            color: #8c8d9b;
-            border-left: 0.2rem solid var(--primary-color);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            border-left: 2px solid var(--primary-color);
             transform: translateY(0);
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
-            :deep(p),
-            :deep(h1),
-            :deep(h2),
-            :deep(h3),
-            :deep(h4),
-            :deep(h5),
-            :deep(h6),
-            :deep(span),
-            :deep(div),
-            :deep(ul),
-            :deep(ol),
-            :deep(li) {
-              color: #8c8d9b;
+            // 字体渲染优化
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+
+            // 亮色模式：灰色文字
+            .light-mode & {
+              color: #666;
+
+              :deep(p),
+              :deep(h1),
+              :deep(h2),
+              :deep(h3),
+              :deep(h4),
+              :deep(h5),
+              :deep(h6),
+              :deep(span),
+              :deep(div),
+              :deep(ul),
+              :deep(ol),
+              :deep(li) {
+                color: #666;
+                line-height: 1.7;
+              }
+
+              :deep(a) {
+                color: #444;
+                text-decoration: underline;
+              }
             }
 
-            :deep(a) {
-              color: #8c8d9b;
-              opacity: 0.8;
+            // 暗色模式：灰色文字
+            :root:not(.light-mode) & {
+              color: #999;
 
-              &:hover {
-                opacity: 1;
+              :deep(p),
+              :deep(h1),
+              :deep(h2),
+              :deep(h3),
+              :deep(h4),
+              :deep(h5),
+              :deep(h6),
+              :deep(span),
+              :deep(div),
+              :deep(ul),
+              :deep(ol),
+              :deep(li) {
+                color: #999;
+                line-height: 1.7;
               }
+
+              :deep(a) {
+                color: #bbb;
+                text-decoration: underline;
+              }
+            }
+
+            // 优化段落间距
+            :deep(p) {
+              margin: 0.5em 0;
             }
           }
 
@@ -2320,7 +2405,6 @@ onBeforeUnmount(() => {
 
           &:hover {
             background-color: rgba(24, 160, 88, 0.1);
-            transform: scale(1.1);
           }
 
           &:active {
@@ -2446,8 +2530,7 @@ onBeforeUnmount(() => {
         margin-left: 4px;
         font-size: 1.05em;
         cursor: pointer;
-        transition:
-          opacity 0.3s ease,
+        transition: opacity 0.3s ease,
           transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         will-change: transform, opacity;
 

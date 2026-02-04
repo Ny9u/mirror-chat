@@ -1971,6 +1971,7 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        user-select: none;
       }
     }
 
@@ -2075,6 +2076,7 @@ onBeforeUnmount(() => {
         font-size: 16px;
         font-weight: 600;
         color: var(--text-color);
+        user-select: none;
       }
 
       .header-actions {

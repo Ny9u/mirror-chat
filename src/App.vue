@@ -2,7 +2,7 @@
   <n-config-provider :theme="theme">
     <div class="main" :class="{ 'light-mode': configStore.theme === 'light' }">
       <n-dialog-provider>
-        <n-message-provider>
+        <n-message-provider :placement="'top'" :max="3" :duration="3000">
           <main>
             <router-view />
           </main>
@@ -36,7 +36,7 @@ watch(
       root.classList.remove("light-mode");
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 

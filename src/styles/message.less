@@ -1,0 +1,191 @@
+// 全局 Message 样式
+
+// Message 容器
+.n-message-container {
+  top: 20px !important;
+  pointer-events: none;
+}
+
+.n-message-wrapper {
+  pointer-events: auto;
+}
+
+// Message 主体样式
+.n-message {
+  // 基础样式
+  padding: 12px 16px !important;
+  border-radius: 10px !important;
+  max-width: 480px !important;
+
+  // 背景模糊效果(现代化设计)
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  // 微妙的过渡动画
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // 字体优化
+  font-size: 14px !important;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  line-height: 1.5 !important;
+
+  // hover 状态 - 微妙上浮
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  // 隐藏图标
+  .n-message__icon {
+    display: none !important;
+  }
+
+  // 内容区域
+  .n-message__content {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  // 关闭按钮基础样式
+  .n-message__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-left: 12px;
+    border-radius: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+// 亮色模式样式
+.light-mode {
+  .n-message {
+    // 统一背景色
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: #1a1a1a !important;
+
+    // 边框
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+
+    // 默认阴影
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 8px rgba(0, 0, 0, 0.06),
+      0 12px 24px rgba(0, 0, 0, 0.08) !important;
+
+    // hover 阴影
+    &:hover {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 8px 16px rgba(0, 0, 0, 0.06),
+        0 16px 32px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    // 关闭按钮颜色
+    .n-message__close {
+      color: rgba(0, 0, 0, 0.45);
+
+      &:hover {
+        color: rgba(0, 0, 0, 0.65);
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      &:active {
+        color: rgba(0, 0, 0, 0.85);
+        background-color: rgba(0, 0, 0, 0.08);
+      }
+    }
+  }
+}
+
+// 暗色模式样式
+:root:not(.light-mode) {
+  .n-message {
+    // 统一背景色
+    background-color: rgba(26, 26, 26, 0.95) !important;
+    color: #ffffff !important;
+
+    // 边框
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    // 默认阴影
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 4px 8px rgba(0, 0, 0, 0.28),
+      0 12px 24px rgba(0, 0, 0, 0.32) !important;
+
+    // hover 阴影
+    &:hover {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.24),
+        0 8px 16px rgba(0, 0, 0, 0.28),
+        0 16px 32px rgba(0, 0, 0, 0.32) !important;
+    }
+
+    // 关闭按钮颜色
+    .n-message__close {
+      color: rgba(255, 255, 255, 0.45);
+
+      &:hover {
+        color: rgba(255, 255, 255, 0.65);
+        background-color: rgba(255, 255, 255, 0.08);
+      }
+
+      &:active {
+        color: rgba(255, 255, 255, 0.85);
+        background-color: rgba(255, 255, 255, 0.12);
+      }
+    }
+  }
+}
+
+// 入场动画 - 从上方滑入并淡入
+.n-message-wrapper {
+  animation: message-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 离场动画 - 淡出并微微上移
+.n-message-wrapper--hide {
+  animation: message-slide-out 0.25s cubic-bezier(0.4, 0, 1, 1);
+}
+
+@keyframes message-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+// 多个 message 之间的间距
+.n-message-wrapper + .n-message-wrapper {
+  margin-top: 12px;
+}

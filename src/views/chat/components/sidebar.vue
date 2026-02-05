@@ -185,46 +185,65 @@
 
         <div class="history-section" v-show="!configStore.sidebarCollapsed">
           <div class="history-header">
-            <div class="history-title">历史对话</div>
-            <n-icon class="history-icon" size="16" @click="navigateToHistory">
+            <div class="history-title-wrapper" @click="toggleHistory">
+              <div class="history-title">历史对话</div>
+              <n-icon
+                class="toggle-icon"
+                size="16"
+                :class="{ rotated: !isHistoryExpanded }"
+              >
+                <ChevronDown />
+              </n-icon>
+            </div>
+            <n-icon
+              class="history-icon navigate-icon"
+              size="16"
+              @click="navigateToHistory"
+            >
               <Clock />
             </n-icon>
           </div>
-          <div class="history-list">
-            <div
-              v-for="item in historyList"
-              :key="item.id"
-              class="history-item"
-              :class="{ active: item.id === configStore.chatId }"
-              @click="selectHistory(item.id)"
-            >
-              <div class="history-item-content">
-                <div class="history-item-title">{{ item.title }}</div>
-                <div class="history-item-time">
-                  {{ formatTime(item.updateTime) }}
+          <transition name="history-list">
+            <div class="history-list" v-show="isHistoryExpanded">
+              <template v-if="groupedHistoryList.length > 0">
+                <div
+                  v-for="group in groupedHistoryList"
+                  :key="group.key"
+                  class="history-group"
+                >
+                  <div class="history-group-label">{{ group.label }}</div>
+                  <div
+                    v-for="item in group.items"
+                    :key="item.id"
+                    class="history-item"
+                    :class="{ active: item.id === configStore.chatId }"
+                    @click="selectHistory(item.id)"
+                  >
+                    <div class="history-item-content">
+                      <div class="history-item-title">{{ item.title }}</div>
+                    </div>
+                    <div class="history-item-actions">
+                      <n-icon
+                        class="history-action-icon edit-icon"
+                        size="16"
+                        @click.stop="handleEditTitle(item.id, item.title)"
+                      >
+                        <Edit />
+                      </n-icon>
+                      <n-icon
+                        class="history-action-icon delete-icon"
+                        size="16"
+                        @click.stop="handleDeleteConversation(item.id)"
+                      >
+                        <Trash />
+                      </n-icon>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="history-item-actions">
-                <n-icon
-                  class="history-action-icon edit-icon"
-                  size="16"
-                  @click.stop="handleEditTitle(item.id, item.title)"
-                >
-                  <Edit />
-                </n-icon>
-                <n-icon
-                  class="history-action-icon delete-icon"
-                  size="16"
-                  @click.stop="handleDeleteConversation(item.id)"
-                >
-                  <Trash />
-                </n-icon>
-              </div>
+              </template>
+              <div v-else class="history-empty">暂无对话记录</div>
             </div>
-            <div v-if="historyList.length === 0" class="history-empty">
-              暂无对话记录
-            </div>
-          </div>
+          </transition>
         </div>
 
         <div
@@ -615,6 +634,7 @@ import {
   ChevronRight,
   Plus,
   X,
+  ChevronDown,
 } from "@vicons/tabler";
 import { useConfigStore } from "@/stores/configStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -645,6 +665,7 @@ const editingId = ref(null);
 const editingTitle = ref("");
 const editInput = ref(null);
 const toggleBtnHover = ref(false);
+const isHistoryExpanded = ref(true);
 const showRoleDialog = ref(false);
 const showCreateRoleDialog = ref(false);
 const systemRolePage = ref(1);
@@ -718,6 +739,42 @@ const nextCustomRolePage = () => {
 };
 
 const historyList = computed(() => historyStore.historyList);
+
+// 按时间分组的历史记录
+const groupedHistoryList = computed(() => {
+  const groups = {
+    today: { label: "今天", items: [] },
+    yesterday: { label: "昨天", items: [] },
+    older: { label: "很久以前", items: [] },
+  };
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  historyList.value.forEach((item) => {
+    const itemDate = new Date(item.updateTime);
+    const itemDay = new Date(
+      itemDate.getFullYear(),
+      itemDate.getMonth(),
+      itemDate.getDate()
+    );
+
+    if (itemDay.getTime() === today.getTime()) {
+      groups.today.items.push(item);
+    } else if (itemDay.getTime() === yesterday.getTime()) {
+      groups.yesterday.items.push(item);
+    } else {
+      groups.older.items.push(item);
+    }
+  });
+
+  // 只返回有数据的分组
+  return Object.entries(groups)
+    .filter(([_, group]) => group.items.length > 0)
+    .map(([key, group]) => ({ key, ...group }));
+});
 
 // 获取系统角色列表
 const fetchSystemRoles = async () => {
@@ -837,12 +894,12 @@ const initRoles = async () => {
   }
 };
 
-const formatTime = (date) => {
-  return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
-};
-
 const toggleSidebar = () => {
   configStore.toggleSidebar();
+};
+
+const toggleHistory = () => {
+  isHistoryExpanded.value = !isHistoryExpanded.value;
 };
 
 const fetchHistoryList = async (forceRefresh = false) => {
@@ -1614,6 +1671,10 @@ onBeforeUnmount(() => {
 
       .menu-section {
         padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background-color: var(--background-color);
 
         .menu-item {
           display: flex;
@@ -1685,7 +1746,7 @@ onBeforeUnmount(() => {
           }
 
           .menu-text {
-            font-size: 14px;
+            font-size: 15px;
             color: var(--text-color);
             white-space: nowrap;
             overflow: hidden;
@@ -1706,7 +1767,7 @@ onBeforeUnmount(() => {
       }
 
       .history-section {
-        padding: 0 0.625rem;
+        padding: 0 0.5rem;
         overflow: hidden;
         max-height: 100vh;
 
@@ -1714,20 +1775,52 @@ onBeforeUnmount(() => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0rem 0.8rem;
-          padding-top: 0.8rem;
-          padding-bottom: 0.4rem;
+          padding: 0.6rem 0.5rem;
+          margin: 0 0.25rem;
           user-select: none;
           position: sticky;
           top: 0;
           z-index: 10;
 
-          .history-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-color);
-            opacity: 0.3;
-            transition: opacity 0.4s @ease-smooth;
+          .history-title-wrapper {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            margin: -0.4rem -0.6rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s @ease-smooth;
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.04);
+            }
+
+            .history-title {
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--text-color);
+              opacity: 0.3;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              transition: opacity 0.4s @ease-smooth;
+            }
+
+            .toggle-icon {
+              width: 1.6rem;
+              height: 1.6rem;
+              border-radius: 50%;
+              cursor: pointer;
+              color: var(--text-color);
+              opacity: 0.4;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: transform 0.3s @ease-bounce, opacity 0.2s @ease-smooth;
+
+              &.rotated {
+                transform: rotate(-90deg);
+              }
+            }
           }
 
           .history-icon {
@@ -1740,101 +1833,123 @@ onBeforeUnmount(() => {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.4s @ease-smooth;
+            transition: all 0.2s @ease-smooth;
 
             &:hover {
               background-color: rgba(0, 0, 0, 0.1);
-              transform: scale(1.1);
+              opacity: 0.6;
             }
           }
         }
 
-        .history-header:hover .history-icon {
-          opacity: 0.3;
-        }
-
-        .history-header:hover .history-icon:hover {
-          opacity: 0.6;
+        .history-header:hover .navigate-icon {
+          opacity: 0.4;
         }
 
         .history-list {
+          padding-bottom: 0.5rem;
+
+          .history-group {
+            margin-bottom: 0.75rem;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .history-group-label {
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--text-color);
+              opacity: 0.3;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              padding: 0.5rem 0.75rem 0.375rem;
+              user-select: none;
+            }
+          }
+
           .history-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 0.5rem 0;
-            padding: 0.5rem 0.8rem;
-            border-radius: 12px;
+            margin: 0.125rem 0;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.4s @ease-smooth;
+            transition: all 0.2s @ease-smooth;
             position: relative;
 
             &:hover {
-              background-color: rgba(0, 0, 0, 0.05);
+              background-color: rgba(0, 0, 0, 0.04);
 
               .history-item-actions {
-                display: flex;
                 opacity: 1;
+                transform: translateX(0);
               }
             }
 
             &:active {
-              transform: scale(0.98);
+              background-color: rgba(0, 0, 0, 0.06);
             }
 
             &.active {
-              background-color: rgba(0, 0, 0, 0.08);
+              background-color: rgba(0, 0, 0, 0.06);
+
+              .history-item-title {
+                font-weight: 500;
+              }
             }
 
             .history-item-content {
               flex: 1;
               overflow: hidden;
+              min-width: 0;
+              user-select: none;
 
               .history-item-title {
-                font-size: 14px;
+                font-size: 15px;
                 color: var(--text-color);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                transition: color 0.4s @ease-smooth;
-              }
-
-              .history-item-time {
-                font-size: 12px;
-                color: rgba(128, 128, 128, 0.8);
-                transition: color 0.4s @ease-smooth;
+                transition: color 0.2s @ease-smooth;
+                line-height: 1.4;
               }
             }
 
             .history-item-actions {
-              margin-left: 0.5rem;
+              margin-left: 0.375rem;
               display: flex;
-              gap: 0.25rem;
+              gap: 0.125rem;
               opacity: 0;
-              transition: opacity 0.4s @ease-smooth;
+              transform: translateX(4px);
+              transition: all 0.2s @ease-smooth;
+              flex-shrink: 0;
 
               .history-action-icon {
                 cursor: pointer;
                 color: var(--text-color);
+                opacity: 0.4;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.4s @ease-bounce;
+                transition: all 0.2s @ease-smooth;
                 padding: 0.25rem;
                 border-radius: 4px;
 
                 &:hover {
+                  opacity: 1;
                   transform: scale(1.05);
                 }
 
                 &.edit-icon:hover {
                   color: var(--primary-color);
-                  background-color: rgba(0, 255, 119, 0.1);
+                  background-color: rgba(0, 255, 119, 0.08);
                 }
 
                 &.delete-icon:hover {
                   color: #d03050;
-                  background-color: rgba(208, 48, 80, 0.1);
+                  background-color: rgba(208, 48, 80, 0.08);
                 }
               }
             }
@@ -1842,13 +1957,33 @@ onBeforeUnmount(() => {
 
           .history-empty {
             text-align: center;
-            padding: 15rem 0;
+            padding: 3rem 0;
             color: var(--text-color);
-            opacity: 0.3;
-            font-size: 14px;
+            opacity: 0.35;
+            font-size: 15px;
             user-select: none;
           }
         }
+      }
+
+      .history-list-enter-active,
+      .history-list-leave-active {
+        transition: all 0.3s @ease-smooth;
+        overflow: hidden;
+      }
+
+      .history-list-enter-from,
+      .history-list-leave-to {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+      }
+
+      .history-list-enter-to,
+      .history-list-leave-from {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
       }
 
       .collapsed-history-icon {

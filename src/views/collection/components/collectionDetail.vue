@@ -78,6 +78,9 @@
             <div class="message">
               <div class="content">
                 <div v-for="(i, index) in item.content" :key="index">
+                  <div class="image-container" v-if="i.type === 'image'">
+                    <img :src="i.data.url" />
+                  </div>
                   <div class="text-container" v-if="i.type === 'content'">
                     <div
                       class="text"
@@ -87,9 +90,6 @@
                     >
                       <div v-html="processContent(i.data)"></div>
                     </div>
-                  </div>
-                  <div class="image-container" v-else-if="i.type === 'image'">
-                    <img :src="i.data.url" />
                   </div>
                 </div>
               </div>
@@ -570,7 +570,7 @@ onMounted(async () => {
       .content {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: flex-end;
         .text-container {
           background: var(--message-color) no-repeat center;
           border-radius: 10px;
@@ -582,10 +582,10 @@ onMounted(async () => {
         }
 
         .image-container {
-          background: var(--message-color) no-repeat center;
           border-radius: 10px;
           padding: 0.6rem 1.33rem;
           max-width: 700px;
+          user-select: none;
 
           img {
             max-width: 100%;

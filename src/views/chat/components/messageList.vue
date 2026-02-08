@@ -86,12 +86,27 @@
                       <WaveCanvas />
                       <div class="generating-text">图像生成中</div>
                     </div>
-                    <img
-                      v-else
-                      :src="i.data.url"
-                      class="message-image"
-                      @click="openFullscreenImage(i.data.url)"
-                    />
+                    <template v-else>
+                      <div
+                        v-if="!imageLoadStatus.get(i.data.url)"
+                        class="chat-image-placeholder"
+                      >
+                        <n-icon size="36" class="loading-icon">
+                          <Loader />
+                        </n-icon>
+                        <span class="placeholder-text">图片加载中...</span>
+                      </div>
+                      <img
+                        :src="i.data.url"
+                        class="message-image"
+                        :class="{
+                          'image-hidden': !imageLoadStatus.get(i.data.url),
+                        }"
+                        @load="imageLoadStatus.set(i.data.url, true)"
+                        @error="imageLoadStatus.set(i.data.url, true)"
+                        @click="openFullscreenImage(i.data.url)"
+                      />
+                    </template>
                   </div>
                   <!-- 文件内容渲染 -->
                   <div class="file-message-container" v-if="i.type === 'file'">
@@ -451,29 +466,37 @@
     <div class="welcome" v-show="!chatHistory.slice(1).length">
       <div id="typed" class="welcome-text"></div>
     </div>
-    <Transition name="fullscreen-fade">
-      <div
-        v-if="isFullscreenImage"
-        class="fullscreen-image-overlay"
-        @click="closeFullscreenImage"
-      >
-        <div class="fullscreen-image-container" @click.stop>
-          <img :src="fullscreenImage" class="fullscreen-image" />
-          <div class="fullscreen-toolbar">
-            <n-button
-              type="text"
-              size="large"
-              circle
-              @click="downloadImage(fullscreenImage)"
-            >
-              <template #icon>
-                <n-icon :size="24"><Download /></n-icon>
-              </template>
-            </n-button>
+    <Teleport to="body">
+      <Transition name="fullscreen-fade">
+        <div
+          v-if="isFullscreenImage"
+          class="fullscreen-image-overlay"
+          @click="closeFullscreenImage"
+        >
+          <div class="fullscreen-image-container" @click.stop>
+            <img
+              :src="fullscreenImage"
+              class="fullscreen-image"
+              :class="{ 'image-hidden': !imageLoadStatus.get(fullscreenImage) }"
+              @load="imageLoadStatus.set(fullscreenImage, true)"
+              @error="imageLoadStatus.set(fullscreenImage, true)"
+            />
+            <div class="fullscreen-toolbar">
+              <n-button
+                type="text"
+                size="large"
+                circle
+                @click="downloadImage(fullscreenImage)"
+              >
+                <template #icon>
+                  <n-icon :size="24" color="#fff"><Download /></n-icon>
+                </template>
+              </n-button>
+            </div>
           </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -482,6 +505,7 @@ import {
   nextTick,
   onMounted,
   ref,
+  reactive,
   toRefs,
   watch,
   onBeforeUnmount,
@@ -544,6 +568,7 @@ const editContent = ref("");
 const editInputRef = ref(null);
 const fullscreenImage = ref(null);
 const isFullscreenImage = ref(false);
+const imageLoadStatus = reactive(new Map());
 const chatHistory = ref([
   {
     role: "system",
@@ -680,10 +705,16 @@ const sendMessage = (content, images = [], files = []) => {
   const messageContent = [];
 
   if (images && images.length > 0) {
-    images.forEach((imageUrl) => {
+    images.forEach((imageData) => {
+      // 支持新旧格式：如果 imageData 是字符串则是旧格式，否则是新格式对象
+      const originalUrl =
+        typeof imageData === "string" ? imageData : imageData.original;
+
       messageContent.push({
         type: "image",
-        data: imageUrl,
+        data: {
+          url: originalUrl,
+        },
       });
     });
   }
@@ -1045,7 +1076,7 @@ const regenerateResponse = (item) => {
 
       lastImages = lastMessage.content
         .filter((c) => c.type === "image")
-        .map((c) => c.data);
+        .map((c) => c.data?.url);
 
       lastFiles = lastMessage.content
         .filter((c) => c.type === "file" && c.fileObject)
@@ -1151,7 +1182,7 @@ const saveEdit = (item) => {
 
   const existingImages = item.content
     .filter((c) => c.type === "image")
-    .map((c) => c.data);
+    .map((c) => c.data?.url);
 
   const existingFiles = item.content
     .filter((c) => c.type === "file" && c.fileObject)
@@ -1185,9 +1216,30 @@ const handleMouseLeave = (key) => {
   hoveredMessageKey.value[key] = false;
 };
 
+const onChatImageLoad = (imageUrl) => {
+  imageLoadStatus.set(imageUrl, true);
+};
+
 const openFullscreenImage = (imageUrl) => {
   fullscreenImage.value = imageUrl;
   isFullscreenImage.value = true;
+
+  // 如果该图片还未加载过，初始化加载状态为 false
+  if (!imageLoadStatus.has(imageUrl)) {
+    imageLoadStatus.set(imageUrl, false);
+  }
+
+  // 预加载原图
+  if (imageUrl) {
+    const img = new Image();
+    img.onload = () => {
+      imageLoadStatus.set(imageUrl, true);
+    };
+    img.onerror = () => {
+      imageLoadStatus.set(imageUrl, true);
+    };
+    img.src = imageUrl;
+  }
 };
 
 const closeFullscreenImage = () => {
@@ -2098,6 +2150,45 @@ onBeforeUnmount(() => {
           border-radius: 10px;
           object-fit: contain;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          transition: opacity 0.3s ease;
+
+          &.image-hidden {
+            opacity: 0;
+            position: absolute;
+          }
+        }
+
+        .chat-image-placeholder {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 260px;
+          height: 200px;
+          background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+          border-radius: 10px;
+          border: 1px solid #d0d0d0;
+
+          .loading-icon {
+            animation: spin 3s linear infinite;
+            color: #999;
+          }
+
+          .placeholder-text {
+            color: #999;
+            font-size: 14px;
+            user-select: none;
+          }
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .image-generating {
@@ -2642,16 +2733,6 @@ onBeforeUnmount(() => {
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.15);
   }
-}
-
-.fullscreen-fade-enter-active,
-.fullscreen-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fullscreen-fade-enter-from,
-.fullscreen-fade-leave-to {
-  opacity: 0;
 }
 </style>
 

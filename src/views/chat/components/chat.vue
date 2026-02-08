@@ -484,44 +484,6 @@ const handleRegenerateImage = async ({ prompt, ratio }) => {
   }
 };
 
-const handleGenerateImage = async ({ prompt, ratio }) => {
-  if (!listRef.value) {
-    message.error("模型初始化失败，请稍后再试 ⚠️");
-    return;
-  }
-
-  const selectedRatioValue = ratio || selectedRatio.value.value;
-
-  const generatingKey = listRef.value.addImageMessage(ratio);
-  loading.value = true;
-
-  try {
-    const params = {
-      prompt,
-      model: "qwen-image-max",
-      size: ratioToSize[selectedRatioValue] || "1328*1328",
-      prompt_extend: true,
-      watermark: false,
-      chatId: configStore.chatId || undefined,
-    };
-
-    const res = await generateImage(params);
-
-    if (res && res.data && res.data.url) {
-      if (res.data.chatId) {
-        configStore.setChatId(res.data.chatId);
-      }
-      listRef.value.updateImageMessage(generatingKey, res.data.url, ratio);
-    } else {
-      message.error("图片生成失败 ⚠️");
-    }
-  } catch (err) {
-    message.error("服务请求失败，请检查网络连接 🌐");
-  } finally {
-    loading.value = false;
-  }
-};
-
 const handleEnter = (e) => {
   if (!e.shiftKey) {
     e.preventDefault();
@@ -557,8 +519,12 @@ const sendMessage = async () => {
     message.error("模型初始化失败，请稍后再试 ⚠️");
     return;
   }
-  if (netSearch.value) {
-    // 发送前先进行搜索(调用博查API需要付费,暂时不开发)
+  const hasImage = uploadedFiles.value.some((file) =>
+    file.type.startsWith("image/")
+  );
+  if (hasImage && configStore.model !== "qwen3-vl-plus") {
+    message.warning("当前模型不支持图片识别，请切换到 qwen3-vl-plus 模型 ");
+    return;
   }
 
   // 提取图片数据
@@ -913,7 +879,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="less" scoped>
-  .chat-container {
+.chat-container {
   width: 100%;
   height: 100%;
   margin-top: 3.6rem;
@@ -970,6 +936,7 @@ onUnmounted(() => {
           overflow: hidden;
           display: flex;
           align-items: center;
+          user-select: none;
 
           .image-preview {
             position: relative;

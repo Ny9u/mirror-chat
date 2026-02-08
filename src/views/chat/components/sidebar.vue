@@ -1255,6 +1255,9 @@ const createNewChat = () => {
   configStore.chatId = null;
   fetchHistoryList(true);
   window.dispatchEvent(new CustomEvent("clearChatHistory"));
+  if (route.params.id) {
+    router.push("/chat");
+  }
 };
 
 const handleEditTitle = (id, title) => {

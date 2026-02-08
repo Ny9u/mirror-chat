@@ -16,8 +16,9 @@
           v-for="item in column"
           :key="item.id"
           class="collection-item"
+          :class="{ 'image-item': item.isImage }"
           :style="{
-            height: getRandomHeight(item.originalIndex),
+            height: item.isImage ? 'auto' : getRandomHeight(item.originalIndex),
             animationDelay: `${item.originalIndex * 0.05}s`,
           }"
           @click="openCollection(item)"
@@ -26,8 +27,23 @@
             <div class="item-title">{{ item.title }}</div>
             <div class="item-date">{{ formatDate(item.date) }}</div>
           </div>
-          <div class="item-content" style="padding: 0px" v-if="item.isImage">
-            <img :src="item.content" />
+          <div class="item-content image-wrapper" v-if="item.isImage">
+            <div
+              v-if="!imageLoadStatus.get(item.content)"
+              class="image-placeholder"
+            >
+              <n-icon size="36" class="loading-icon">
+                <Loader />
+              </n-icon>
+              <span class="placeholder-text">图片加载中...</span>
+            </div>
+            <img
+              :src="item.content"
+              class="collection-image"
+              :class="{ 'image-loaded': imageLoadStatus.get(item.content) }"
+              @load="imageLoadStatus.set(item.content, true)"
+              @error="imageLoadStatus.set(item.content, true)"
+            />
           </div>
           <div
             class="item-content"
@@ -83,9 +99,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { Trash, X, BookmarkOff, Eye, Copy } from "@vicons/tabler";
+import { Trash, X, BookmarkOff, Eye, Copy, Loader } from "@vicons/tabler";
 import { getUserFavorites, removeFavorite } from "@/services/user.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { md } from "@/services/markdownService.js";
@@ -99,7 +115,7 @@ const totalPage = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(18);
 const loading = ref(true);
-
+const imageLoadStatus = reactive(new Map());
 
 const totalPages = computed(() => {
   return Math.ceil(totalPage.value / pageSize.value);
@@ -332,11 +348,16 @@ onUnmounted(() => {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
       overflow: hidden;
 
+      &.image-item {
+        .item-content {
+          flex: 0 0 auto;
+        }
+      }
+
       &:hover {
         transform: translateY(-6px) scale(1.05);
         border-color: var(--primary-color);
-        box-shadow:
-          0 12px 28px rgba(0, 0, 0, 0.12),
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12),
           0 4px 12px rgba(var(--primary-color-rgb, 99, 102, 241), 0.15);
 
         .item-header .item-title {
@@ -425,6 +446,63 @@ onUnmounted(() => {
           font-size: 12px;
           padding: 1rem;
         }
+
+        &.image-wrapper {
+          padding: 0;
+          position: relative;
+          min-height: 120px;
+          flex: 0 0 auto;
+
+          .image-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            border-radius: 12px;
+
+            .loading-icon {
+              animation: spin 3s linear infinite;
+              color: #999;
+            }
+
+            .placeholder-text {
+              color: #999;
+              font-size: 14px;
+              user-select: none;
+            }
+          }
+
+          .collection-image {
+            width: 100%;
+            height: auto;
+            max-height: none;
+            object-fit: contain;
+            border-radius: 12px;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+
+            &.image-loaded {
+              opacity: 1;
+            }
+          }
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .item-actions {
@@ -440,9 +518,7 @@ onUnmounted(() => {
         backdrop-filter: blur(10px);
         border-radius: 10px;
         padding: 0.35rem 0.5rem;
-        box-shadow:
-          0 4px 12px rgba(0, 0, 0, 0.1),
-          0 1px 3px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
         z-index: 10;
 
         :deep(.n-button) {

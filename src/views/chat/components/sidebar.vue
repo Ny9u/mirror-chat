@@ -950,7 +950,7 @@ const loadConversation = async (id) => {
             role: "system",
             content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
           },
-          ...res.data.content[0],
+          ...res.data.content,
         ];
       } else {
         conversationData = [
@@ -958,7 +958,7 @@ const loadConversation = async (id) => {
             role: "system",
             content: "你是一个专业、精准、高效的智能问答助手,名字叫Mirror。",
           },
-          ...JSON.parse(res.data.content[0]),
+          ...JSON.parse(res.data.content),
         ];
       }
 

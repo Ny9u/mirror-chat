@@ -9,7 +9,7 @@
     <div class="filter-section">
       <div class="filter-buttons">
         <div
-          v-for="(filter) in filters"
+          v-for="filter in filters"
           :key="filter.key"
           class="filter-button"
           :class="{
@@ -134,6 +134,12 @@ import {
 import { md } from "@/services/markdownService.js";
 
 const router = useRouter();
+
+const NUploadComponent = resolveComponent("NUpload");
+const NUploadDraggerComponent = resolveComponent("NUploadDragger");
+const NIconComponent = resolveComponent("NIcon");
+const NTextComponent = resolveComponent("NText");
+const NPComponent = resolveComponent("NP");
 const message = useMessage();
 const dialog = useDialog();
 const configStore = useConfigStore();
@@ -309,7 +315,7 @@ const showUploadDialog = () => {
     content: () =>
       h("div", { style: "padding: 12px 0 0 0;" }, [
         h(
-          NUpload,
+          NUploadComponent,
           {
             multiple: true,
             directoryDnd: true,
@@ -320,7 +326,7 @@ const showUploadDialog = () => {
           {
             default: () =>
               h(
-                NUploadDragger,
+                NUploadDraggerComponent,
                 {},
                 {
                   default: () => [
@@ -334,14 +340,14 @@ const showUploadDialog = () => {
                       ),
                     ]),
                     h(
-                      NText,
+                      NTextComponent,
                       { style: "font-size: 16px" },
                       {
                         default: () => "点击或者拖动文件到该区域来上传",
                       }
                     ),
                     h(
-                      NP,
+                      NPComponent,
                       { depth: 3, style: "margin: 8px 0 0 0" },
                       {
                         default: () =>
@@ -430,7 +436,6 @@ const openKnowledge = async (item) => {
 };
 
 const openDeleteKnowledgeDialog = async (item) => {
-  const NIconComponent = resolveComponent("NIcon");
   dialog.warning({
     title: "确定删除文件？",
     content: `确定要删除"${item.fileName}"吗？删除后，文件将不可恢复。`,

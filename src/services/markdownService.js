@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import { markdownItTable } from "markdown-it-table";
 import hljs, { loadLanguage, isLanguageRegistered } from "@/utils/highlight.js";
 
 // 单例模式 - 只创建一个 MarkdownIt 实例
@@ -66,6 +67,9 @@ const getMarkdownInstance = () => {
         );
       },
     });
+
+    // 启用表格插件
+    markdownInstance.use(markdownItTable);
   }
   return markdownInstance;
 };

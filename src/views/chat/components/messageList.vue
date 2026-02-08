@@ -116,9 +116,11 @@
                         class="file-message-icon"
                       />
                       <div class="file-message-info">
-                        <div class="file-message-name">{{ i.data }}</div>
-                        <div class="file-message-size">
-                          {{ formatFileSize(i.size) }}
+                        <div class="file-message-name">
+                          {{ typeof i.data === "object" && i.data ? i.data.fileName : i.data }}
+                        </div>
+                        <div class="file-message-size" v-if="typeof i.data === 'object' && i.data?.size">
+                          {{ formatFileSize(i.data.size) }}
                         </div>
                       </div>
                     </div>
@@ -415,7 +417,7 @@
                         padding: '8px 8px',
                       }"
                     >
-                      <div
+                      <!-- <div
                         class="action-button"
                         :class="`action-button-${item.key}`"
                         @click="favoriteMessage(item)"
@@ -428,7 +430,7 @@
                           <Bookmark />
                         </n-icon>
                         <span>收藏</span>
-                      </div>
+                      </div> -->
                       <div
                         style="
                           padding: 8px 12px;
@@ -559,6 +561,7 @@ const { netSearch, deepThinking, knowledgeBase, imageGeneration } =
 const emit = defineEmits(["regenerateImage", "generateImage"]);
 
 const configStore = useConfigStore();
+const message = useMessage();
 
 const virtualListRef = ref(null);
 const popoverShowMap = ref({});
@@ -723,9 +726,12 @@ const sendMessage = (content, images = [], files = []) => {
     files.forEach((file) => {
       messageContent.push({
         type: "file",
-        data: file.name,
-        size: file.size,
-        fileObject: file,
+        data: {
+          fileName: file.name,
+          size: file.size,
+          mimeType: file.type,
+          fileObject: file,
+        },
       });
     });
   }
@@ -774,8 +780,8 @@ const fetchAI = async (
         // 如果没有传入 files，从 chatHistory 中提取原始 File 对象
         if (!extractedFiles || extractedFiles.length === 0) {
           extractedFiles = chatHistory.value[i].content
-            .filter((c) => c.type === "file" && c.fileObject)
-            .map((c) => c.fileObject);
+            .filter((c) => c.type === "file" && c.data?.fileObject)
+            .map((c) => c.data.fileObject);
         }
 
         break;
@@ -1079,8 +1085,8 @@ const regenerateResponse = (item) => {
         .map((c) => c.data?.url);
 
       lastFiles = lastMessage.content
-        .filter((c) => c.type === "file" && c.fileObject)
-        .map((c) => c.fileObject);
+        .filter((c) => c.type === "file" && c.data?.fileObject)
+        .map((c) => c.data.fileObject);
 
       break;
     }
@@ -1185,8 +1191,8 @@ const saveEdit = (item) => {
     .map((c) => c.data?.url);
 
   const existingFiles = item.content
-    .filter((c) => c.type === "file" && c.fileObject)
-    .map((c) => c.fileObject);
+    .filter((c) => c.type === "file" && c.data?.fileObject)
+    .map((c) => c.data.fileObject);
 
   const editedText = editContent.value;
 
@@ -1770,7 +1776,14 @@ const formatFileSize = (bytes) => {
 };
 
 // 获取文件图标
-const getFileIcon = (fileName) => {
+const getFileIcon = (fileOrName) => {
+  const fileName =
+    typeof fileOrName === "object" && fileOrName !== null
+      ? fileOrName.fileName
+      : fileOrName;
+  if (typeof fileName !== "string") {
+    return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  }
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   switch (ext) {
     case "pdf":

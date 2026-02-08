@@ -717,6 +717,7 @@ const handleFileSelect = (event) => {
         ".svg",
         ".doc",
         ".docx",
+        ".pdf",
         ".txt",
         ".md",
       ];

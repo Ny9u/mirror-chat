@@ -81,6 +81,22 @@
                   <div class="image-container" v-if="i.type === 'image'">
                     <img :src="i.data.url" />
                   </div>
+                  <div class="file-message-container" v-if="i.type === 'file'">
+                    <div class="file-message-item">
+                      <img
+                        :src="getFileIcon(i.data.fileName)"
+                        class="file-message-icon"
+                      />
+                      <div class="file-message-info">
+                        <div class="file-message-name">
+                          {{ i.data.fileName }}
+                        </div>
+                        <div class="file-message-size">
+                          {{ formatFileSize(i.data.size) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div class="text-container" v-if="i.type === 'content'">
                     <div
                       class="text"
@@ -219,6 +235,71 @@ const isCapturing = ref(false);
 
 // 处理内容，将Markdown转换为HTML并确保代码块高亮
 const processContent = (content) => {
+  // 如果内容看起来像是纯文本，先渲染为Markdown
+  // 检查是否包含常见的Markdown语法
+  const hasMarkdownSyntax =
+    /^(#{1,6}\s|[-*+]\s|\d+\.\s|>|\|.*\||```)/m.test(content) ||
+    /\*\*.*?\*\*/.test(content) ||
+    /__.*?__/.test(content) ||
+    /\*.*?\*/.test(content) ||
+    /_.*?_/.test(content) ||
+    /\[.*?\]\(.*?\)/.test(content);
+
+  if (hasMarkdownSyntax) {
+    // 渲染Markdown
+    const html = md.render(content);
+
+    // 如果渲染后的HTML包含代码块，需要进行高亮处理
+    if (html.includes("<pre") || html.includes("<code")) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = html;
+
+      // 查找所有的pre和code标签
+      const codeBlocks = tempDiv.querySelectorAll("pre code");
+      codeBlocks.forEach((block) => {
+        const codeText = block.textContent;
+        const classes = block.className.split(" ");
+        const langClass = classes.find((c) => c.startsWith("language-"));
+        const lang = langClass ? langClass.replace("language-", "") : "";
+
+        // 使用highlight.js高亮代码
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            const highlighted = hljs.highlight(codeText, {
+              language: lang,
+              ignoreIllegals: true,
+            }).value;
+            block.innerHTML = highlighted;
+            block.classList.add("hljs");
+          } catch (__) {
+            block.classList.add("hljs");
+          }
+        } else {
+          try {
+            const result = hljs.highlightAuto(codeText);
+            block.innerHTML = result.value;
+            block.classList.add("hljs");
+            if (result.language) {
+              block.classList.add(`language-${result.language}`);
+            }
+          } catch (__) {
+            block.classList.add("hljs");
+          }
+        }
+      });
+
+      const inlineCodes = tempDiv.querySelectorAll("code:not(pre code)");
+      inlineCodes.forEach((code) => {
+        code.classList.add("hljs");
+      });
+
+      return tempDiv.innerHTML;
+    }
+
+    return html;
+  }
+
+  // 如果内容已经包含HTML标签，直接处理高亮
   if (/<[^>]+>/.test(content)) {
     // 创建一个临时DOM元素来解析HTML
     const tempDiv = document.createElement("div");
@@ -266,6 +347,7 @@ const processContent = (content) => {
     return tempDiv.innerHTML;
   }
 
+  // 默认情况下，渲染为Markdown
   return md.render(content);
 };
 
@@ -428,6 +510,32 @@ const goBack = () => {
   router.push("/collection");
 };
 
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
+
+// 获取文件图标
+const getFileIcon = (fileName) => {
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  switch (ext) {
+    case "pdf":
+      return new URL("@/assets/PDF.svg", import.meta.url).href;
+    case "doc":
+    case "docx":
+      return new URL("@/assets/DOCX.svg", import.meta.url).href;
+    case "txt":
+    case "md":
+      return new URL("@/assets/Markdown.svg", import.meta.url).href;
+    default:
+      return new URL("@/assets/Markdown.svg", import.meta.url).href;
+  }
+};
+
 onMounted(async () => {
   await loadCollectionDetail();
 });
@@ -578,6 +686,35 @@ onMounted(async () => {
             padding: 0.6rem 1.33rem;
             font-size: 1.07rem;
             color: var(--text-color);
+            line-height: 1.6;
+
+            /* 确保Markdown元素正确渲染 */
+            p {
+              margin: 0.5em 0;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+              margin: 1em 0 0.5em 0;
+            }
+
+            ul,
+            ol {
+              margin: 0.5em 0;
+              padding-left: 2em;
+            }
+
+            li {
+              margin: 0.25em 0;
+            }
+
+            table {
+              margin: 1em 0;
+            }
           }
         }
 
@@ -601,6 +738,51 @@ onMounted(async () => {
             color: var(--text-color-3);
             font-size: 14px;
             padding: 1rem;
+          }
+        }
+
+        .file-message-container {
+          padding: 0.6rem 0;
+          max-width: 400px;
+
+          .file-message-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--message-color);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+
+            .file-message-icon {
+              width: 40px;
+              height: 40px;
+              flex-shrink: 0;
+              object-fit: contain;
+            }
+
+            .file-message-info {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              min-width: 0;
+              flex: 1;
+
+              .file-message-name {
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--text-color);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+
+              .file-message-size {
+                font-size: 12px;
+                color: var(--text-color);
+                opacity: 0.6;
+              }
+            }
           }
         }
       }
@@ -666,6 +848,7 @@ onMounted(async () => {
 <style lang="less">
 @import "../styles/imageModal.less";
 @import "@/styles/hljs.less";
+@import "@/styles/markdown.less";
 
 .collection-detail-content .n-scrollbar-rail {
   display: none !important;

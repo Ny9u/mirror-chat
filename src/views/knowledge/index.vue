@@ -400,31 +400,32 @@ const openKnowledge = async (item) => {
           "div",
           {
             style:
-              "max-height: 60vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.2) transparent;",
+              "max-height: 60vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.15) transparent; padding: 0 4px;",
           },
           [
             isMarkdown
               ? h("div", {
                   style:
-                    "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color);",
+                    "margin: 0; padding: 1.25rem; background-color: rgba(128, 128, 128, 0.05); border-radius: 12px; font-size: 14px; line-height: 1.75; color: var(--text-color);",
                   innerHTML: md.render(content),
                 })
               : h(
                   "pre",
                   {
                     style:
-                      "margin: 0; padding: 1rem; background-color: var(--background-color); border-radius: 8px; font-size: 14px; line-height: 1.8; color: var(--text-color); white-space: pre-wrap; word-break: break-word; font-family: inherit;",
+                      "margin: 0; padding: 1.25rem; background-color: rgba(128, 128, 128, 0.05); border-radius: 12px; font-size: 13px; line-height: 1.7; color: var(--text-color); white-space: pre-wrap; word-break: break-word;",
                   },
                   content
                 ),
           ]
         ),
       showIcon: false,
-      style: "width: 50vw; max-width: 800px;",
-      titleStyle: "font-weight: 600;",
+      style: "width: 50vw; max-width: 800px; border-radius: 16px;",
+      titleStyle: "font-weight: 600; font-size: 16px; letter-spacing: -0.01em;",
       positiveText: "关闭",
       positiveButtonProps: {
-        style: "height: 34px; border-radius: 8px; padding: 1.3rem 1.5rem;",
+        style:
+          "height: 36px; border-radius: 8px; padding: 0 1.25rem; font-weight: 500;",
       },
       onPositiveClick: () => {
         d.destroy();

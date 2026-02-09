@@ -115,7 +115,6 @@
               placement="bottom"
               raw
               :show-arrow="false"
-              class="feature-popover"
             >
               <template #trigger>
                 <div
@@ -134,7 +133,17 @@
                   </div>
                 </div>
               </template>
-              <span>点击退出技能</span>
+              <span
+                :style="{
+                  backgroundColor: '#000000',
+                  color: '#f1f2f8',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '14px',
+                  userSelect: 'none',
+                }"
+                >退出技能</span
+              >
             </n-popover>
             <div
               v-else
@@ -1015,10 +1024,6 @@ onUnmounted(() => {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
 
-            &:hover {
-              border-color: var(--primary-color);
-            }
-
             .file-icon {
               width: 24px;
               height: 24px;
@@ -1097,19 +1102,21 @@ onUnmounted(() => {
           .feature-button {
             display: flex;
             align-items: center;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.875rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
             color: var(--primary-color);
             background-color: transparent;
             font-size: 14px;
             font-weight: 600;
             user-select: none;
+            border: 1px solid transparent;
+            letter-spacing: -0.01em;
 
             &:hover {
-              background-color: rgba(0, 0, 0, 0.1);
-              transform: translateY(-1px);
+              background-color: rgba(0, 0, 0, 0.04);
+              border-color: rgba(0, 0, 0, 0.08);
 
               .feature-button-icon {
                 color: var(--text-color);
@@ -1121,41 +1128,41 @@ onUnmounted(() => {
             }
 
             &.active {
-              background: linear-gradient(
-                135deg,
-                rgba(200, 240, 220, 0.7) 0%,
-                rgba(167, 243, 208, 0.65) 50%,
-                rgba(110, 231, 183, 0.4) 100%
-              );
-              box-shadow: 0 2px 8px rgba(110, 231, 183, 0.2),
-                0 0 10px rgba(110, 231, 183, 0.05);
-              border: 1px solid var(--primary-color);
+              background-color: rgba(16, 185, 129, 0.1);
+              border: 1px solid rgba(16, 185, 129, 0.3);
+              box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
 
               .feature-button-icon {
-                color: var(--text-color);
+                color: var(--primary-color);
               }
 
               .feature-button-text {
-                color: var(--text-color);
+                color: var(--primary-color);
+              }
+
+              &:hover {
+                background-color: rgba(16, 185, 129, 0.15);
+                border-color: rgba(16, 185, 129, 0.4);
               }
             }
 
             .feature-button-icon {
-              margin-right: 0.5rem;
+              margin-right: 0.375rem;
               color: var(--text-color);
-              transition: color 0.2s ease;
+              transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              opacity: 0.85;
             }
 
             .feature-button-text {
               color: var(--text-color);
-              transition: color 0.2s ease;
+              transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
               display: flex;
               align-items: center;
-              gap: 6px;
+              gap: 4px;
 
               .exit-icon {
-                opacity: 0.7;
-                transition: all 0.2s ease;
+                opacity: 0.6;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
               }
             }
 
@@ -1463,8 +1470,4 @@ onUnmounted(() => {
     transform: translateY(-6px) scale(0.98);
   }
 }
-</style>
-
-<style lang="less">
-@import "../styles/featurePopover.less";
 </style>

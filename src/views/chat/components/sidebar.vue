@@ -1879,8 +1879,9 @@ onBeforeUnmount(() => {
             padding: 0.5rem 0.75rem;
             border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s @ease-smooth;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            border: 1px solid transparent;
 
             &:hover {
               background-color: rgba(0, 0, 0, 0.04);
@@ -1893,10 +1894,11 @@ onBeforeUnmount(() => {
 
             &:active {
               background-color: rgba(0, 0, 0, 0.06);
+              transform: scale(0.995);
             }
 
             &.active {
-              background-color: rgba(0, 0, 0, 0.06);
+              background-color: rgba(0, 0, 0, 0.05);
 
               .history-item-title {
                 font-weight: 500;
@@ -1910,35 +1912,37 @@ onBeforeUnmount(() => {
               user-select: none;
 
               .history-item-title {
-                font-size: 15px;
+                font-size: 14px;
+                font-weight: 500;
+                letter-spacing: -0.01em;
                 color: var(--text-color);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                transition: color 0.2s @ease-smooth;
-                line-height: 1.4;
+                transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                line-height: 1.5;
               }
             }
 
             .history-item-actions {
-              margin-left: 0.375rem;
+              margin-left: 0.5rem;
               display: flex;
               gap: 0.125rem;
               opacity: 0;
               transform: translateX(4px);
-              transition: all 0.2s @ease-smooth;
+              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
               flex-shrink: 0;
 
               .history-action-icon {
                 cursor: pointer;
                 color: var(--text-color);
-                opacity: 0.4;
+                opacity: 0.5;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s @ease-smooth;
+                transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
                 padding: 0.25rem;
-                border-radius: 4px;
+                border-radius: 6px;
 
                 &:hover {
                   opacity: 1;
@@ -1947,12 +1951,12 @@ onBeforeUnmount(() => {
 
                 &.edit-icon:hover {
                   color: var(--primary-color);
-                  background-color: rgba(0, 255, 119, 0.08);
+                  background-color: rgba(0, 255, 119, 0.1);
                 }
 
                 &.delete-icon:hover {
-                  color: #d03050;
-                  background-color: rgba(208, 48, 80, 0.08);
+                  color: #dc2626;
+                  background-color: rgba(220, 38, 38, 0.1);
                 }
               }
             }
@@ -2302,7 +2306,7 @@ onBeforeUnmount(() => {
             opacity: 0.6;
             line-height: 1.4;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
             user-select: none;

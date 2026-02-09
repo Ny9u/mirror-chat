@@ -50,25 +50,28 @@
                   >
                     <div
                       style="
-                        padding: 8px 12px;
-                        border-radius: 10px;
+                        padding: 6px 10px;
+                        border-radius: 6px;
                         cursor: pointer;
                         display: flex;
                         align-items: center;
                         gap: 8px;
-                        transition: background-color 0.2s ease;
+                        transition: all 0.15s ease;
+                        font-size: 14px;
+                        font-weight: 400;
+                        color: var(--text-color);
                       "
                       @click.stop="editChat(item)"
                       @mouseover="
                         $event.currentTarget.style.backgroundColor =
-                          'rgba(0, 0, 0, 0.1)'
+                          'rgba(128, 128, 128, 0.1)'
                       "
                       @mouseout="
                         $event.currentTarget.style.backgroundColor =
                           'transparent'
                       "
                     >
-                      <n-icon size="18">
+                      <n-icon size="16">
                         <Edit />
                       </n-icon>
                       <span>编辑</span>
@@ -76,26 +79,28 @@
 
                     <div
                       style="
-                        padding: 8px 12px;
-                        border-radius: 10px;
+                        padding: 6px 10px;
+                        border-radius: 6px;
                         cursor: pointer;
                         display: flex;
                         align-items: center;
-                        color: rgba(249, 57, 32, 1);
+                        color: rgba(239, 68, 68, 1);
                         gap: 8px;
-                        transition: background-color 0.2s ease;
+                        transition: all 0.15s ease;
+                        font-size: 14px;
+                        font-weight: 400;
                       "
                       @click.stop="deleteChat(item)"
                       @mouseover="
                         $event.currentTarget.style.backgroundColor =
-                          'rgba(0, 0, 0, 0.1)'
+                          'rgba(239, 68, 68, 0.08)'
                       "
                       @mouseout="
                         $event.currentTarget.style.backgroundColor =
                           'transparent'
                       "
                     >
-                      <n-icon size="18">
+                      <n-icon size="16">
                         <Trash />
                       </n-icon>
                       <span>删除</span>
@@ -522,36 +527,49 @@ onMounted(() => {
     }
 
     .time-group {
-      padding: 42px 0 4px 8px;
+      padding: 32px 0 8px 4px;
 
       .group-title {
         font-size: 1rem;
         color: var(--text-color);
         font-weight: 600;
+        opacity: 0.5;
+        letter-spacing: 0.025em;
       }
     }
 
     .history-item {
       padding: 16px 20px;
-      border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+      margin-bottom: 4px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+
+      &:hover {
+        background-color: rgba(128, 128, 128, 0.06);
+        border-color: rgba(128, 128, 128, 0.1);
+      }
+
+      &:active {
+        background-color: rgba(128, 128, 128, 0.1);
+      }
 
       .history-item-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
+        gap: 8px;
 
         .chat-icon {
           opacity: 0.7;
           flex-shrink: 0;
-          margin-right: 8px;
         }
 
         .history-title {
-          font-size: 1.2rem;
-          font-weight: 800;
+          font-size: 0.9375rem;
+          font-weight: 600;
           color: var(--text-color);
           overflow: hidden;
           text-overflow: ellipsis;
@@ -559,29 +577,41 @@ onMounted(() => {
           flex: 1;
           display: flex;
           align-items: center;
+          line-height: 1.4;
 
           &:hover {
             color: var(--primary-color);
           }
         }
+
+        .n-button {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+      }
+
+      &:hover .history-item-header .n-button {
+        opacity: 1;
       }
 
       .history-preview {
-        font-size: 1rem;
+        font-size: 0.8125rem;
         color: var(--text-color);
-        line-height: 1.4;
+        line-height: 1.5;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         opacity: 0.6;
+        font-weight: 500;
       }
 
       .history-time {
         font-size: 0.75rem;
         color: var(--text-color);
-        opacity: 0.6;
+        opacity: 0.4;
+        font-weight: 500;
       }
     }
 

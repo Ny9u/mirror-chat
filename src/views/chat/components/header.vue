@@ -723,15 +723,17 @@ onMounted(async () => {
   height: auto;
   max-height: 26rem;
   background: var(--select-color) no-repeat center;
-  border-radius: 14px;
+  border-radius: 12px;
   position: absolute;
   top: 3.6rem;
   left: 12rem;
   z-index: 999;
   caret-color: transparent;
-  padding: 0.75rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(10px);
+  padding: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px -2px rgba(0, 0, 0, 0.04), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 
   .model-title {
     height: 2.33rem;
@@ -739,25 +741,26 @@ onMounted(async () => {
     line-height: 3.33rem;
     font-size: 1.2rem;
     font-weight: 600;
+    letter-spacing: 0.025em;
     color: var(--text-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     user-select: none;
-    animation: itemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: itemFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
     .model-question {
       width: 1.33rem;
       height: 1.33rem;
       background: url("@/assets/question.svg") no-repeat center;
       background-size: 100% 100%;
-      opacity: 0.5;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      opacity: 0.4;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
 
       &:hover {
-        opacity: 0.8;
-        transform: scale(1.1);
+        opacity: 0.7;
+        transform: scale(1.05);
       }
     }
     .model-question-light {
@@ -765,13 +768,13 @@ onMounted(async () => {
       height: 1.33rem;
       background: url("@/assets/question-dark.svg") no-repeat center;
       background-size: 100% 100%;
-      opacity: 0.5;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      opacity: 0.4;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
 
       &:hover {
-        opacity: 0.8;
-        transform: scale(1.1);
+        opacity: 0.7;
+        transform: scale(1.05);
       }
     }
   }
@@ -784,35 +787,37 @@ onMounted(async () => {
     flex-direction: column;
     justify-content: center;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 0.875rem 1rem;
     box-sizing: border-box;
     user-select: none;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     position: relative;
     overflow: hidden;
     opacity: 0;
-    animation: modelItemFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    animation-delay: calc(0.15s + var(--model-index) * 0.08s);
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: modelItemFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(0.1s + var(--model-index) * 0.04s);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
     .model-name {
       width: 100%;
       font-weight: 600;
-      transition: color 0.2s ease, transform 0.2s ease;
+      font-size: 0.9375rem;
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
     }
     .model-desc {
       width: 100%;
       color: var(--text-color-3);
-      font-size: 13px;
+      font-size: 0.8125rem;
       white-space: normal;
       overflow: hidden;
       text-overflow: ellipsis;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      line-height: 1.5;
-      margin-top: 0.2rem;
+      line-height: 1.4;
+      margin-top: 0.25rem;
       transition: color 0.2s ease;
     }
 
@@ -822,25 +827,30 @@ onMounted(async () => {
         rgba(150, 150, 150, 0.2),
         rgba(150, 150, 150, 0.15)
       );
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     &:active {
-      transform: translateX(4px) scale(0.98);
+      transform: scale(0.995);
     }
   }
 
   .item.selected {
-    background-color: rgba(0, 200, 136, 0.12);
-    border-left: 3px solid var(--primary-color);
+    background: rgba(24, 160, 88, 0.08);
+
+    &::before {
+      height: 1.25rem;
+    }
 
     .model-name {
       color: var(--primary-color);
     }
+    .model-desc {
+      color: rgba(24, 160, 88, 0.7);
+    }
   }
 
   .item.selected:hover {
-    background-color: rgba(0, 200, 136, 0.18);
+    background: rgba(24, 160, 88, 0.12);
   }
 }
 .overlay {
